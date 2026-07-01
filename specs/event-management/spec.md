@@ -52,6 +52,26 @@ event is open.
 - THEN the option and its responses are deleted
 - AND the organizer is warned before the deletion is confirmed
 
+### Requirement: Optional start and end time on a date option
+A date option MAY have a start time and an end time; both are optional. An end
+time MAY only be set when a start time is present, and MUST NOT be before it.
+
+#### Scenario: Date only, no times
+- WHEN the organizer adds an option with a date but no start time
+- THEN the option is saved with no start or end time
+
+#### Scenario: Start time without end time
+- WHEN the organizer adds an option with a start time but no end time
+- THEN the option is saved with the start time and no end time
+
+#### Scenario: End time requires a start time
+- WHEN the organizer tries to set an end time without a start time
+- THEN the system rejects it and no end time is saved
+
+#### Scenario: End time before start time
+- WHEN the organizer sets an end time earlier than the start time
+- THEN the system rejects it
+
 ### Requirement: Close and reopen an event
 The system SHALL let the organizer close an event to stop further responses, and
 reopen it.

@@ -131,6 +131,8 @@ canvas library.
 | Field: description | Beskrivelse |
 | Dates section | Mulige datoer |
 | Add date | Tilføj dato |
+| Field: start time | Starttid |
+| Field: end time | Sluttid |
 | Participants section | Deltagere |
 | Add participant | Tilføj deltager |
 | Field: name | Navn |

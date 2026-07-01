@@ -28,7 +28,8 @@ for this write volume.
 ## Data model (D1)
 - `events(id, title, description, organizer_token, status, created_at)`
     - status ∈ {open, closed}
-- `date_options(id, event_id, starts_at, label, sort_order)`
+- `date_options(id, event_id, starts_at, ends_at, label, sort_order)`
+    - `starts_at` and `ends_at` are both optional (nullable); `ends_at` requires `starts_at`
 - `invitees(id, event_id, label, token, note, created_at)`
 - `responses(invitee_id, date_option_id, preference, updated_at)`
     - preference ∈ {preferred, available, unavailable}
@@ -44,7 +45,7 @@ for this write volume.
 - Mutations use SvelteKit form actions; token is validated in every load/action.
 - Language: all user-facing text is Danish. Weekdays/months render in Danish,
   lowercase (lørdag, marts). Keep copy in one `da` strings module for consistency.
-- Timezone: store `starts_at` as UTC ISO; render in Europe/Copenhagen.
+- Timezone: store `starts_at`/`ends_at` as UTC ISO; render in Europe/Copenhagen.
 - Motion: user-facing UI follows the animations.dev principles (ease-out enter/exit,
   ease-in-out for on-screen movement, spring for the state selector, staggered list
   entrance, transform/opacity only) and honors `prefers-reduced-motion`. See the
