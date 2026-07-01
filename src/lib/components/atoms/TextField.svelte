@@ -1,12 +1,14 @@
 <script lang="ts">
 	let {
 		label,
+		name,
 		value = $bindable(),
 		type = 'text',
 		placeholder,
 		compact = false
 	}: {
 		label?: string;
+		name?: string;
 		value: string;
 		type?: 'text' | 'date' | 'time';
 		placeholder?: string;
@@ -20,6 +22,7 @@
 	{/if}
 	<input
 		{type}
+		{name}
 		{placeholder}
 		bind:value
 		class="w-full rounded-[10px] border border-border bg-card px-3.5 text-[15px] text-ink outline-none placeholder:text-ink-muted/70 focus:border-primary {compact

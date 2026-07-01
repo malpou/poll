@@ -59,5 +59,11 @@ export default defineConfig(
 		// Config files: lint for correctness but skip type-aware rules (loose plugin types).
 		files: ['eslint.config.js', 'vitest.config.ts'],
 		extends: [ts.configs.disableTypeChecked]
+	},
+	{
+		// Playwright e2e + its config aren't in the SvelteKit tsconfig include, so
+		// skip type-aware rules there rather than wiring a separate project.
+		files: ['e2e/**/*.ts', 'playwright.config.ts'],
+		extends: [ts.configs.disableTypeChecked]
 	}
 );

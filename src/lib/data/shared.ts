@@ -31,13 +31,6 @@ export const RESULTS_SQL = `
 
 // Pure DataProvider helpers — identical for mock and D1, so both spread them in.
 export const helpers = {
-	seedEvent() {
-		return {
-			title: 'Rundvisning i DR Byen',
-			description: 'Vi mødes ved hovedindgangen til DR Byen. Turen tager ca. en time.'
-		};
-	},
-
 	blankDate(): DateOption {
 		return { id: id('date'), value: '', startTime: '', endTime: '' };
 	},

@@ -19,7 +19,6 @@ export interface ResponseInput {
 }
 
 export interface DataProvider {
-	seedEvent(): { title: string; description: string };
 	blankDate(): DateOption;
 	blankParticipant(): Participant;
 	inviteeUrl(token: string): string;

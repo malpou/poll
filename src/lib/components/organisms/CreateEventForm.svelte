@@ -5,25 +5,20 @@
 	import DateList from '$lib/components/organisms/DateList.svelte';
 	import ParticipantList from '$lib/components/organisms/ParticipantList.svelte';
 	import Toast from '$lib/components/feedback/Toast.svelte';
+	import { enhance } from '$app/forms';
 	import { da } from '$lib/da';
 	import { helpers } from '$lib/data/shared';
-	import { mockProvider } from '$lib/data/mock';
 	import type { DateOption, Participant } from '$lib/types';
 
-	const seed = helpers.seedEvent();
+	// The create action's fail() payload; null on first render / success.
+	let { form }: { form: { error?: string } | null } = $props();
 
-	let title = $state(seed.title);
-	let description = $state(seed.description);
-	let dates = $state<DateOption[]>([
-		{ id: 'seed-d1', value: '2026-09-12', startTime: '10:00', endTime: '11:00' },
-		{ id: 'seed-d2', value: '2026-09-20', startTime: '11:00', endTime: '12:00' }
-	]);
-	let participants = $state<Participant[]>([
-		{ ...helpers.blankParticipant(), name: 'Anna' },
-		{ ...helpers.blankParticipant(), name: 'Morten' }
-	]);
+	// Start empty — one blank row each so the form is usable without seed data.
+	let title = $state('');
+	let description = $state('');
+	let dates = $state<DateOption[]>([helpers.blankDate()]);
+	let participants = $state<Participant[]>([helpers.blankParticipant()]);
 
-	let created = $state(false);
 	let toastOpen = $state(false);
 	let toastTimer: ReturnType<typeof setTimeout> | undefined;
 
@@ -46,24 +41,22 @@
 		toastOpen = true;
 		toastTimer = setTimeout(() => (toastOpen = false), 3000);
 	}
-
-	async function create() {
-		await mockProvider.createEvent($state.snapshot({ title, description, dates, participants }));
-		created = true;
-	}
 </script>
 
-<div class="mx-auto max-w-[640px] px-6 pb-24 pt-10">
-	<h1 class="mb-8 text-[28px] font-extrabold tracking-[-0.02em] text-ink">
+<form method="POST" action="?/create" use:enhance class="mx-auto max-w-[640px] px-6 pb-24 pt-10">
+	<h1 class="mb-3 text-[28px] font-extrabold tracking-[-0.02em] text-ink">
 		{da.createTitle}
 	</h1>
+	<p class="mb-8 max-w-[52ch] text-[15px] leading-relaxed text-ink-muted">
+		{da.createIntro}
+	</p>
 
 	<div class="mb-6">
-		<TextField label={da.fieldTitle} bind:value={title} />
+		<TextField label={da.fieldTitle} name="title" bind:value={title} />
 	</div>
 
 	<div class="mb-10">
-		<TextArea label={da.fieldDescription} bind:value={description} />
+		<TextArea label={da.fieldDescription} name="description" bind:value={description} />
 	</div>
 
 	<div class="mb-10">
@@ -80,18 +73,11 @@
 	</div>
 
 	<div class="mt-2 flex items-center gap-3.5">
-		<Button variant="primary" onclick={create}>{da.create}</Button>
-		{#if created}
-			<div class="flex items-center gap-2 text-sm font-semibold text-good">
-				<span
-					class="flex h-[22px] w-[22px] items-center justify-center rounded-full bg-good-tint text-[13px] text-good"
-				>
-					✓
-				</span>
-				{da.created}
-			</div>
+		<Button variant="primary" type="submit">{da.create}</Button>
+		{#if form?.error}
+			<div class="text-sm font-semibold text-bad">{form.error}</div>
 		{/if}
 	</div>
-</div>
+</form>
 
 <Toast open={toastOpen} text={da.linkCopied} />

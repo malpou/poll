@@ -9,10 +9,12 @@
 
 	let {
 		participant = $bindable(),
+		index,
 		onremove,
 		oncopy
 	}: {
 		participant: Participant;
+		index: number;
 		onremove: () => void;
 		oncopy: (url: string) => void;
 	} = $props();
@@ -22,7 +24,12 @@
 
 <div class="rounded-xl border border-border bg-card p-3">
 	<div class="flex items-center gap-2.5">
-		<TextField placeholder={da.name} bind:value={participant.name} />
+		<TextField
+			placeholder={da.name}
+			name="participants.{index}.name"
+			bind:value={participant.name}
+		/>
+		<input type="hidden" name="participants.{index}.token" value={participant.token} />
 		<IconButton label={da.remove} onclick={onremove}>✕</IconButton>
 	</div>
 	<div class="mt-2.5 flex flex-wrap items-center gap-2.5">
