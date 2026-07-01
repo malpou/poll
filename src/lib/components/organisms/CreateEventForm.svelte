@@ -13,7 +13,7 @@
 	// The create action's fail() payload; null on first render / success.
 	let { form }: { form: { error?: string } | null } = $props();
 
-	// Start empty — one blank row each so the form is usable without seed data.
+	// Start empty - one blank row each so the form is usable without seed data.
 	let title = $state('');
 	let description = $state('');
 	let dates = $state<DateOption[]>([helpers.blankDate()]);

@@ -2,7 +2,7 @@ import { execFileSync } from 'node:child_process';
 import type { Preference } from '../src/lib/types';
 
 // The single home for e2e DB access. Specs seed/read the local D1 through these
-// typed builders and never write SQL themselves — mirroring how src/lib/data/d1.ts
+// typed builders and never write SQL themselves - mirroring how src/lib/data/d1.ts
 // is the only place app SQL lives. Seeding runs against the same local D1 the
 // preview server uses (wrangler dev), via `wrangler d1 execute`.
 
@@ -34,9 +34,9 @@ export function d1(sql: string): { results: Record<string, unknown>[] } {
 	return parsed[0];
 }
 
-// SQL literal for a string-or-null value. ponytail: string-escaped, not
-// parameterized — wrangler --command takes no bind params and these are test
-// seeds with fixed, developer-controlled inputs only.
+// SQL literal for a string-or-null value. String-escaped rather than
+// parameterized because `wrangler d1 execute --command` takes no bind params;
+// safe here as these are fixed, developer-controlled test seeds only.
 function lit(v: string | null | undefined): string {
 	if (v === null || v === undefined) return 'NULL';
 	return `'${v.replace(/'/g, "''")}'`;
@@ -102,7 +102,7 @@ export function seedResponse(r: ResponseSeed) {
 }
 
 // Delete an event and all its children in FK order (responses first). Accepts one
-// id or several. Idempotent — safe to call before every seed.
+// id or several. Idempotent - safe to call before every seed.
 export function wipeEvent(eventId: string | string[]) {
 	const ids = (Array.isArray(eventId) ? eventId : [eventId]).map(lit).join(', ');
 	d1(

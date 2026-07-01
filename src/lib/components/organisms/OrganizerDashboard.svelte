@@ -59,7 +59,7 @@
 	let { data }: { data: { invalid: true } | ValidData } = $props();
 	const view = $derived<ValidData | null>(data.invalid ? null : data);
 
-	// Which option is in inline-edit mode (id) — null when none.
+	// Which option is in inline-edit mode (id) - null when none.
 	let editing = $state<string | null>(null);
 
 	// Expanded result cards (show who chose what) and expanded invitee notes.
@@ -102,7 +102,7 @@
 	}
 
 	// enhance factory: warn first when deleting something with responses. cancel()
-	// aborts the submit cleanly — done in the SubmitFunction (not onsubmit) so it
+	// aborts the submit cleanly - done in the SubmitFunction (not onsubmit) so it
 	// cooperates with enhance's own preventDefault.
 	function confirmingRefresh(message: string, needsConfirm: boolean) {
 		return ({ cancel }: { cancel: () => void }): AfterSubmit | undefined => {

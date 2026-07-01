@@ -3,7 +3,7 @@
 [![CI](https://github.com/malpou/family-date-poll/actions/workflows/ci.yml/badge.svg)](https://github.com/malpou/family-date-poll/actions/workflows/ci.yml)
 
 A tiny, no-login date poll. One organizer seeds a few candidate dates, sends
-each person a personal link, and sees at a glance which date suits everyone —
+each person a personal link, and sees at a glance which date suits everyone -
 originally built to schedule a _rundvisning i DR Byen_, but it works for any
 "når passer det jer?" question.
 
@@ -12,7 +12,7 @@ Danish.
 
 ## How it works
 
-No accounts. Access is by **capability URL** — whoever holds a token can act,
+No accounts. Access is by **capability URL** - whoever holds a token can act,
 and tokens are unguessable and never listed.
 
 | Route                  | Who           | What                                                                                        |
@@ -21,7 +21,7 @@ and tokens are unguessable and never listed.
 | `/e/{organizer_token}` | the organizer | Dashboard: manage dates & invitees, copy links, see results, close/reopen                   |
 | `/r/{invitee_token}`   | an invitee    | Mark each date **Foretrukket / Kan godt / Kan ikke**, add a note, submit                    |
 
-The organizer link is the secret — treat it like a password. Each invitee gets
+The organizer link is the secret - treat it like a password. Each invitee gets
 their own link to copy and send by their own means (email, text, …).
 
 ## Stack
@@ -34,7 +34,7 @@ their own link to copy and send by their own means (email, text, …).
 UI is organized by **atomic design** under `src/lib/components/`
 (`atoms/` → `molecules/` → `organisms/`). Data goes through a
 single `DataProvider` interface (`src/lib/data/provider.ts`) with a mock
-implementation for local dev and tests and a D1 implementation in production —
+implementation for local dev and tests and a D1 implementation in production -
 swapping is one line.
 
 ## Develop
@@ -61,12 +61,12 @@ bun run test:e2e   # Playwright smoke tests: full journey against a local D1
 
 `test:e2e` builds the app, boots `wrangler dev` on a freshly-migrated **local
 D1**, and drives the real create → dashboard → respond → results journey. Specs
-seed and read the database through one shared helper (`e2e/db.ts`) — no raw SQL
+seed and read the database through one shared helper (`e2e/db.ts`) - no raw SQL
 in the tests themselves; all query-building lives in that module, mirroring how
 `src/lib/data/d1.ts` is the single home for app SQL.
 
 **CI** ([`.github/workflows/ci.yml`](.github/workflows/ci.yml)) runs the full
-gate — `check` → unit tests → e2e — on every push and pull request, and uploads
+gate - `check` → unit tests → e2e - on every push and pull request, and uploads
 the Playwright HTML report as an artifact when a run fails.
 
 ## Deploy (Cloudflare)
@@ -82,7 +82,7 @@ Requires a Cloudflare account with a D1 database bound as `DB` and the
 ## Project layout
 
 ```
-specs/                       the source of truth — see below
+specs/                       the source of truth - see below
 src/lib/components/          atoms / molecules / organisms
 src/lib/data/                DataProvider: provider.ts, mock.ts, d1.ts
 src/lib/da.ts                all Danish strings, in one place
@@ -94,7 +94,7 @@ e2e/                         Playwright smoke tests
 
 ## Specs & roadmap
 
-The behavior is specified up front in [`specs/`](specs/) — `PROJECT.md` (data
+The behavior is specified up front in [`specs/`](specs/) - `PROJECT.md` (data
 model, routes, security, conventions), `DESIGN.md` (visual + Danish copy), and
 one folder per capability (`event-management`, `invitee-links`,
 `availability-response`, `results`). Work is tracked as

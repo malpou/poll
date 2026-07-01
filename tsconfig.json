@@ -13,7 +13,7 @@
 		"moduleResolution": "bundler",
 		"types": ["node"]
 	},
-	// The generated config includes src/ and tests/ but not e2e/ — add it so the
+	// The generated config includes src/ and tests/ but not e2e/ - add it so the
 	// Playwright specs (which import node: builtins) type-check in the editor.
 	"include": [
 		".svelte-kit/ambient.d.ts",

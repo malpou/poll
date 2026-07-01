@@ -30,7 +30,7 @@
 		data: { invalid: true } | ValidData;
 	} = $props();
 
-	// Narrowed view for the template — avoids re-checking the union per binding.
+	// Narrowed view for the template - avoids re-checking the union per binding.
 	const view = $derived<ValidData | null>(data.invalid ? null : data);
 
 	// Local editable state, seeded once from the load (revisits pre-select).

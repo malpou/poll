@@ -5,7 +5,7 @@ on:
   pull_request:
 
 jobs:
-  # One job, no matrix — single app, chromium-only per iteration 7.
+  # One job, no matrix - single app, chromium-only per iteration 7.
   check-and-test:
     runs-on: ubuntu-latest
     env:

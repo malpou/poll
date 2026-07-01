@@ -1,7 +1,7 @@
-# Prompt for Claude Design — "Rundvisning i DR Byen" date poll
+# Prompt for Claude Design - "Rundvisning i DR Byen" date poll
 
 > Paste everything below into Claude Design. Instructions are in English; every
-> user-facing string is Danish and listed in the copy table — use those exact
+> user-facing string is Danish and listed in the copy table - use those exact
 > strings, don't translate the labels yourself.
 
 ---
@@ -12,15 +12,15 @@ A small, warm, mobile-first web UI for collecting preferred dates for a family
 **rundvisning (guided tour) at DR Byen** in Copenhagen. One organizer seeds a few
 candidate dates; each family member or group opens a **personal link** (received
 by email) and marks how each date suits them. The organizer sees the aggregate
-and picks a date. No logins — the link is the credential.
+and picks a date. No logins - the link is the credential.
 
 Three screens, in priority order:
 
-1. **Response page** (`/r/{token}`) — the star. This is what gets mailed out and
+1. **Response page** (`/r/{token}`) - the star. This is what gets mailed out and
    opened on a phone. Make it feel personal and effortless.
-2. **Results / dashboard** (`/e/{token}`) — organizer sees counts per date and who
+2. **Results / dashboard** (`/e/{token}`) - organizer sees counts per date and who
    hasn't answered yet.
-3. **Create event** (`/`) — organizer sets title, description, dates, and adds
+3. **Create event** (`/`) - organizer sets title, description, dates, and adds
    participants (each generating a copyable link).
 
 Mobile-first; scale gracefully to desktop for the organizer views.
@@ -35,7 +35,7 @@ Mobile-first; scale gracefully to desktop for the organizer views.
 
 ## Visual direction
 
-Clean Nordic minimalism that nods to DR Byen's architecture — the blue-lit cube of
+Clean Nordic minimalism that nods to DR Byen's architecture - the blue-lit cube of
 DR Koncerthuset, glass, and pale concrete. (Evoke the mood; this isn't official DR
 branding.)
 
@@ -53,7 +53,7 @@ branding.)
 
 ## Animation direction (core requirement)
 
-Follow the animations.dev principles. Motion should feel intentional and quiet —
+Follow the animations.dev principles. Motion should feel intentional and quiet -
 never decorative. Animate **transform and opacity only**. Concrete rules:
 
 - **Enter / exit → ease-out, fast.** Elements fading/rising in use
@@ -62,7 +62,7 @@ never decorative. Animate **transform and opacity only**. Concrete rules:
 - **On-screen movement / reflow → ease-in-out** (e.g. `cubic-bezier(0.32, 0.72, 0, 1)`).
 - **Hover / color / focus → `ease`, ~150ms.**
 - **The three-state selector is the signature interaction.** Selecting
-  Foretrukket / Kan godt / Kan ikke should feel organic — animate the active
+  Foretrukket / Kan godt / Kan ikke should feel organic - animate the active
   indicator with a **spring** (Framer Motion `type: "spring", stiffness: 420,
 damping: 32`, or an equivalent snappy-but-soft feel). Think Dynamic-Island
   smoothness: the highlight glides between the three options, it doesn't cut.
@@ -73,13 +73,13 @@ damping: 32`, or an equivalent snappy-but-soft feel). Think Dynamic-Island
 - **Results bars → animate width on mount** with ease-out (~450ms). When the
   organizer's data re-sorts (best date to top), use a layout/spring transition so
   rows slide to their new position rather than jumping.
-- **Accessibility:** honor `prefers-reduced-motion` — drop transforms and stagger,
+- **Accessibility:** honor `prefers-reduced-motion` - drop transforms and stagger,
   keep only near-instant opacity fades. No motion should block interaction.
 - Don't animate anything a user sees dozens of times per session (no animating on
   every keystroke, no looping effects).
 
 Eventual stack is SvelteKit on Cloudflare, so keep animations achievable with CSS
-transitions / Svelte transitions / Motion — nothing that depends on a heavy 3D or
+transitions / Svelte transitions / Motion - nothing that depends on a heavy 3D or
 canvas library.
 
 ## Screen details
@@ -110,7 +110,7 @@ canvas library.
 - A "Deltagere" section: add each participant by name; each row shows a "Kopiér
   link" button (copying triggers a small "Linket er kopieret" toast).
 
-## Danish copy — use these exact strings
+## Danish copy - use these exact strings
 
 | Context                          | Danish string                                                     |
 | -------------------------------- | ----------------------------------------------------------------- |

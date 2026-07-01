@@ -22,10 +22,10 @@ for this write volume.
 
 - No logins. Access is via **capability URLs**: whoever holds a token can act.
 - Two token kinds:
-  - `organizer_token` — full management of one event
-  - `invitee_token` — respond as one invitee on one event
+  - `organizer_token` - full management of one event
+  - `invitee_token` - respond as one invitee on one event
 - Tokens are unguessable and never listed publicly. Treat the organizer link as
-  a secret. Decision: capability URL only for v1 — no passphrase. Mitigate leak
+  a secret. Decision: capability URL only for v1 - no passphrase. Mitigate leak
   risk by keeping tokens out of logs, referrers, and analytics.
 
 ## Data model (D1)
@@ -38,7 +38,7 @@ for this write volume.
 - `responses(invitee_id, date_option_id, preference, updated_at)`
   - preference ∈ {preferred, available, unavailable}
   - primary key (invitee_id, date_option_id)
-  - a missing row means "no answer yet" for that date — distinct from "unavailable"
+  - a missing row means "no answer yet" for that date - distinct from "unavailable"
 
 ## Routes
 

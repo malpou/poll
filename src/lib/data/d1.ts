@@ -259,7 +259,7 @@ export function d1Provider(db: D1Database): DataProvider {
 		},
 
 		async removeDateOption(optionId) {
-			// No FK cascade — clear responses first, then the option.
+			// No FK cascade - clear responses first, then the option.
 			await db.batch([
 				db.prepare(`DELETE FROM responses WHERE date_option_id = ?`).bind(optionId),
 				db.prepare(`DELETE FROM date_options WHERE id = ?`).bind(optionId)
@@ -283,7 +283,7 @@ export function d1Provider(db: D1Database): DataProvider {
 		},
 
 		async removeInvitee(inviteeId) {
-			// No FK cascade — clear responses first, then the invitee (link stops working).
+			// No FK cascade - clear responses first, then the invitee (link stops working).
 			await db.batch([
 				db.prepare(`DELETE FROM responses WHERE invitee_id = ?`).bind(inviteeId),
 				db.prepare(`DELETE FROM invitees WHERE id = ?`).bind(inviteeId)

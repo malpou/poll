@@ -8,7 +8,7 @@ export function markBest<T extends { preferred: number; available: number; unava
 	const sorted = [...rows].sort(
 		(a, b) => a.unavailable - b.unavailable || b.preferred - a.preferred
 	);
-	// No highlight until at least one response exists — otherwise an all-zero
+	// No highlight until at least one response exists - otherwise an all-zero
 	// board ties every row on unavailable=0 and marks them all "best".
 	const anyAnswered = sorted.some((r) => r.preferred + r.available + r.unavailable > 0);
 	const top = sorted[0];
@@ -18,7 +18,7 @@ export function markBest<T extends { preferred: number; available: number; unava
 	}));
 }
 
-// ponytail: one assert-based self-check, no framework. Runs under `node results.ts`.
+// Assert-based self-check, no test framework needed. Run directly with the runtime.
 function demo() {
 	const clearWinner = markBest([
 		{ id: 'a', preferred: 3, available: 0, unavailable: 2 },

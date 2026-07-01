@@ -19,7 +19,7 @@ function dateInput(form: FormData): DateOptionInput {
 export const load: PageServerLoad = async ({ params, platform, url }) => {
 	const provider = getProvider(platform);
 	const event = await provider.getEventByOrganizerToken(params.token);
-	// Reveal nothing on an unknown token — same discipline as the response page.
+	// Reveal nothing on an unknown token - same discipline as the response page.
 	if (!event) return { invalid: true as const };
 
 	const [results, answered, responses] = await Promise.all([

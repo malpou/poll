@@ -15,7 +15,7 @@ export function id(prefix: string): string {
 }
 
 // Per-date preference counts. notAnswered is derived from the invitee total
-// (see getResults), NOT from this query — a missing responses row contributes 0
+// (see getResults), NOT from this query - a missing responses row contributes 0
 // to every count here, so it can never read as "unavailable".
 export const RESULTS_SQL = `
 	SELECT d.id AS id,
@@ -29,7 +29,7 @@ export const RESULTS_SQL = `
 	ORDER BY d.sort_order;
 `;
 
-// Pure DataProvider helpers — identical for mock and D1, so both spread them in.
+// Pure DataProvider helpers - identical for mock and D1, so both spread them in.
 export const helpers = {
 	blankDate(): DateOption {
 		return { id: id('date'), value: '', startTime: '', endTime: '' };
@@ -40,7 +40,7 @@ export const helpers = {
 	},
 
 	// Absolute links off the runtime origin (request host in prod, localhost in
-	// dev) — pass url.origin server-side or page.url.origin in a component.
+	// dev) - pass url.origin server-side or page.url.origin in a component.
 	inviteeUrl(origin: string, token: string): string {
 		return `${origin}/r/${token}`;
 	},

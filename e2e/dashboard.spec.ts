@@ -107,7 +107,7 @@ test('accepting the warning deletes the option and its responses', async ({ page
 	expect(countResponsesForOption(OPT)).toBe(0);
 });
 
-// Scope to the invitees section — the organizer-link banner also has a copy
+// Scope to the invitees section - the organizer-link banner also has a copy
 // button (it copies the /e URL), so an unscoped .first() would grab that one.
 function inviteesSection(page: Page) {
 	return page.locator('section', { has: page.getByText(da.participantsSection) });
@@ -123,7 +123,7 @@ test('copy link puts the full absolute invitee URL on the clipboard', async ({ p
 	seed();
 	await page.goto(`/e/${OTOK}`);
 	// URLs follow the request host the server saw (a custom-domain route can
-	// rewrite it), so assert shape — absolute + correct path — not a fixed host.
+	// rewrite it), so assert shape - absolute + correct path - not a fixed host.
 	const copied = await copiedUrl(page);
 	expect(copied).toMatch(/^https?:\/\/[^/]+\/r\//);
 	expect(copied.endsWith(`/r/${RTOK}`)).toBe(true);
@@ -159,7 +159,7 @@ test('close stops response edits; reopen restores them', async ({ page }) => {
 
 	// Reopen → the invitee can edit again. Anna was seeded with an answer, so the
 	// response bar shows the "saved / Rediger" affordance (not a fresh "Send svar")
-	// — that Rediger button only renders when the event is open, so its presence is
+	// - that Rediger button only renders when the event is open, so its presence is
 	// exactly the "edits restored" signal. Clicking it reveals the submit button.
 	await page.goto(`/e/${OTOK}`);
 	await page.getByRole('button', { name: da.reopenPoll }).click();

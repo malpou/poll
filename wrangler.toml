@@ -3,7 +3,7 @@ main = ".svelte-kit/cloudflare/_worker.js"
 compatibility_date = "2025-07-01"
 compatibility_flags = ["nodejs_compat"]
 
-# poll.malpou.io — wrangler provisions the DNS record + cert on deploy
+# poll.malpou.io - wrangler provisions the DNS record + cert on deploy
 # (requires malpou.io to be a zone on this Cloudflare account).
 routes = [{ pattern = "poll.malpou.io", custom_domain = true }]
 

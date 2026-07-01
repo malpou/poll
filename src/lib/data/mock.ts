@@ -3,7 +3,7 @@ import type { EventDraft } from '$lib/types';
 import { helpers, newToken } from './shared';
 
 // In-memory mock for `bun run dev` without a DB and for tests. No persistence
-// across requests — the read methods return empty/not-found. Real storage is
+// across requests - the read methods return empty/not-found. Real storage is
 // d1.ts; this keeps the create page working locally without wrangler.
 export const mockProvider: DataProvider = {
 	...helpers,
@@ -35,7 +35,7 @@ export const mockProvider: DataProvider = {
 	},
 
 	async getAnsweredInviteeIds() {
-		// No persistence — local dev shows everyone pending; e2e uses real D1.
+		// No persistence - local dev shows everyone pending; e2e uses real D1.
 		return new Set<string>();
 	},
 

@@ -19,7 +19,7 @@ test('zero date options is rejected with a validation message, no redirect', asy
 	await page.getByLabel(da.fieldTitle).fill('Sommerfest');
 	// Leave the date blank → dropped server-side → zero options.
 	await page.getByRole('button', { name: da.create }).click();
-	// exact — the dates hint copy also contains this phrase as a substring.
+	// exact - the dates hint copy also contains this phrase as a substring.
 	await expect(page.getByText(da.errorNoDates, { exact: true })).toBeVisible();
 	await expect(page).toHaveURL(/\/$/);
 });
