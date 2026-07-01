@@ -1,5 +1,6 @@
 // All user-facing Danish copy in one place (PROJECT.md convention).
 export const da = {
+	appName: 'Datoafstemning',
 	createTitle: 'Opret afstemning',
 	createIntro:
 		'Vælg nogle datoer, tilføj de personer du vil spørge, og del deres personlige link. Hver deltager svarer, om de foretrækker, kan eller ikke kan.',
