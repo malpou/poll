@@ -1,43 +1,32 @@
 import type { DataProvider } from './provider';
-import type { DateOption, EventDraft, Participant } from '$lib/types';
+import type { EventDraft } from '$lib/types';
+import { helpers, newToken } from './shared';
 
-const BASE62 = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-
-// ≥128 bits of entropy, base62 (PROJECT.md). 22 chars ≈ 131 bits.
-function newToken(): string {
-	const bytes = crypto.getRandomValues(new Uint8Array(22));
-	let out = '';
-	for (const b of bytes) out += BASE62[b % 62];
-	return out;
-}
-
-function id(prefix: string): string {
-	return `${prefix}-${newToken().slice(0, 7)}`;
-}
-
+// In-memory mock for `bun run dev` without a DB and for tests. No persistence
+// across requests — the read methods return empty/not-found. Real storage is
+// d1.ts; this keeps the create page working locally without wrangler.
 export const mockProvider: DataProvider = {
-	seedEvent() {
-		return {
-			title: 'Rundvisning i DR Byen',
-			description: 'Vi mødes ved hovedindgangen til DR Byen. Turen tager ca. en time.'
-		};
-	},
-
-	blankDate(): DateOption {
-		return { id: id('date'), value: '', startTime: '', endTime: '' };
-	},
-
-	blankParticipant(): Participant {
-		return { id: id('p'), name: '', token: newToken() };
-	},
-
-	inviteeUrl(token: string): string {
-		return `https://poll.malpou.io/r/${token}`;
-	},
+	...helpers,
 
 	async createEvent(draft: EventDraft) {
 		const organizerToken = newToken();
 		console.log('[mock] createEvent', { organizerToken, draft });
 		return { organizerToken };
+	},
+
+	async getEventByOrganizerToken() {
+		return null;
+	},
+
+	async getInviteeContext() {
+		return null;
+	},
+
+	async saveResponses(inviteeId, answers) {
+		console.log('[mock] saveResponses', { inviteeId, answers });
+	},
+
+	async getResults() {
+		return [];
 	}
 };

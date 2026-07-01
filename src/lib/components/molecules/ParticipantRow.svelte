@@ -5,7 +5,7 @@
 	import Button from '$lib/components/atoms/Button.svelte';
 	import type { Participant } from '$lib/types';
 	import { da } from '$lib/da';
-	import { provider } from '$lib/data/provider';
+	import { helpers } from '$lib/data/shared';
 
 	let {
 		participant = $bindable(),
@@ -17,7 +17,7 @@
 		oncopy: (url: string) => void;
 	} = $props();
 
-	const url = $derived(provider.inviteeUrl(participant.token));
+	const url = $derived(helpers.inviteeUrl(participant.token));
 </script>
 
 <div class="rounded-xl border border-border bg-card p-3">

@@ -6,10 +6,11 @@
 	import ParticipantList from '$lib/components/organisms/ParticipantList.svelte';
 	import Toast from '$lib/components/feedback/Toast.svelte';
 	import { da } from '$lib/da';
-	import { provider } from '$lib/data/provider';
+	import { helpers } from '$lib/data/shared';
+	import { mockProvider } from '$lib/data/mock';
 	import type { DateOption, Participant } from '$lib/types';
 
-	const seed = provider.seedEvent();
+	const seed = helpers.seedEvent();
 
 	let title = $state(seed.title);
 	let description = $state(seed.description);
@@ -18,8 +19,8 @@
 		{ id: 'seed-d2', value: '2026-09-20', startTime: '11:00', endTime: '12:00' }
 	]);
 	let participants = $state<Participant[]>([
-		{ ...provider.blankParticipant(), name: 'Anna' },
-		{ ...provider.blankParticipant(), name: 'Morten' }
+		{ ...helpers.blankParticipant(), name: 'Anna' },
+		{ ...helpers.blankParticipant(), name: 'Morten' }
 	]);
 
 	let created = $state(false);
@@ -27,13 +28,13 @@
 	let toastTimer: ReturnType<typeof setTimeout> | undefined;
 
 	function addDate() {
-		dates.push(provider.blankDate());
+		dates.push(helpers.blankDate());
 	}
 	function removeDate(id: string) {
 		dates = dates.filter((d) => d.id !== id);
 	}
 	function addParticipant() {
-		participants.push(provider.blankParticipant());
+		participants.push(helpers.blankParticipant());
 	}
 	function removeParticipant(id: string) {
 		participants = participants.filter((p) => p.id !== id);
@@ -47,7 +48,7 @@
 	}
 
 	async function create() {
-		await provider.createEvent($state.snapshot({ title, description, dates, participants }));
+		await mockProvider.createEvent($state.snapshot({ title, description, dates, participants }));
 		created = true;
 	}
 </script>
