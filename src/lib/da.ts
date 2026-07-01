@@ -45,6 +45,9 @@ export const da = {
 
 	// Organizer dashboard (/e/[token])
 	dashboardTitle: 'Oversigt',
+	organizerLinkTitle: 'Gem dette link',
+	organizerLinkWarning:
+		'Dette er din eneste vej tilbage til afstemningen og resultaterne. Gem det som bogmærke — det kan ikke gendannes, hvis du mister det. Del det ikke med deltagerne.',
 	resultsSection: 'Resultater',
 	bestDate: 'Bedste dato',
 	answered: 'Har svaret',

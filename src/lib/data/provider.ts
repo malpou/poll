@@ -28,7 +28,8 @@ export interface DateOptionInput {
 export interface DataProvider {
 	blankDate(): DateOption;
 	blankParticipant(): Participant;
-	inviteeUrl(token: string): string;
+	inviteeUrl(origin: string, token: string): string;
+	organizerUrl(origin: string, token: string): string;
 	createEvent(draft: EventDraft): Promise<CreateResult>;
 	getEventByOrganizerToken(token: string): Promise<EventWithDetails | null>;
 	getInviteeContext(inviteeToken: string): Promise<InviteeContext | null>;

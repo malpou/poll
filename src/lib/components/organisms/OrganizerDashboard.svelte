@@ -47,6 +47,7 @@
 	interface ValidData {
 		invalid: false;
 		token: string;
+		organizerUrl: string;
 		title: string;
 		description: string | null;
 		closed: boolean;
@@ -137,6 +138,24 @@
 					{view.closed ? da.reopenPoll : da.closePoll}
 				</Button>
 			</form>
+		</div>
+
+		<!-- Save-your-link warning: the /e URL is the only way back to the results. -->
+		<div class="mb-6 rounded-xl border border-amber bg-amber-tint px-4 py-3.5">
+			<div class="flex items-center gap-2 text-sm font-bold text-amber">
+				<span class="text-base leading-none">⚠</span>
+				{da.organizerLinkTitle}
+			</div>
+			<p class="mt-1.5 text-[13px] leading-relaxed text-ink">{da.organizerLinkWarning}</p>
+			<div class="mt-2.5 flex flex-wrap items-center gap-2.5">
+				<LinkChip text={view.organizerUrl.replace(/^https?:\/\//, '')} />
+				<Button
+					variant="ghost"
+					onclick={() => {
+						copy(view.organizerUrl);
+					}}>{da.copyLink}</Button
+				>
+			</div>
 		</div>
 
 		{#if view.closed}

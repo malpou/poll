@@ -133,8 +133,14 @@ test('accepting the warning deletes the option and its responses', async ({ page
 	).toBe(0);
 });
 
+// Scope to the invitees section — the organizer-link banner also has a copy
+// button (it copies the /e URL), so an unscoped .first() would grab that one.
+function inviteesSection(page: Page) {
+	return page.locator('section', { has: page.getByText(da.participantsSection) });
+}
+
 async function copiedUrl(page: Page): Promise<string> {
-	await page.getByRole('button', { name: da.copyLink }).first().click();
+	await inviteesSection(page).getByRole('button', { name: da.copyLink }).first().click();
 	return page.evaluate(() => navigator.clipboard.readText());
 }
 
@@ -142,7 +148,26 @@ test('copy link puts the full absolute invitee URL on the clipboard', async ({ p
 	await context.grantPermissions(['clipboard-read', 'clipboard-write']);
 	seed();
 	await page.goto(`/e/${OTOK}`);
-	expect(await copiedUrl(page)).toBe(`https://poll.malpou.io/r/${RTOK}`);
+	// URLs follow the request host the server saw (a custom-domain route can
+	// rewrite it), so assert shape — absolute + correct path — not a fixed host.
+	const copied = await copiedUrl(page);
+	expect(copied).toMatch(/^https?:\/\/[^/]+\/r\//);
+	expect(copied.endsWith(`/r/${RTOK}`)).toBe(true);
+});
+
+test('organizer-link banner copies the /e URL and warns to save it', async ({ page, context }) => {
+	await context.grantPermissions(['clipboard-read', 'clipboard-write']);
+	seed();
+	await page.goto(`/e/${OTOK}`);
+	// The warning heading and its copy button share the banner's outer div.
+	const banner = page
+		.locator('div.border-amber')
+		.filter({ has: page.getByText(da.organizerLinkTitle) });
+	await expect(banner).toBeVisible();
+	await banner.getByRole('button', { name: da.copyLink }).click();
+	const copied = await page.evaluate(() => navigator.clipboard.readText());
+	expect(copied).toMatch(/^https?:\/\/[^/]+\/e\//);
+	expect(copied.endsWith(`/e/${OTOK}`)).toBe(true);
 });
 
 test('close stops response edits; reopen restores them', async ({ page }) => {

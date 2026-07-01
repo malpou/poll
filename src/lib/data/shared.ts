@@ -39,7 +39,13 @@ export const helpers = {
 		return { id: id('p'), name: '', token: newToken() };
 	},
 
-	inviteeUrl(token: string): string {
-		return `https://poll.malpou.io/r/${token}`;
+	// Absolute links off the runtime origin (request host in prod, localhost in
+	// dev) — pass url.origin server-side or page.url.origin in a component.
+	inviteeUrl(origin: string, token: string): string {
+		return `${origin}/r/${token}`;
+	},
+
+	organizerUrl(origin: string, token: string): string {
+		return `${origin}/e/${token}`;
 	}
 };

@@ -16,7 +16,7 @@ function dateInput(form: FormData): DateOptionInput {
 	};
 }
 
-export const load: PageServerLoad = async ({ params, platform }) => {
+export const load: PageServerLoad = async ({ params, platform, url }) => {
 	const provider = getProvider(platform);
 	const event = await provider.getEventByOrganizerToken(params.token);
 	// Reveal nothing on an unknown token — same discipline as the response page.
@@ -79,6 +79,7 @@ export const load: PageServerLoad = async ({ params, platform }) => {
 	return {
 		invalid: false as const,
 		token: params.token,
+		organizerUrl: provider.organizerUrl(url.origin, params.token),
 		title: event.title,
 		description: event.description,
 		closed: event.status === 'closed',
@@ -98,7 +99,7 @@ export const load: PageServerLoad = async ({ params, platform }) => {
 		invitees: event.invitees.map((inv) => ({
 			id: inv.id,
 			label: inv.label,
-			url: provider.inviteeUrl(inv.token),
+			url: provider.inviteeUrl(url.origin, inv.token),
 			answered: answered.has(inv.id),
 			note: inv.note
 		}))

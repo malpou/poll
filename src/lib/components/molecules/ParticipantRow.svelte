@@ -6,6 +6,7 @@
 	import type { Participant } from '$lib/types';
 	import { da } from '$lib/da';
 	import { helpers } from '$lib/data/shared';
+	import { page } from '$app/state';
 
 	let {
 		participant = $bindable(),
@@ -19,7 +20,7 @@
 		oncopy: (url: string) => void;
 	} = $props();
 
-	const url = $derived(helpers.inviteeUrl(participant.token));
+	const url = $derived(helpers.inviteeUrl(page.url.origin, participant.token));
 </script>
 
 <div class="rounded-xl border border-border bg-card p-3">
