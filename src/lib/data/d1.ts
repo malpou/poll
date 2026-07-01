@@ -206,6 +206,75 @@ export function d1Provider(db: D1Database): DataProvider {
 				// missing responses row => counted here, never as unavailable.
 				notAnswered: totalInvitees - (r.preferred + r.available + r.unavailable)
 			}));
+		},
+
+		async addDateOption(eventId, date) {
+			// Append after the current last option for this event.
+			const max = await db
+				.prepare(`SELECT MAX(sort_order) AS m FROM date_options WHERE event_id = ?`)
+				.bind(eventId)
+				.first<{ m: number | null }>();
+			await db
+				.prepare(
+					`INSERT INTO date_options (id, event_id, starts_at, ends_at, label, sort_order)
+					 VALUES (?, ?, ?, ?, ?, ?)`
+				)
+				.bind(
+					id('date'),
+					eventId,
+					composeIso(date.value, date.startTime),
+					composeIso(date.value, date.endTime),
+					null,
+					(max?.m ?? -1) + 1
+				)
+				.run();
+		},
+
+		async updateDateOption(optionId, date) {
+			await db
+				.prepare(`UPDATE date_options SET starts_at = ?, ends_at = ? WHERE id = ?`)
+				.bind(
+					composeIso(date.value, date.startTime),
+					composeIso(date.value, date.endTime),
+					optionId
+				)
+				.run();
+		},
+
+		async removeDateOption(optionId) {
+			// No FK cascade — clear responses first, then the option.
+			await db.batch([
+				db.prepare(`DELETE FROM responses WHERE date_option_id = ?`).bind(optionId),
+				db.prepare(`DELETE FROM date_options WHERE id = ?`).bind(optionId)
+			]);
+		},
+
+		async addInvitee(eventId, label) {
+			const token = newToken();
+			await db
+				.prepare(
+					`INSERT INTO invitees (id, event_id, label, token, note, created_at)
+					 VALUES (?, ?, ?, ?, ?, ?)`
+				)
+				.bind(id('p'), eventId, label, token, null, new Date().toISOString())
+				.run();
+			return { token };
+		},
+
+		async renameInvitee(inviteeId, label) {
+			await db.prepare(`UPDATE invitees SET label = ? WHERE id = ?`).bind(label, inviteeId).run();
+		},
+
+		async removeInvitee(inviteeId) {
+			// No FK cascade — clear responses first, then the invitee (link stops working).
+			await db.batch([
+				db.prepare(`DELETE FROM responses WHERE invitee_id = ?`).bind(inviteeId),
+				db.prepare(`DELETE FROM invitees WHERE id = ?`).bind(inviteeId)
+			]);
+		},
+
+		async setEventStatus(eventId, status) {
+			await db.prepare(`UPDATE events SET status = ? WHERE id = ?`).bind(status, eventId).run();
 		}
 	};
 }

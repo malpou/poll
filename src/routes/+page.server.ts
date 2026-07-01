@@ -2,19 +2,14 @@ import { fail, redirect } from '@sveltejs/kit';
 import { getProvider } from '$lib/data/provider';
 import { newToken } from '$lib/data/shared';
 import { da } from '$lib/da';
+import { field, validateTimes } from '$lib/forms';
 import type { DateOption, Participant } from '$lib/types';
 import type { Actions } from './$types';
 
-// ponytail: inline parser, extract when a 2nd action reuses it.
-// Rebuild the dates/participants arrays from indexed named inputs
-// (`dates.0.value`, `participants.1.token`, ...). Only string fields are read.
-function field(form: FormData, key: string): string {
-	const v = form.get(key);
-	return typeof v === 'string' ? v.trim() : '';
-}
-
 type Row = Partial<Record<string, string>>;
 
+// Rebuild the dates/participants arrays from indexed named inputs
+// (`dates.0.value`, `participants.1.token`, ...). Only string fields are read.
 function parseIndexed(form: FormData, prefix: string): Row[] {
 	const re = new RegExp(`^${prefix}\\.(\\d+)\\.(\\w+)$`);
 	const rows: Row[] = [];
@@ -59,14 +54,8 @@ export const actions = {
 		else if (dates.length === 0) error = da.errorNoDates;
 		else {
 			for (const d of dates) {
-				if (d.endTime && !d.startTime) {
-					error = da.errorEndNeedsStart;
-					break;
-				}
-				if (d.startTime && d.endTime && d.endTime < d.startTime) {
-					error = da.errorEndBeforeStart;
-					break;
-				}
+				error = validateTimes(d.startTime, d.endTime);
+				if (error) break;
 			}
 		}
 		if (error) return fail(400, { error, values: draft });

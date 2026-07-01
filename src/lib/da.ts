@@ -40,5 +40,17 @@ export const da = {
 	closedBanner: 'Afstemningen er lukket',
 	linkNotFound: 'Linket findes ikke',
 	linkNotFoundSub: 'Tjek at du har hele linket med, eller bed arrangøren sende det igen.',
-	chooseEach: 'Vælg en mulighed for hver dato'
+	chooseEach: 'Vælg en mulighed for hver dato',
+
+	// Organizer dashboard (/e/[token])
+	dashboardTitle: 'Oversigt',
+	closePoll: 'Luk afstemning',
+	reopenPoll: 'Åbn afstemning igen',
+	statusOpen: 'Åben',
+	statusClosed: 'Lukket',
+	save: 'Gem',
+	edit: 'Rediger',
+	confirmDeleteOption: 'Denne dato har svar. Slet den alligevel?',
+	confirmDeleteInvitee:
+		'Denne deltager har svaret. Fjern dem alligevel? Deres link holder op med at virke.'
 } as const;

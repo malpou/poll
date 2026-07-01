@@ -1,0 +1,17 @@
+// Shared form-action helpers. Extracted from the create page's inline parser
+// once the dashboard became the second caller (the promised extraction).
+import { da } from '$lib/da';
+
+// Read one trimmed string field; '' when absent or non-string.
+export function field(form: FormData, key: string): string {
+	const v = form.get(key);
+	return typeof v === 'string' ? v.trim() : '';
+}
+
+// Validate a date option's optional times. Returns an error string or null.
+// end requires start; end must not precede start (both hh:mm, same day).
+export function validateTimes(startTime: string, endTime: string): string | null {
+	if (endTime && !startTime) return da.errorEndNeedsStart;
+	if (startTime && endTime && endTime < startTime) return da.errorEndBeforeStart;
+	return null;
+}

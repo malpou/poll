@@ -32,5 +32,35 @@ export const mockProvider: DataProvider = {
 
 	async getResults() {
 		return [];
+	},
+
+	async addDateOption(eventId, date) {
+		console.log('[mock] addDateOption', { eventId, date });
+	},
+
+	async updateDateOption(optionId, date) {
+		console.log('[mock] updateDateOption', { optionId, date });
+	},
+
+	async removeDateOption(optionId) {
+		console.log('[mock] removeDateOption', { optionId });
+	},
+
+	async addInvitee(eventId, label) {
+		const token = newToken();
+		console.log('[mock] addInvitee', { eventId, label, token });
+		return { token };
+	},
+
+	async renameInvitee(inviteeId, label) {
+		console.log('[mock] renameInvitee', { inviteeId, label });
+	},
+
+	async removeInvitee(inviteeId) {
+		console.log('[mock] removeInvitee', { inviteeId });
+	},
+
+	async setEventStatus(eventId, status) {
+		console.log('[mock] setEventStatus', { eventId, status });
 	}
 };

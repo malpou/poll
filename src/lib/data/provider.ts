@@ -17,6 +17,12 @@ export interface ResponseInput {
 	dateOptionId: string;
 	preference: Preference;
 }
+// Date + optional times, as the dashboard/create forms hold them before compose.
+export interface DateOptionInput {
+	value: string; // yyyy-mm-dd
+	startTime: string; // hh:mm or ''
+	endTime: string; // hh:mm or ''
+}
 
 export interface DataProvider {
 	blankDate(): DateOption;
@@ -28,6 +34,14 @@ export interface DataProvider {
 	saveResponses(inviteeId: string, answers: ResponseInput[]): Promise<void>;
 	saveNote(inviteeId: string, note: string): Promise<void>;
 	getResults(eventId: string): Promise<DateOptionResult[]>;
+	// Organizer dashboard mutations. IDs/tokens are generated server-side.
+	addDateOption(eventId: string, date: DateOptionInput): Promise<void>;
+	updateDateOption(optionId: string, date: DateOptionInput): Promise<void>;
+	removeDateOption(optionId: string): Promise<void>;
+	addInvitee(eventId: string, label: string): Promise<{ token: string }>;
+	renameInvitee(inviteeId: string, label: string): Promise<void>;
+	removeInvitee(inviteeId: string): Promise<void>;
+	setEventStatus(eventId: string, status: 'open' | 'closed'): Promise<void>;
 }
 
 // Swap point: D1 when a platform/DB is present (Workers), mock otherwise
