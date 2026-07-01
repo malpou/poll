@@ -1,0 +1,18 @@
+name = "family-date-poll"
+main = ".svelte-kit/cloudflare/_worker.js"
+compatibility_date = "2025-07-01"
+compatibility_flags = ["nodejs_compat"]
+
+# poll.malpou.io — wrangler provisions the DNS record + cert on deploy
+# (requires malpou.io to be a zone on this Cloudflare account).
+routes = [{ pattern = "poll.malpou.io", custom_domain = true }]
+
+[assets]
+directory = ".svelte-kit/cloudflare"
+binding = "ASSETS"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "family-date-poll"
+database_id = "f3b8e58d-1142-48cd-8c80-66bdba82a4db"
+migrations_dir = "migrations"
