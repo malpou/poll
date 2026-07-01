@@ -126,7 +126,7 @@ canvas library.
 | Success subtext | Du kan ændre dit svar, indtil afstemningen lukker. |
 | Closed banner | Afstemningen er lukket |
 | Invalid link | Linket findes ikke |
-| Create page title | Opret rundvisning |
+| Create page title | Opret afstemning |
 | Field: title | Titel |
 | Field: description | Beskrivelse |
 | Dates section | Mulige datoer |

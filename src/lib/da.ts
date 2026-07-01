@@ -1,6 +1,6 @@
 // All user-facing Danish copy in one place (PROJECT.md convention).
 export const da = {
-	createTitle: 'Opret rundvisning',
+	createTitle: 'Opret afstemning',
 	fieldTitle: 'Titel',
 	fieldDescription: 'Beskrivelse',
 	datesSection: 'Mulige datoer',
@@ -12,7 +12,7 @@ export const da = {
 	name: 'Navn',
 	copyLink: 'Kopiér link',
 	linkCopied: 'Linket er kopieret',
-	create: 'Opret rundvisning',
+	create: 'Opret afstemning',
 	created: 'Oprettet',
 	remove: 'Fjern'
 } as const;
