@@ -1,6 +1,6 @@
 import { fail } from '@sveltejs/kit';
 import { getProvider } from '$lib/data/provider';
-import { formatDateOption } from '$lib/date';
+import { formatDateOption, utcIsoToZonedParts } from '$lib/date';
 import { field, validateTimes } from '$lib/forms';
 import type { DateOptionInput } from '$lib/data/provider';
 import type { Actions, PageServerLoad } from './$types';
@@ -32,15 +32,18 @@ export const load: PageServerLoad = async ({ params, platform }) => {
 		title: event.title,
 		description: event.description,
 		closed: event.status === 'closed',
-		options: event.dateOptions.map((d) => ({
-			id: d.id,
-			// Raw values for the edit form's native inputs (UTC ISO → date/time parts).
-			value: d.startsAt ? d.startsAt.slice(0, 10) : '',
-			startTime: d.startsAt ? d.startsAt.slice(11, 16) : '',
-			endTime: d.endsAt ? d.endsAt.slice(11, 16) : '',
-			hasResponses: optionHasResponses.get(d.id) ?? false,
-			...formatDateOption(d.startsAt, d.endsAt)
-		})),
+		options: event.dateOptions.map((d) => {
+			// Copenhagen wall-clock parts for the edit form's native inputs.
+			const start = utcIsoToZonedParts(d.startsAt);
+			return {
+				id: d.id,
+				value: start.value,
+				startTime: start.time,
+				endTime: d.endsAt ? utcIsoToZonedParts(d.endsAt).time : '',
+				hasResponses: optionHasResponses.get(d.id) ?? false,
+				...formatDateOption(d.startsAt, d.endsAt)
+			};
+		}),
 		invitees: event.invitees.map((inv) => ({
 			id: inv.id,
 			label: inv.label,

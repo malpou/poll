@@ -11,13 +11,7 @@ import type {
 	Preference
 } from '$lib/types';
 import { helpers, id, newToken, RESULTS_SQL } from './shared';
-
-// Compose a UTC ISO timestamp from a create-form date + optional time.
-// value is yyyy-mm-dd, time is hh:mm or ''. Blank date => null.
-function composeIso(value: string, time: string): string | null {
-	if (!value) return null;
-	return new Date(`${value}T${time || '00:00'}:00Z`).toISOString();
-}
+import { zonedToUtcIso } from '$lib/date';
 
 function mapEvent(r: Record<string, unknown>): EventRow {
 	return {
@@ -89,8 +83,8 @@ export function d1Provider(db: D1Database): DataProvider {
 						.bind(
 							id('date'),
 							eventId,
-							composeIso(d.value, d.startTime),
-							composeIso(d.value, d.endTime),
+							zonedToUtcIso(d.value, d.startTime),
+							zonedToUtcIso(d.value, d.endTime),
 							null,
 							i
 						)
@@ -222,8 +216,8 @@ export function d1Provider(db: D1Database): DataProvider {
 				.bind(
 					id('date'),
 					eventId,
-					composeIso(date.value, date.startTime),
-					composeIso(date.value, date.endTime),
+					zonedToUtcIso(date.value, date.startTime),
+					zonedToUtcIso(date.value, date.endTime),
 					null,
 					(max?.m ?? -1) + 1
 				)
@@ -234,8 +228,8 @@ export function d1Provider(db: D1Database): DataProvider {
 			await db
 				.prepare(`UPDATE date_options SET starts_at = ?, ends_at = ? WHERE id = ?`)
 				.bind(
-					composeIso(date.value, date.startTime),
-					composeIso(date.value, date.endTime),
+					zonedToUtcIso(date.value, date.startTime),
+					zonedToUtcIso(date.value, date.endTime),
 					optionId
 				)
 				.run();

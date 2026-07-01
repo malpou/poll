@@ -19,6 +19,7 @@ Thumbs.db
 
 # Editor
 .vscode
+.zed
 
 # Env
 .env
