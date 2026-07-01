@@ -1,17 +1,15 @@
 import type { DataProvider } from './provider';
-import type { EventDraft } from '$lib/types';
 import { helpers, newToken } from './shared';
 
 // In-memory mock for `bun run dev` without a DB and for tests. No persistence
 // across requests - the read methods return empty/not-found. Real storage is
 // d1.ts; this keeps the create page working locally without wrangler.
+/* eslint-disable @typescript-eslint/no-empty-function -- write methods are intentional no-ops */
 export const mockProvider: DataProvider = {
 	...helpers,
 
-	async createEvent(draft: EventDraft) {
-		const organizerToken = newToken();
-		console.log('[mock] createEvent', { organizerToken, draft });
-		return { organizerToken };
+	async createEvent() {
+		return { organizerToken: newToken() };
 	},
 
 	async getEventByOrganizerToken() {
@@ -22,13 +20,9 @@ export const mockProvider: DataProvider = {
 		return null;
 	},
 
-	async saveResponses(inviteeId, answers) {
-		console.log('[mock] saveResponses', { inviteeId, answers });
-	},
+	async saveResponses() {},
 
-	async saveNote(inviteeId, note) {
-		console.log('[mock] saveNote', { inviteeId, note });
-	},
+	async saveNote() {},
 
 	async getResults() {
 		return [];
@@ -43,33 +37,19 @@ export const mockProvider: DataProvider = {
 		return [];
 	},
 
-	async addDateOption(eventId, date) {
-		console.log('[mock] addDateOption', { eventId, date });
+	async addDateOption() {},
+
+	async updateDateOption() {},
+
+	async removeDateOption() {},
+
+	async addInvitee() {
+		return { token: newToken() };
 	},
 
-	async updateDateOption(optionId, date) {
-		console.log('[mock] updateDateOption', { optionId, date });
-	},
+	async renameInvitee() {},
 
-	async removeDateOption(optionId) {
-		console.log('[mock] removeDateOption', { optionId });
-	},
+	async removeInvitee() {},
 
-	async addInvitee(eventId, label) {
-		const token = newToken();
-		console.log('[mock] addInvitee', { eventId, label, token });
-		return { token };
-	},
-
-	async renameInvitee(inviteeId, label) {
-		console.log('[mock] renameInvitee', { inviteeId, label });
-	},
-
-	async removeInvitee(inviteeId) {
-		console.log('[mock] removeInvitee', { inviteeId });
-	},
-
-	async setEventStatus(eventId, status) {
-		console.log('[mock] setEventStatus', { eventId, status });
-	}
+	async setEventStatus() {}
 };

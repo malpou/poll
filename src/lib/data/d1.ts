@@ -30,7 +30,6 @@ function mapDateOption(r: Record<string, unknown>): DateOptionRow {
 		eventId: r.event_id as string,
 		startsAt: (r.starts_at as string | null) ?? null,
 		endsAt: (r.ends_at as string | null) ?? null,
-		label: (r.label as string | null) ?? null,
 		sortOrder: r.sort_order as number
 	};
 }
@@ -77,15 +76,14 @@ export function d1Provider(db: D1Database): DataProvider {
 				statements.push(
 					db
 						.prepare(
-							`INSERT INTO date_options (id, event_id, starts_at, ends_at, label, sort_order)
-							 VALUES (?, ?, ?, ?, ?, ?)`
+							`INSERT INTO date_options (id, event_id, starts_at, ends_at, sort_order)
+							 VALUES (?, ?, ?, ?, ?)`
 						)
 						.bind(
 							id('date'),
 							eventId,
 							zonedToUtcIso(d.value, d.startTime),
 							zonedToUtcIso(d.value, d.endTime),
-							null,
 							i
 						)
 				);
@@ -233,15 +231,14 @@ export function d1Provider(db: D1Database): DataProvider {
 				.first<{ m: number | null }>();
 			await db
 				.prepare(
-					`INSERT INTO date_options (id, event_id, starts_at, ends_at, label, sort_order)
-					 VALUES (?, ?, ?, ?, ?, ?)`
+					`INSERT INTO date_options (id, event_id, starts_at, ends_at, sort_order)
+					 VALUES (?, ?, ?, ?, ?)`
 				)
 				.bind(
 					id('date'),
 					eventId,
 					zonedToUtcIso(date.value, date.startTime),
 					zonedToUtcIso(date.value, date.endTime),
-					null,
 					(max?.m ?? -1) + 1
 				)
 				.run();

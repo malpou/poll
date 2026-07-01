@@ -40,7 +40,6 @@ export interface DateOptionRow {
 	eventId: string;
 	startsAt: string | null;
 	endsAt: string | null;
-	label: string | null;
 	sortOrder: number;
 }
 
