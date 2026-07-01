@@ -22,6 +22,5 @@
 }
 
 body {
-	@apply min-h-screen bg-paper font-sans text-ink;
+	@apply bg-paper text-ink min-h-screen font-sans;
 }
-

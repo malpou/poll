@@ -11,7 +11,12 @@ const migration = readFileSync(
 	'utf8'
 );
 
-type Row = { id: string; preferred: number; available: number; unavailable: number };
+interface Row {
+	id: string;
+	preferred: number;
+	available: number;
+	unavailable: number;
+}
 
 let db: Database.Database;
 
@@ -36,9 +41,10 @@ beforeEach(() => {
 	db.exec(`INSERT INTO events (id, title, organizer_token, created_at)
 	         VALUES ('e1', 'Test', 'otok', '2026-07-01T00:00:00Z')`);
 	for (const d of ['d1', 'd2', 'd3']) {
-		db.prepare(
-			`INSERT INTO date_options (id, event_id, sort_order) VALUES (?, 'e1', ?)`
-		).run(d, d.slice(1));
+		db.prepare(`INSERT INTO date_options (id, event_id, sort_order) VALUES (?, 'e1', ?)`).run(
+			d,
+			d.slice(1)
+		);
 	}
 	for (const i of ['i1', 'i2', 'i3']) {
 		db.prepare(
@@ -84,7 +90,9 @@ describe('results aggregation', () => {
 		respond('i1', 'd1', 'unavailable'); // same PK -> update
 		const count = (
 			db
-				.prepare(`SELECT COUNT(*) AS n FROM responses WHERE invitee_id = 'i1' AND date_option_id = 'd1'`)
+				.prepare(
+					`SELECT COUNT(*) AS n FROM responses WHERE invitee_id = 'i1' AND date_option_id = 'd1'`
+				)
 				.get() as { n: number }
 		).n;
 		expect(count).toBe(1);

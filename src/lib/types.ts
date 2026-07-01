@@ -2,63 +2,63 @@
 // ends_at requires starts_at. On the create form we hold date + times as
 // separate fields and compose starts_at/ends_at at submit.
 
-export type DateOption = {
+export interface DateOption {
 	id: string;
 	value: string; // yyyy-mm-dd, native <input type=date>
 	startTime: string; // hh:mm or '' — optional
 	endTime: string; // hh:mm or '' — optional, requires startTime
-};
+}
 
-export type Participant = {
+export interface Participant {
 	id: string;
 	name: string;
 	token: string;
-};
+}
 
-export type EventDraft = {
+export interface EventDraft {
 	title: string;
 	description: string;
 	dates: DateOption[];
 	participants: Participant[];
-};
+}
 
 // --- Persisted row shapes (D1). Returned by the provider's query methods. ---
 
 export type Preference = 'preferred' | 'available' | 'unavailable';
 
-export type EventRow = {
+export interface EventRow {
 	id: string;
 	title: string;
 	description: string | null;
 	organizerToken: string;
 	status: 'open' | 'closed';
 	createdAt: string;
-};
+}
 
-export type DateOptionRow = {
+export interface DateOptionRow {
 	id: string;
 	eventId: string;
 	startsAt: string | null;
 	endsAt: string | null;
 	label: string | null;
 	sortOrder: number;
-};
+}
 
-export type InviteeRow = {
+export interface InviteeRow {
 	id: string;
 	eventId: string;
 	label: string;
 	token: string;
 	note: string | null;
 	createdAt: string;
-};
+}
 
-export type ResponseRow = {
+export interface ResponseRow {
 	inviteeId: string;
 	dateOptionId: string;
 	preference: Preference;
 	updatedAt: string;
-};
+}
 
 // Organizer dashboard payload.
 export type EventWithDetails = EventRow & {
@@ -67,19 +67,19 @@ export type EventWithDetails = EventRow & {
 };
 
 // Recipient response page payload.
-export type InviteeContext = {
+export interface InviteeContext {
 	invitee: InviteeRow;
 	event: EventRow;
 	dateOptions: DateOptionRow[];
 	responses: ResponseRow[];
-};
+}
 
 // Per-date aggregate for the results view. notAnswered = invitees − answered,
 // so a missing responses row reads as "no answer", never "unavailable".
-export type DateOptionResult = {
+export interface DateOptionResult {
 	dateOptionId: string;
 	preferred: number;
 	available: number;
 	unavailable: number;
 	notAnswered: number;
-};
+}

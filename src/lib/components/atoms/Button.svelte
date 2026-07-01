@@ -14,8 +14,7 @@
 	} = $props();
 
 	const variants = {
-		primary:
-			'h-[50px] px-6 rounded-xl bg-primary text-white font-bold hover:bg-primary-hover',
+		primary: 'h-[50px] px-6 rounded-xl bg-primary text-white font-bold hover:bg-primary-hover',
 		dashed:
 			'mt-2.5 h-[42px] px-4 rounded-[10px] border border-dashed border-border text-primary font-semibold hover:bg-primary-tint hover:border-primary',
 		ghost:

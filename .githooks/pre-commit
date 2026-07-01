@@ -1,0 +1,13 @@
+#!/bin/sh
+# Pre-commit gate. Enabled via `git config core.hooksPath .githooks`
+# (run automatically by the "prepare" script on `bun install`).
+set -e
+
+echo "▶ format:check"
+bun run format:check
+
+echo "▶ lint"
+bun run lint
+
+echo "▶ check (svelte-check)"
+bun run check

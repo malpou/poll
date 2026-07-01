@@ -10,8 +10,13 @@ import type {
 import { mockProvider } from './mock';
 import { d1Provider } from './d1';
 
-export type CreateResult = { organizerToken: string };
-export type ResponseInput = { dateOptionId: string; preference: Preference };
+export interface CreateResult {
+	organizerToken: string;
+}
+export interface ResponseInput {
+	dateOptionId: string;
+	preference: Preference;
+}
 
 export interface DataProvider {
 	seedEvent(): { title: string; description: string };

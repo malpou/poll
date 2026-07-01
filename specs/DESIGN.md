@@ -64,7 +64,7 @@ never decorative. Animate **transform and opacity only**. Concrete rules:
 - **The three-state selector is the signature interaction.** Selecting
   Foretrukket / Kan godt / Kan ikke should feel organic — animate the active
   indicator with a **spring** (Framer Motion `type: "spring", stiffness: 420,
-  damping: 32`, or an equivalent snappy-but-soft feel). Think Dynamic-Island
+damping: 32`, or an equivalent snappy-but-soft feel). Think Dynamic-Island
   smoothness: the highlight glides between the three options, it doesn't cut.
 - **Date list entrance → staggered.** Cards fade+rise in with ~40ms between each on
   first load. Orchestrate, don't dump.
@@ -85,6 +85,7 @@ canvas library.
 ## Screen details
 
 **Response page (mobile, primary):**
+
 - Header: event title, a short intro line, and a personal greeting using the
   participant's name.
 - A list of date cards. Each card shows the date and a three-option segmented
@@ -96,12 +97,14 @@ canvas library.
 - Invalid link: a friendly full-screen "Linket findes ikke" state.
 
 **Results / dashboard (organizer):**
+
 - Per date: a row with the date, three animated count bars (Foretrukket / Kan godt
   / Kan ikke), and totals. Best date highlighted at top with a "Bedste dato" badge.
 - A participant list showing who has answered and who is "Mangler at svare".
 - Controls: "Luk afstemning" / "Åbn afstemning igen".
 
 **Create event (organizer):**
+
 - Fields: Titel, Beskrivelse, then a repeatable "Mulige datoer" list with "Tilføj
   dato".
 - A "Deltagere" section: add each participant by name; each row shows a "Kopiér
@@ -109,42 +112,42 @@ canvas library.
 
 ## Danish copy — use these exact strings
 
-| Context | Danish string |
-|---|---|
-| App / event title (example) | Rundvisning i DR Byen |
-| Event description (example) | Vi mødes ved hovedindgangen til DR Byen. Turen tager ca. en time. |
-| Response page intro | Vælg de datoer, der passer dig bedst |
-| Greeting | Hej {navn} |
-| Section heading on response page | Hvordan passer datoerne dig? |
-| State: preferred | Foretrukket |
-| State: available | Kan godt |
-| State: unavailable | Kan ikke |
-| Note label | Bemærkning (valgfri) |
-| Note placeholder | Fx: Jeg kan ikke om morgenen |
-| Submit button | Send svar |
-| Success toast | Tak! Dit svar er gemt. |
-| Success subtext | Du kan ændre dit svar, indtil afstemningen lukker. |
-| Closed banner | Afstemningen er lukket |
-| Invalid link | Linket findes ikke |
-| Create page title | Opret afstemning |
-| Field: title | Titel |
-| Field: description | Beskrivelse |
-| Dates section | Mulige datoer |
-| Add date | Tilføj dato |
-| Field: start time | Starttid |
-| Field: end time | Sluttid |
-| Participants section | Deltagere |
-| Add participant | Tilføj deltager |
-| Field: name | Navn |
-| Copy link button | Kopiér link |
-| Link copied toast | Linket er kopieret |
-| Dashboard title | Oversigt |
-| Results section | Resultater |
-| Best date badge | Bedste dato |
-| Pending status | Mangler at svare |
-| Answered status | Har svaret |
-| Close poll | Luk afstemning |
-| Reopen poll | Åbn afstemning igen |
+| Context                          | Danish string                                                     |
+| -------------------------------- | ----------------------------------------------------------------- |
+| App / event title (example)      | Rundvisning i DR Byen                                             |
+| Event description (example)      | Vi mødes ved hovedindgangen til DR Byen. Turen tager ca. en time. |
+| Response page intro              | Vælg de datoer, der passer dig bedst                              |
+| Greeting                         | Hej {navn}                                                        |
+| Section heading on response page | Hvordan passer datoerne dig?                                      |
+| State: preferred                 | Foretrukket                                                       |
+| State: available                 | Kan godt                                                          |
+| State: unavailable               | Kan ikke                                                          |
+| Note label                       | Bemærkning (valgfri)                                              |
+| Note placeholder                 | Fx: Jeg kan ikke om morgenen                                      |
+| Submit button                    | Send svar                                                         |
+| Success toast                    | Tak! Dit svar er gemt.                                            |
+| Success subtext                  | Du kan ændre dit svar, indtil afstemningen lukker.                |
+| Closed banner                    | Afstemningen er lukket                                            |
+| Invalid link                     | Linket findes ikke                                                |
+| Create page title                | Opret afstemning                                                  |
+| Field: title                     | Titel                                                             |
+| Field: description               | Beskrivelse                                                       |
+| Dates section                    | Mulige datoer                                                     |
+| Add date                         | Tilføj dato                                                       |
+| Field: start time                | Starttid                                                          |
+| Field: end time                  | Sluttid                                                           |
+| Participants section             | Deltagere                                                         |
+| Add participant                  | Tilføj deltager                                                   |
+| Field: name                      | Navn                                                              |
+| Copy link button                 | Kopiér link                                                       |
+| Link copied toast                | Linket er kopieret                                                |
+| Dashboard title                  | Oversigt                                                          |
+| Results section                  | Resultater                                                        |
+| Best date badge                  | Bedste dato                                                       |
+| Pending status                   | Mangler at svare                                                  |
+| Answered status                  | Har svaret                                                        |
+| Close poll                       | Luk afstemning                                                    |
+| Reopen poll                      | Åbn afstemning igen                                               |
 
 Weekday/month rendering should be Danish (lørdag, søndag, marts, etc.), lowercase
 as is conventional in Danish.

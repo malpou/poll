@@ -18,15 +18,18 @@
 </script>
 
 <div>
-	<div
-		class="mb-3.5 text-[13px] font-bold uppercase tracking-[0.06em] text-ink-muted"
-	>
+	<div class="mb-3.5 text-[13px] font-bold uppercase tracking-[0.06em] text-ink-muted">
 		{da.datesSection}
 	</div>
 	<div class="flex flex-col gap-2.5">
 		{#each dates as date, i (date.id)}
 			<div in:fly={{ y: 8, duration: 240, delay: i * 40, easing: cubicOut }}>
-				<DateRow bind:date={dates[i]} onremove={() => onremove(date.id)} />
+				<DateRow
+					bind:date={dates[i]}
+					onremove={() => {
+						onremove(date.id);
+					}}
+				/>
 			</div>
 		{/each}
 	</div>

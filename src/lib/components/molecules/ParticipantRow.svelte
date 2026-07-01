@@ -27,6 +27,11 @@
 	</div>
 	<div class="mt-2.5 flex flex-wrap items-center gap-2.5">
 		<LinkChip text={url.replace(/^https?:\/\//, '')} />
-		<Button variant="ghost" onclick={() => oncopy(url)}>{da.copyLink}</Button>
+		<Button
+			variant="ghost"
+			onclick={() => {
+				oncopy(url);
+			}}>{da.copyLink}</Button
+		>
 	</div>
 </div>

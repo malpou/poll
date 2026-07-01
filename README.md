@@ -2,7 +2,7 @@
 
 A tiny, no-login date poll. One organizer seeds a few candidate dates, sends
 each person a personal link, and sees at a glance which date suits everyone —
-originally built to schedule a *rundvisning i DR Byen*, but it works for any
+originally built to schedule a _rundvisning i DR Byen_, but it works for any
 "når passer det jer?" question.
 
 Live at **[poll.malpou.io](https://poll.malpou.io)**. All user-facing text is
@@ -13,11 +13,11 @@ Danish.
 No accounts. Access is by **capability URL** — whoever holds a token can act,
 and tokens are unguessable and never listed.
 
-| Route | Who | What |
-|-------|-----|------|
-| `/` | anyone | Create a poll: title, description, candidate dates (optional start/end times), participants |
-| `/e/{organizer_token}` | the organizer | Dashboard: manage dates & invitees, copy links, see results, close/reopen |
-| `/r/{invitee_token}` | an invitee | Mark each date **Foretrukket / Kan godt / Kan ikke**, add a note, submit |
+| Route                  | Who           | What                                                                                        |
+| ---------------------- | ------------- | ------------------------------------------------------------------------------------------- |
+| `/`                    | anyone        | Create a poll: title, description, candidate dates (optional start/end times), participants |
+| `/e/{organizer_token}` | the organizer | Dashboard: manage dates & invitees, copy links, see results, close/reopen                   |
+| `/r/{invitee_token}`   | an invitee    | Mark each date **Foretrukket / Kan godt / Kan ikke**, add a note, submit                    |
 
 The organizer link is the secret — treat it like a password. Each invitee gets
 their own link to copy and send by their own means (email, text, …).

@@ -17,7 +17,9 @@ Plan the implementation of one GitHub issue for **malpou/family-date-poll**, the
 stop for approval. You produce a plan, not code.
 
 ## Input
+
 The user gives an issue link or number. Accept any of:
+
 - `123`
 - `#123`
 - `https://github.com/malpou/family-date-poll/issues/123`
@@ -25,17 +27,20 @@ The user gives an issue link or number. Accept any of:
 Extract the number `N`.
 
 ## Step 1 — Enter plan mode
+
 Call `EnterPlanMode` immediately. Everything below is read-only until the user
 approves via `ExitPlanMode`. Do not edit files (except the plan file the harness
 gives you), run migrations, create branches, or push.
 
 ## Step 2 — Read the issue
+
 Run: `gh issue view N --json title,body,labels,comments`
 Pull out: the scope, the **References** section (which `specs/*` files it cites),
 and the **Acceptance** checklist. The acceptance items are your plan's contract —
 each must be satisfiable by the plan and covered by a test.
 
 ## Step 3 — Read the referenced specs
+
 For every spec named in the issue's References, read the file under `specs/`
 (e.g. `specs/event-management/spec.md`, `specs/results/spec.md`). Also skim
 `specs/PROJECT.md` (data model, routes, security, conventions) and
@@ -47,7 +52,9 @@ If the issue and the specs disagree, surface it with `AskUserQuestion` rather
 than guessing.
 
 ## Step 4 — Understand the current code
+
 Use Explore/Grep/Read (or launch an `Explore` agent for anything broad) to find:
+
 - What already exists that this issue builds on or reuses. Key spots:
   - `src/lib/data/provider.ts` — the `DataProvider` swap point (mock ↔ D1).
   - `src/lib/components/{atoms,molecules,organisms,feedback}` — the atomic library.
@@ -56,12 +63,14 @@ Use Explore/Grep/Read (or launch an `Explore` agent for anything broad) to find:
 - Reserved names to honor if the issue touches them: `SegmentedControl`
   (the Foretrukket/Kan godt/Kan ikke selector) and `lib/date.ts` (Danish
   lowercase date formatter).
-Reuse before adding. This is a ponytail codebase — the plan should climb the
-ladder (reuse → stdlib → native → one line → minimal new code) and call out
-anything it deliberately does NOT build.
+  Reuse before adding. This is a ponytail codebase — the plan should climb the
+  ladder (reuse → stdlib → native → one line → minimal new code) and call out
+  anything it deliberately does NOT build.
 
 ## Step 5 — Write the plan
+
 Write the plan to the plan file with these sections:
+
 - **Context** — what the issue needs and why, in your words, tying it to the specs.
 - **Approach** — the recommended implementation only (not every alternative).
   Name the exact files to add/change (routes, form actions, provider methods,
@@ -82,10 +91,12 @@ Write the plan to the plan file with these sections:
 Keep it scannable: name files and patterns, don't paste whole implementations.
 
 ## Step 6 — Clarify, then hand off
+
 - Use `AskUserQuestion` only for genuine forks the issue/specs don't settle.
 - End by calling `ExitPlanMode` with the plan. Do not ask for approval in prose.
 
 ## Notes
+
 - Iterations are sequential-ish: iteration 1 (Cloudflare) and 2 (schema/provider)
   underpin the rest. If the issue depends on unfinished earlier work, say so in
   Context and plan against the expected interface.

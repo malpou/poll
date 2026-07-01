@@ -41,7 +41,7 @@
 	}
 
 	function copy(url: string) {
-		navigator.clipboard?.writeText(url).catch(() => {});
+		void navigator.clipboard.writeText(url).catch(() => undefined);
 		clearTimeout(toastTimer);
 		toastOpen = true;
 		toastTimer = setTimeout(() => (toastOpen = false), 3000);

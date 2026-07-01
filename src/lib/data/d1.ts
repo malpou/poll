@@ -86,7 +86,14 @@ export function d1Provider(db: D1Database): DataProvider {
 							`INSERT INTO date_options (id, event_id, starts_at, ends_at, label, sort_order)
 							 VALUES (?, ?, ?, ?, ?, ?)`
 						)
-						.bind(id('date'), eventId, composeIso(d.value, d.startTime), composeIso(d.value, d.endTime), null, i)
+						.bind(
+							id('date'),
+							eventId,
+							composeIso(d.value, d.startTime),
+							composeIso(d.value, d.endTime),
+							null,
+							i
+						)
 				);
 			});
 
@@ -109,12 +116,14 @@ export function d1Provider(db: D1Database): DataProvider {
 			const event = await db
 				.prepare(`SELECT * FROM events WHERE organizer_token = ?`)
 				.bind(token)
-				.first<Record<string, unknown>>();
+				.first();
 			if (!event) return null;
 
 			const eventId = event.id as string;
 			const [dates, invitees] = await db.batch<Record<string, unknown>>([
-				db.prepare(`SELECT * FROM date_options WHERE event_id = ? ORDER BY sort_order`).bind(eventId),
+				db
+					.prepare(`SELECT * FROM date_options WHERE event_id = ? ORDER BY sort_order`)
+					.bind(eventId),
 				db.prepare(`SELECT * FROM invitees WHERE event_id = ? ORDER BY created_at`).bind(eventId)
 			]);
 
@@ -129,14 +138,14 @@ export function d1Provider(db: D1Database): DataProvider {
 			const inviteeRow = await db
 				.prepare(`SELECT * FROM invitees WHERE token = ?`)
 				.bind(inviteeToken)
-				.first<Record<string, unknown>>();
+				.first();
 			if (!inviteeRow) return null;
 
 			const invitee = mapInvitee(inviteeRow);
 			const eventRow = await db
 				.prepare(`SELECT * FROM events WHERE id = ?`)
 				.bind(invitee.eventId)
-				.first<Record<string, unknown>>();
+				.first();
 			if (!eventRow) return null;
 
 			const [dates, responses] = await db.batch<Record<string, unknown>>([
