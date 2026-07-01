@@ -15,8 +15,9 @@
 		"lint": "eslint .",
 		"format": "prettier --write .",
 		"format:check": "prettier --check .",
-		"prepare": "svelte-kit sync || echo '' ; git config core.hooksPath .githooks",
-		"check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
+		"messages": "paraglide-js compile --project ./project.inlang --outdir ./src/lib/paraglide",
+		"prepare": "svelte-kit sync || echo '' ; bun run messages || echo '' ; git config core.hooksPath .githooks",
+		"check": "bun run messages && svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
 		"check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch"
 	},
 	"devDependencies": {
