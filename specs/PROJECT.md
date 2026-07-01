@@ -8,7 +8,7 @@ text, etc.). No participant accounts.
 
 ## Stack
 - SvelteKit with `@sveltejs/adapter-cloudflare`
-- Cloudflare Workers/Pages for hosting
+- Cloudflare Workers/Pages for hosting, served at `poll.malpou.io`
 - Cloudflare D1 (SQLite) for storage, bound as `platform.env.DB`
 - Tokens generated with `crypto.getRandomValues` (≥128 bits entropy, base62)
 
