@@ -14,11 +14,26 @@ const OPT = 'e2e-dash-opt'; // an option that will carry a response
 const TITLE = 'Rundvisning i DR Byen (dash)';
 
 function d1(sql: string): { results: Record<string, unknown>[] } {
-	const out = execFileSync(
-		'bunx',
-		['wrangler', 'd1', 'execute', 'DB', '--local', '--json', '--command', sql],
-		{ encoding: 'utf8' }
-	);
+	// The preview server (wrangler dev) and this spawned wrangler share one local
+	// D1 file, so writes occasionally lose a lock/visibility race and surface as a
+	// transient FK/BUSY error. One retry clears it; the seeds are idempotent.
+	const run = () =>
+		execFileSync(
+			'bunx',
+			['wrangler', 'd1', 'execute', 'DB', '--local', '--json', '--command', sql],
+			{
+				encoding: 'utf8'
+			}
+		);
+	let out: string;
+	for (let attempt = 0; ; attempt++) {
+		try {
+			out = run();
+			break;
+		} catch (e) {
+			if (attempt >= 2) throw e;
+		}
+	}
 	const parsed = JSON.parse(out.slice(out.indexOf('['))) as {
 		results: Record<string, unknown>[];
 	}[];
@@ -149,4 +164,120 @@ test('close stops response edits; reopen restores them', async ({ page }) => {
 	await expect(page.getByText(da.closedBanner)).toHaveCount(0);
 	await page.goto(`/r/${RTOK}`);
 	await expect(page.getByRole('button', { name: da.sendAnswer })).toBeVisible();
+});
+
+// --- Results view (iteration 6): counts, pending, best-option highlight. ---
+// Separate event/tokens from the mutation tests above so seeds don't collide.
+
+const R_OTOK = 'e2e-res-otok';
+const R_EV = 'e2e-res-ev';
+
+function seedResults(sql: string) {
+	// Fresh event with 3 invitees + 3 options, then whatever responses `sql` adds.
+	d1(
+		`DELETE FROM responses WHERE invitee_id IN (SELECT id FROM invitees WHERE event_id = '${R_EV}');
+		 DELETE FROM invitees WHERE event_id = '${R_EV}';
+		 DELETE FROM date_options WHERE event_id = '${R_EV}';
+		 DELETE FROM events WHERE id = '${R_EV}';`
+	);
+	const now = '2026-07-01T00:00:00Z';
+	d1(
+		`INSERT INTO events (id, title, description, organizer_token, status, created_at) VALUES
+		   ('${R_EV}', 'Resultater', NULL, '${R_OTOK}', 'open', '${now}');
+		 INSERT INTO date_options (id, event_id, starts_at, ends_at, label, sort_order) VALUES
+		   ('ra', '${R_EV}', '2026-09-12T08:00:00Z', NULL, NULL, 0),
+		   ('rb', '${R_EV}', '2026-09-20T08:00:00Z', NULL, NULL, 1),
+		   ('rc', '${R_EV}', '2026-10-03T08:00:00Z', NULL, NULL, 2);
+		 INSERT INTO invitees (id, event_id, label, token, note, created_at) VALUES
+		   ('ri1', '${R_EV}', 'Anna', 'e2e-res-t1', NULL, '${now}'),
+		   ('ri2', '${R_EV}', 'Bo',   'e2e-res-t2', NULL, '${now}'),
+		   ('ri3', '${R_EV}', 'Ced',  'e2e-res-t3', NULL, '${now}');`
+	);
+	if (sql) d1(sql);
+}
+
+const resp = (inv: string, opt: string, pref: string) =>
+	`INSERT INTO responses (invitee_id, date_option_id, preference, updated_at) VALUES
+	   ('${inv}', '${opt}', '${pref}', '2026-07-01T00:00:00Z');`;
+
+// Each option renders one result card; its "{n} af 3 har svaret" label is unique
+// per option, so we locate the card by that label and assert on its contents.
+function cardByAnswered(page: Page, label: string) {
+	return page
+		.locator('section')
+		.filter({ hasText: da.resultsSection })
+		.locator('div')
+		.filter({ hasText: label })
+		.filter({ has: page.getByText(da.prefPreferred) });
+}
+
+test('per-option counts and a clear winner is highlighted', async ({ page }) => {
+	// rb: 2×preferred, 1×available, 0×unavailable → fewest unavailable + most preferred.
+	// ra: 1×preferred, 2×unavailable. rc: 3×available, 0×unavailable (loses on preferred).
+	seedResults(
+		resp('ri1', 'rb', 'preferred') +
+			resp('ri2', 'rb', 'preferred') +
+			resp('ri3', 'rb', 'available') +
+			resp('ri1', 'ra', 'preferred') +
+			resp('ri2', 'ra', 'unavailable') +
+			resp('ri3', 'ra', 'unavailable') +
+			resp('ri1', 'rc', 'available') +
+			resp('ri2', 'rc', 'available') +
+			resp('ri3', 'rc', 'available')
+	);
+	await page.goto(`/e/${R_OTOK}`);
+
+	// Winner rb is the only fully-answered option (3 of 3) and carries the badge.
+	const winner = cardByAnswered(page, '3 af 3 har svaret');
+	await expect(winner.getByText(da.bestDate)).toBeVisible();
+
+	// Exactly one best-date badge → clear winner, not a tie.
+	await expect(page.getByText(da.bestDate)).toHaveCount(1);
+});
+
+test('a tie highlights both options', async ({ page }) => {
+	// ra and rb both: 1×preferred, 0×unavailable → identical (unavailable, preferred).
+	seedResults(resp('ri1', 'ra', 'preferred') + resp('ri2', 'rb', 'preferred'));
+	await page.goto(`/e/${R_OTOK}`);
+	await expect(page.getByText(da.bestDate)).toHaveCount(2);
+});
+
+test('with no responses at all, no date is highlighted as best', async ({ page }) => {
+	seedResults('');
+	await page.goto(`/e/${R_OTOK}`);
+	// Bars render (Foretrukket label present) but no date is crowned best.
+	await expect(page.getByText(da.prefPreferred).first()).toBeVisible();
+	await expect(page.getByText(da.bestDate)).toHaveCount(0);
+});
+
+test('pending invitees are listed as Mangler at svare', async ({ page }) => {
+	// Anna answers; Bo and Ced do not → two pending, one answered.
+	seedResults(resp('ri1', 'ra', 'preferred'));
+	await page.goto(`/e/${R_OTOK}`);
+	// Exact match: the "{n} af 3 har svaret" labels also contain "har svaret".
+	await expect(page.getByText(da.pending, { exact: true })).toHaveCount(2); // Bo + Ced
+	await expect(page.getByText(da.answered, { exact: true })).toHaveCount(1); // Anna
+});
+
+test('expanding a result shows which people chose each preference', async ({ page }) => {
+	seedResults(resp('ri1', 'ra', 'preferred') + resp('ri2', 'ra', 'unavailable'));
+	await page.goto(`/e/${R_OTOK}`);
+
+	// Names hidden until the card is expanded.
+	await expect(page.getByText('Anna', { exact: true })).toHaveCount(0);
+	await page.getByRole('button', { name: da.showWho }).first().click();
+	await expect(page.getByText('Anna', { exact: true })).toBeVisible(); // preferred ra
+	await expect(page.getByText('Bo', { exact: true })).toBeVisible(); // unavailable ra
+});
+
+test('an invitee note shows behind a comment toggle', async ({ page }) => {
+	seedResults(
+		resp('ri1', 'ra', 'preferred') +
+			`UPDATE invitees SET note = 'Jeg kan ikke om morgenen' WHERE id = 'ri1';`
+	);
+	await page.goto(`/e/${R_OTOK}`);
+
+	await expect(page.getByText('Jeg kan ikke om morgenen')).toHaveCount(0);
+	await page.getByRole('button', { name: da.showNote }).click();
+	await expect(page.getByText('Jeg kan ikke om morgenen')).toBeVisible();
 });

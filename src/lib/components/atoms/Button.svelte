@@ -25,7 +25,9 @@
 <button
 	{type}
 	{onclick}
-	class="cursor-pointer text-[15px] transition-colors duration-150 {variants[variant]}"
+	class="cursor-pointer whitespace-nowrap text-[15px] transition-colors duration-150 {variants[
+		variant
+	]}"
 >
 	{@render children()}
 </button>

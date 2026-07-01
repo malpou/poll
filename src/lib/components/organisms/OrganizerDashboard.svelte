@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { onMount } from 'svelte';
 	import { fly } from 'svelte/transition';
 	import { cubicOut } from 'svelte/easing';
 	import { enhance } from '$app/forms';
@@ -19,10 +20,29 @@
 		dateLabel: string;
 		timeRange: string;
 	}
+	interface ResultView {
+		id: string;
+		preferred: number;
+		available: number;
+		unavailable: number;
+		preferredPct: number;
+		availablePct: number;
+		unavailablePct: number;
+		preferredNames: string[];
+		availableNames: string[];
+		unavailableNames: string[];
+		answeredLabel: string;
+		isBest: boolean;
+		weekday: string;
+		dateLabel: string;
+		timeRange: string;
+	}
 	interface InviteeView {
 		id: string;
 		label: string;
 		url: string;
+		answered: boolean;
+		note: string | null;
 	}
 	interface ValidData {
 		invalid: false;
@@ -30,6 +50,7 @@
 		title: string;
 		description: string | null;
 		closed: boolean;
+		results: ResultView[];
 		options: OptionView[];
 		invitees: InviteeView[];
 	}
@@ -39,6 +60,19 @@
 
 	// Which option is in inline-edit mode (id) — null when none.
 	let editing = $state<string | null>(null);
+
+	// Expanded result cards (show who chose what) and expanded invitee notes.
+	let expandedResults = $state<Record<string, boolean>>({});
+	let expandedNotes = $state<Record<string, boolean>>({});
+
+	// Results bars grow from 0 to their width once mounted (DESIGN.md: animate
+	// width on mount, ~450ms ease-out). Reduced-motion → straight to full width.
+	const reduced =
+		typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+	let revealed = $state(reduced);
+	onMount(() => {
+		if (!revealed) requestAnimationFrame(() => (revealed = true));
+	});
 
 	let toastOpen = $state(false);
 	let toastTimer: ReturnType<typeof setTimeout> | undefined;
@@ -112,6 +146,77 @@
 				<span class="h-2 w-2 shrink-0 rounded-full bg-amber"></span>
 				{da.closedBanner}
 			</div>
+		{/if}
+
+		<!-- Results -->
+		{#if view.results.length > 0}
+			<section class="mb-10">
+				<div class="mb-3.5 text-[13px] font-bold uppercase tracking-[0.06em] text-ink-muted">
+					{da.resultsSection}
+				</div>
+				<div class="flex flex-col gap-3">
+					{#each view.results as r, i (r.id)}
+						<div
+							in:fly={{ y: 8, duration: 240, delay: i * 40, easing: cubicOut }}
+							class="rounded-xl border border-border bg-card p-4"
+						>
+							<div class="flex flex-wrap items-center justify-between gap-2.5">
+								<div class="flex items-center gap-2.5">
+									<div>
+										<div class="text-[15px] font-bold capitalize text-ink">{r.weekday}</div>
+										<div class="text-[13px] text-ink-muted">
+											{r.dateLabel}{#if r.timeRange}
+												· {r.timeRange}{/if}
+										</div>
+									</div>
+									{#if r.isBest}
+										<span
+											class="whitespace-nowrap rounded-full bg-amber-tint px-2.5 py-1 text-[11px] font-bold uppercase tracking-[0.04em] text-amber"
+										>
+											{da.bestDate}
+										</span>
+									{/if}
+								</div>
+								<div class="flex items-center gap-2">
+									<div class="whitespace-nowrap text-[13px] font-semibold text-ink-muted">
+										{r.answeredLabel}
+									</div>
+									{#if r.preferred + r.available + r.unavailable > 0}
+										<IconButton
+											label={expandedResults[r.id] ? da.hideWho : da.showWho}
+											onclick={() => (expandedResults[r.id] = !expandedResults[r.id])}
+										>
+											{expandedResults[r.id] ? '▲' : '▾'}
+										</IconButton>
+									{/if}
+								</div>
+							</div>
+
+							<div class="mt-4 flex flex-col gap-2">
+								{#each [{ label: da.prefPreferred, count: r.preferred, pct: r.preferredPct, color: 'bg-amber', names: r.preferredNames }, { label: da.prefAvailable, count: r.available, pct: r.availablePct, color: 'bg-good', names: r.availableNames }, { label: da.prefUnavailable, count: r.unavailable, pct: r.unavailablePct, color: 'bg-bad', names: r.unavailableNames }] as bar (bar.label)}
+									<div class="grid grid-cols-[92px_1fr_22px] items-center gap-2.5">
+										<div class="text-xs font-semibold text-ink-muted">{bar.label}</div>
+										<div class="h-2.5 overflow-hidden rounded-md bg-card-alt">
+											<div
+												class="h-full rounded-md {bar.color}"
+												style="width:{revealed ? bar.pct : 0}%; transition:{reduced
+													? 'none'
+													: 'width 450ms cubic-bezier(0.16,1,0.3,1)'};"
+											></div>
+										</div>
+										<div class="text-right text-xs font-bold text-ink">{bar.count}</div>
+									</div>
+									{#if expandedResults[r.id] && bar.names.length > 0}
+										<div class="pl-[102px] text-[13px] text-ink-muted">
+											{bar.names.join(', ')}
+										</div>
+									{/if}
+								{/each}
+							</div>
+						</div>
+					{/each}
+				</div>
+			</section>
 		{/if}
 
 		<!-- Options -->
@@ -237,6 +342,23 @@
 									<TextField name="label" value={inv.label} />
 									<Button variant="ghost" type="submit">{da.save}</Button>
 								</form>
+							{/if}
+							<span
+								class="whitespace-nowrap rounded-full px-2.5 py-1 text-[11px] font-bold {inv.answered
+									? 'bg-good-tint text-good'
+									: 'bg-amber-tint text-amber'}"
+							>
+								{inv.answered ? da.answered : da.pending}
+							</span>
+							{#if inv.note}
+								<IconButton
+									label={expandedNotes[inv.id] ? da.hideNote : da.showNote}
+									onclick={() => (expandedNotes[inv.id] = !expandedNotes[inv.id])}
+								>
+									💬
+								</IconButton>
+							{/if}
+							{#if !view.closed}
 								<form
 									method="POST"
 									action="?/removeInvitee"
@@ -247,6 +369,13 @@
 								</form>
 							{/if}
 						</div>
+						{#if inv.note && expandedNotes[inv.id]}
+							<div
+								class="mt-2.5 rounded-lg bg-card-alt px-3 py-2 text-[13px] leading-relaxed text-ink-muted"
+							>
+								{inv.note}
+							</div>
+						{/if}
 						<div class="mt-2.5 flex flex-wrap items-center gap-2.5">
 							<LinkChip text={inv.url.replace(/^https?:\/\//, '')} />
 							<Button

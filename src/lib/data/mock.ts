@@ -34,6 +34,15 @@ export const mockProvider: DataProvider = {
 		return [];
 	},
 
+	async getAnsweredInviteeIds() {
+		// No persistence — local dev shows everyone pending; e2e uses real D1.
+		return new Set<string>();
+	},
+
+	async getEventResponses() {
+		return [];
+	},
+
 	async addDateOption(eventId, date) {
 		console.log('[mock] addDateOption', { eventId, date });
 	},

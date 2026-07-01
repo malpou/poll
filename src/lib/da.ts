@@ -44,6 +44,14 @@ export const da = {
 
 	// Organizer dashboard (/e/[token])
 	dashboardTitle: 'Oversigt',
+	resultsSection: 'Resultater',
+	bestDate: 'Bedste dato',
+	answered: 'Har svaret',
+	pending: 'Mangler at svare',
+	showWho: 'Vis hvem der har svaret',
+	hideWho: 'Skjul',
+	showNote: 'Vis bemærkning',
+	hideNote: 'Skjul bemærkning',
 	closePoll: 'Luk afstemning',
 	reopenPoll: 'Åbn afstemning igen',
 	statusOpen: 'Åben',
