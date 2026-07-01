@@ -4,7 +4,7 @@
 	import Button from '$lib/components/atoms/Button.svelte';
 	import DateList from '$lib/components/organisms/DateList.svelte';
 	import ParticipantList from '$lib/components/organisms/ParticipantList.svelte';
-	import Toast from '$lib/components/feedback/Toast.svelte';
+	import Toast from '$lib/components/atoms/Toast.svelte';
 	import { enhance } from '$app/forms';
 	import { da } from '$lib/da';
 	import { helpers } from '$lib/data/shared';

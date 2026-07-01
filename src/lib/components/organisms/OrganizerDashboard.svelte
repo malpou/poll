@@ -7,7 +7,7 @@
 	import Button from '$lib/components/atoms/Button.svelte';
 	import IconButton from '$lib/components/atoms/IconButton.svelte';
 	import LinkChip from '$lib/components/atoms/LinkChip.svelte';
-	import Toast from '$lib/components/feedback/Toast.svelte';
+	import Toast from '$lib/components/atoms/Toast.svelte';
 	import { da } from '$lib/da';
 
 	interface OptionView {

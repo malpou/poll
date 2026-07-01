@@ -7,6 +7,10 @@ import { defineConfig } from '@playwright/test';
 export default defineConfig({
 	testDir: 'e2e',
 	globalSetup: './e2e/global-setup.ts',
+	// The preview server and the seed helper hit one shared local-D1 file, so a
+	// read can occasionally lag a just-written row (a whole-test race the in-helper
+	// retry can't catch). Retry once in CI rather than chase every read with a poll.
+	retries: process.env.CI ? 2 : 1,
 	use: { baseURL: 'http://localhost:8787' },
 	webServer: {
 		command: 'bun run preview',

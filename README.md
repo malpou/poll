@@ -1,5 +1,7 @@
 # family-date-poll
 
+[![CI](https://github.com/malpou/family-date-poll/actions/workflows/ci.yml/badge.svg)](https://github.com/malpou/family-date-poll/actions/workflows/ci.yml)
+
 A tiny, no-login date poll. One organizer seeds a few candidate dates, sends
 each person a personal link, and sees at a glance which date suits everyone —
 originally built to schedule a _rundvisning i DR Byen_, but it works for any
@@ -30,7 +32,7 @@ their own link to copy and send by their own means (email, text, …).
 - **Playwright** for end-to-end smoke tests
 
 UI is organized by **atomic design** under `src/lib/components/`
-(`atoms/` → `molecules/` → `organisms/`, plus `feedback/`). Data goes through a
+(`atoms/` → `molecules/` → `organisms/`). Data goes through a
 single `DataProvider` interface (`src/lib/data/provider.ts`) with a mock
 implementation for local dev and tests and a D1 implementation in production —
 swapping is one line.
@@ -48,8 +50,24 @@ Useful scripts:
 bun run check      # svelte-check (types)
 bun run build      # production build
 bun run preview    # preview the production build
-bun run test:e2e   # Playwright smoke tests (once iteration 7 lands)
 ```
+
+## Testing
+
+```sh
+bun run test       # unit tests (vitest)
+bun run test:e2e   # Playwright smoke tests: full journey against a local D1
+```
+
+`test:e2e` builds the app, boots `wrangler dev` on a freshly-migrated **local
+D1**, and drives the real create → dashboard → respond → results journey. Specs
+seed and read the database through one shared helper (`e2e/db.ts`) — no raw SQL
+in the tests themselves; all query-building lives in that module, mirroring how
+`src/lib/data/d1.ts` is the single home for app SQL.
+
+**CI** ([`.github/workflows/ci.yml`](.github/workflows/ci.yml)) runs the full
+gate — `check` → unit tests → e2e — on every push and pull request, and uploads
+the Playwright HTML report as an artifact when a run fails.
 
 ## Deploy (Cloudflare)
 
@@ -65,7 +83,7 @@ Requires a Cloudflare account with a D1 database bound as `DB` and the
 
 ```
 specs/                       the source of truth — see below
-src/lib/components/          atoms / molecules / organisms / feedback
+src/lib/components/          atoms / molecules / organisms
 src/lib/data/                DataProvider: provider.ts, mock.ts, d1.ts
 src/lib/da.ts                all Danish strings, in one place
 src/routes/                  /, /e/[token], /r/[token]

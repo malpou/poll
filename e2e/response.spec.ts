@@ -1,11 +1,11 @@
 import { test, expect, type Page } from '@playwright/test';
-import { execFileSync } from 'node:child_process';
 import { da } from '../src/lib/da';
+import { responsesFor, seedDateOption, seedEvent, seedInvitee, wipeEvent } from './db';
 
 // The response page needs a seeded invitee link, but no UI surfaces invitee
-// tokens yet (that's the iteration-5 dashboard). So we seed local D1 directly via
-// `wrangler d1 execute` — same wrangler shell global-setup.ts already uses. Tokens
-// are fixed constants; seeding is delete-then-insert so re-runs are idempotent.
+// tokens yet (that's the iteration-5 dashboard). So we seed local D1 through the
+// shared e2e/db.ts helper. Tokens are fixed constants; seeding is
+// delete-then-insert so re-runs are idempotent.
 
 // Deterministic fixtures.
 const OPEN_TOKEN = 'e2e-open-invitee-token';
@@ -18,46 +18,36 @@ const D1 = 'e2e-d1'; // lørdag 12. sep 2026, 10.00–11.00 (local)
 const D2 = 'e2e-d2'; // søndag 20. sep 2026
 const TITLE = 'Rundvisning i DR Byen (e2e)';
 
-function d1(sql: string): { results: Record<string, unknown>[] } {
-	const out = execFileSync(
-		'bunx',
-		['wrangler', 'd1', 'execute', 'DB', '--local', '--json', '--command', sql],
-		{ encoding: 'utf8' }
-	);
-	// wrangler prints a JSON array of statement results; take the first.
-	const parsed = JSON.parse(out.slice(out.indexOf('['))) as {
-		results: Record<string, unknown>[];
-	}[];
-	return parsed[0];
-}
-
 function seed() {
-	// Clean any prior run (children first).
-	d1(
-		`DELETE FROM responses WHERE invitee_id IN ('${INV_OPEN}','${INV_CLOSED}');
-		 DELETE FROM invitees WHERE id IN ('${INV_OPEN}','${INV_CLOSED}');
-		 DELETE FROM date_options WHERE event_id IN ('${EV_OPEN}','${EV_CLOSED}');
-		 DELETE FROM events WHERE id IN ('${EV_OPEN}','${EV_CLOSED}');`
-	);
-	const now = '2026-07-01T00:00:00Z';
-	d1(
-		`INSERT INTO events (id, title, description, organizer_token, status, created_at) VALUES
-		   ('${EV_OPEN}', '${TITLE}', 'Vi mødes ved indgangen.', 'e2e-otok-open', 'open', '${now}'),
-		   ('${EV_CLOSED}', '${TITLE}', NULL, 'e2e-otok-closed', 'closed', '${now}');
-		 INSERT INTO date_options (id, event_id, starts_at, ends_at, label, sort_order) VALUES
-		   ('${D1}', '${EV_OPEN}', '2026-09-12T08:00:00Z', '2026-09-12T09:00:00Z', NULL, 0),
-		   ('${D2}', '${EV_OPEN}', '2026-09-20T09:00:00Z', NULL, NULL, 1),
-		   ('${D1}-c', '${EV_CLOSED}', '2026-09-12T08:00:00Z', NULL, NULL, 0);
-		 INSERT INTO invitees (id, event_id, label, token, note, created_at) VALUES
-		   ('${INV_OPEN}', '${EV_OPEN}', 'Anna', '${OPEN_TOKEN}', NULL, '${now}'),
-		   ('${INV_CLOSED}', '${EV_CLOSED}', 'Bo', '${CLOSED_TOKEN}', NULL, '${now}');`
-	);
+	wipeEvent([EV_OPEN, EV_CLOSED]);
+	seedEvent({
+		id: EV_OPEN,
+		title: TITLE,
+		description: 'Vi mødes ved indgangen.',
+		organizerToken: 'e2e-otok-open',
+		status: 'open'
+	});
+	seedEvent({ id: EV_CLOSED, title: TITLE, organizerToken: 'e2e-otok-closed', status: 'closed' });
+	seedDateOption({
+		id: D1,
+		eventId: EV_OPEN,
+		startsAt: '2026-09-12T08:00:00Z',
+		endsAt: '2026-09-12T09:00:00Z',
+		sortOrder: 0
+	});
+	seedDateOption({ id: D2, eventId: EV_OPEN, startsAt: '2026-09-20T09:00:00Z', sortOrder: 1 });
+	seedDateOption({
+		id: `${D1}-c`,
+		eventId: EV_CLOSED,
+		startsAt: '2026-09-12T08:00:00Z',
+		sortOrder: 0
+	});
+	seedInvitee({ id: INV_OPEN, eventId: EV_OPEN, label: 'Anna', token: OPEN_TOKEN });
+	seedInvitee({ id: INV_CLOSED, eventId: EV_CLOSED, label: 'Bo', token: CLOSED_TOKEN });
 }
 
 function responseRows() {
-	return d1(
-		`SELECT date_option_id, preference FROM responses WHERE invitee_id = '${INV_OPEN}' ORDER BY date_option_id`
-	).results;
+	return responsesFor(INV_OPEN);
 }
 
 // Click a preference on a specific date card.

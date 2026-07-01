@@ -3,7 +3,7 @@
 	import { enhance } from '$app/forms';
 	import DateOptionCard from '$lib/components/molecules/DateOptionCard.svelte';
 	import TextArea from '$lib/components/atoms/TextArea.svelte';
-	import Toast from '$lib/components/feedback/Toast.svelte';
+	import Toast from '$lib/components/atoms/Toast.svelte';
 	import { da } from '$lib/da';
 	import type { Preference } from '$lib/types';
 
