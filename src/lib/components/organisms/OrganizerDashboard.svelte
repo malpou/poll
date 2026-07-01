@@ -4,11 +4,13 @@
 	import { cubicOut } from 'svelte/easing';
 	import { enhance } from '$app/forms';
 	import TextField from '$lib/components/atoms/TextField.svelte';
+	import TextArea from '$lib/components/atoms/TextArea.svelte';
 	import Button from '$lib/components/atoms/Button.svelte';
 	import IconButton from '$lib/components/atoms/IconButton.svelte';
 	import LinkChip from '$lib/components/atoms/LinkChip.svelte';
 	import Toast from '$lib/components/atoms/Toast.svelte';
-	import { da } from '$lib/da';
+	import { m } from '$lib/paraglide/messages';
+	import type { Locale } from '$lib/types';
 
 	interface OptionView {
 		id: string;
@@ -50,6 +52,7 @@
 		organizerUrl: string;
 		title: string;
 		description: string | null;
+		locale: Locale;
 		closed: boolean;
 		results: ResultView[];
 		options: OptionView[];
@@ -61,6 +64,9 @@
 
 	// Which option is in inline-edit mode (id) - null when none.
 	let editing = $state<string | null>(null);
+
+	// Title/description inline-edit toggle for the event header.
+	let editingDetails = $state(false);
 
 	// Expanded result cards (show who chose what) and expanded invitee notes.
 	let expandedResults = $state<Record<string, boolean>>({});
@@ -92,7 +98,10 @@
 
 	// After a successful submit, re-run the load so the list reflects the change.
 	const onResult: AfterSubmit = ({ result, update }) => {
-		if (result.type === 'success') editing = null;
+		if (result.type === 'success') {
+			editing = null;
+			editingDetails = false;
+		}
 		return update();
 	};
 
@@ -118,42 +127,97 @@
 {#if !view}
 	<div class="flex min-h-screen flex-col items-center justify-center gap-4 px-6 py-10 text-center">
 		<div class="h-[52px] w-[52px] rotate-45 rounded-[14px] border border-border bg-card-alt"></div>
-		<h1 class="mt-3 text-2xl font-extrabold tracking-[-0.01em] text-ink">{da.linkNotFound}</h1>
-		<p class="max-w-[300px] text-[15px] leading-relaxed text-ink-muted">{da.linkNotFoundSub}</p>
+		<h1 class="mt-3 text-2xl font-extrabold tracking-[-0.01em] text-ink">{m.linkNotFound()}</h1>
+		<p class="max-w-[300px] text-[15px] leading-relaxed text-ink-muted">{m.linkNotFoundSub()}</p>
 	</div>
 {:else}
 	<div class="mx-auto max-w-[640px] px-6 pb-24 pt-10">
-		<div class="mb-8 flex items-start justify-between gap-4">
-			<div class="min-w-0">
-				<div class="text-[13px] font-bold uppercase tracking-[0.06em] text-ink-muted">
-					{da.dashboardTitle}
-				</div>
+		<div class="mb-8">
+			<div class="text-[13px] font-bold uppercase tracking-[0.06em] text-ink-muted">
+				{m.dashboardTitle()}
+			</div>
+
+			<!-- Title + description own their block; the edit button sits below, not
+			     beside the (wrapping) title, so nothing collides. -->
+			{#if editingDetails}
+				<form
+					method="POST"
+					action="?/saveDetails"
+					use:enhance={refresh}
+					class="mt-2 flex flex-col gap-2.5"
+				>
+					<TextField label={m.fieldTitle()} name="title" value={view.title} />
+					<TextArea
+						label={m.fieldDescription()}
+						name="description"
+						value={view.description ?? ''}
+					/>
+					<div class="flex items-center gap-2.5">
+						<Button variant="ghost" type="submit">{m.save()}</Button>
+						<IconButton
+							label={m.remove()}
+							onclick={() => {
+								editingDetails = false;
+							}}>✕</IconButton
+						>
+					</div>
+				</form>
+			{:else}
 				<h1 class="mt-1 text-[28px] font-extrabold tracking-[-0.02em] text-ink">{view.title}</h1>
 				{#if view.description}
 					<p class="mt-1.5 text-[15px] leading-relaxed text-ink-muted">{view.description}</p>
 				{/if}
+				{#if !view.closed}
+					<div class="mt-3">
+						<Button
+							variant="ghost"
+							onclick={() => {
+								editingDetails = true;
+							}}>{m.edit()}</Button
+						>
+					</div>
+				{/if}
+			{/if}
+
+			<!-- Poll controls on their own row, under the title/description. -->
+			<div class="mt-5 flex flex-wrap items-center gap-2.5">
+				<!-- Change the poll's language; auto-submits and reloads in the new locale. -->
+				<form method="POST" action="?/setLocale" use:enhance={refresh}>
+					<label class="sr-only" for="poll-locale">{m.fieldLanguage()}</label>
+					<select
+						id="poll-locale"
+						name="locale"
+						value={view.locale}
+						onchange={(e) => e.currentTarget.form?.requestSubmit()}
+						class="h-9 rounded-lg border border-border bg-card px-2 text-[13px] font-semibold text-ink outline-none focus:border-primary"
+					>
+						<option value="da">{m.langDa()}</option>
+						<option value="en">{m.langEn()}</option>
+						<option value="fr">{m.langFr()}</option>
+					</select>
+				</form>
+				<form method="POST" action={view.closed ? '?/reopen' : '?/close'} use:enhance={refresh}>
+					<Button variant="ghost" type="submit">
+						{view.closed ? m.reopenPoll() : m.closePoll()}
+					</Button>
+				</form>
 			</div>
-			<form method="POST" action={view.closed ? '?/reopen' : '?/close'} use:enhance={refresh}>
-				<Button variant="ghost" type="submit">
-					{view.closed ? da.reopenPoll : da.closePoll}
-				</Button>
-			</form>
 		</div>
 
 		<!-- Save-your-link warning: the /e URL is the only way back to the results. -->
 		<div class="mb-6 rounded-xl border border-amber bg-amber-tint px-4 py-3.5">
 			<div class="flex items-center gap-2 text-sm font-bold text-amber">
 				<span class="text-base leading-none">⚠</span>
-				{da.organizerLinkTitle}
+				{m.organizerLinkTitle()}
 			</div>
-			<p class="mt-1.5 text-[13px] leading-relaxed text-ink">{da.organizerLinkWarning}</p>
+			<p class="mt-1.5 text-[13px] leading-relaxed text-ink">{m.organizerLinkWarning()}</p>
 			<div class="mt-2.5 flex flex-wrap items-center gap-2.5">
 				<LinkChip text={view.organizerUrl.replace(/^https?:\/\//, '')} />
 				<Button
 					variant="ghost"
 					onclick={() => {
 						copy(view.organizerUrl);
-					}}>{da.copyLink}</Button
+					}}>{m.copyLink()}</Button
 				>
 			</div>
 		</div>
@@ -163,7 +227,7 @@
 				class="mb-6 flex items-center gap-2.5 rounded-xl border border-border bg-amber-tint px-4 py-3 text-sm font-semibold text-amber"
 			>
 				<span class="h-2 w-2 shrink-0 rounded-full bg-amber"></span>
-				{da.closedBanner}
+				{m.closedBanner()}
 			</div>
 		{/if}
 
@@ -171,7 +235,7 @@
 		{#if view.results.length > 0}
 			<section class="mb-10">
 				<div class="mb-3.5 text-[13px] font-bold uppercase tracking-[0.06em] text-ink-muted">
-					{da.resultsSection}
+					{m.resultsSection()}
 				</div>
 				<div class="flex flex-col gap-3">
 					{#each view.results as r, i (r.id)}
@@ -192,7 +256,7 @@
 										<span
 											class="whitespace-nowrap rounded-full bg-amber-tint px-2.5 py-1 text-[11px] font-bold uppercase tracking-[0.04em] text-amber"
 										>
-											{da.bestDate}
+											{m.bestDate()}
 										</span>
 									{/if}
 								</div>
@@ -202,7 +266,7 @@
 									</div>
 									{#if r.preferred + r.available + r.unavailable > 0}
 										<IconButton
-											label={expandedResults[r.id] ? da.hideWho : da.showWho}
+											label={expandedResults[r.id] ? m.hideWho() : m.showWho()}
 											onclick={() => (expandedResults[r.id] = !expandedResults[r.id])}
 										>
 											{expandedResults[r.id] ? '▲' : '▾'}
@@ -212,7 +276,7 @@
 							</div>
 
 							<div class="mt-4 flex flex-col gap-2">
-								{#each [{ label: da.prefPreferred, count: r.preferred, pct: r.preferredPct, color: 'bg-amber', names: r.preferredNames }, { label: da.prefAvailable, count: r.available, pct: r.availablePct, color: 'bg-good', names: r.availableNames }, { label: da.prefUnavailable, count: r.unavailable, pct: r.unavailablePct, color: 'bg-bad', names: r.unavailableNames }] as bar (bar.label)}
+								{#each [{ label: m.prefPreferred(), count: r.preferred, pct: r.preferredPct, color: 'bg-amber', names: r.preferredNames }, { label: m.prefAvailable(), count: r.available, pct: r.availablePct, color: 'bg-good', names: r.availableNames }, { label: m.prefUnavailable(), count: r.unavailable, pct: r.unavailablePct, color: 'bg-bad', names: r.unavailableNames }] as bar (bar.label)}
 									<div class="grid grid-cols-[92px_1fr_22px] items-center gap-2.5">
 										<div class="text-xs font-semibold text-ink-muted">{bar.label}</div>
 										<div class="h-2.5 overflow-hidden rounded-md bg-card-alt">
@@ -241,7 +305,7 @@
 		<!-- Options -->
 		<section class="mb-10">
 			<div class="mb-3.5 text-[13px] font-bold uppercase tracking-[0.06em] text-ink-muted">
-				{da.datesSection}
+				{m.datesSection()}
 			</div>
 			<div class="flex flex-col gap-2.5">
 				{#each view.options as opt, i (opt.id)}
@@ -259,9 +323,9 @@
 								<input type="hidden" name="optionId" value={opt.id} />
 								<div class="flex items-center gap-2.5">
 									<TextField type="date" name="value" value={opt.value} />
-									<Button variant="ghost" type="submit">{da.save}</Button>
+									<Button variant="ghost" type="submit">{m.save()}</Button>
 									<IconButton
-										label={da.remove}
+										label={m.remove()}
 										onclick={() => {
 											editing = null;
 										}}>✕</IconButton
@@ -269,11 +333,11 @@
 								</div>
 								<div class="flex items-center gap-3.5">
 									<div class="flex flex-1 items-center gap-2">
-										<span class="shrink-0 text-xs font-semibold text-ink-muted">{da.from}</span>
+										<span class="shrink-0 text-xs font-semibold text-ink-muted">{m.from()}</span>
 										<TextField type="time" compact name="startTime" value={opt.startTime} />
 									</div>
 									<div class="flex flex-1 items-center gap-2">
-										<span class="shrink-0 text-xs font-semibold text-ink-muted">{da.to}</span>
+										<span class="shrink-0 text-xs font-semibold text-ink-muted">{m.to()}</span>
 										<TextField type="time" compact name="endTime" value={opt.endTime} />
 									</div>
 								</div>
@@ -295,15 +359,15 @@
 											variant="ghost"
 											onclick={() => {
 												editing = opt.id;
-											}}>{da.edit}</Button
+											}}>{m.edit()}</Button
 										>
 										<form
 											method="POST"
 											action="?/removeOption"
-											use:enhance={confirmingRefresh(da.confirmDeleteOption, opt.hasResponses)}
+											use:enhance={confirmingRefresh(m.confirmDeleteOption(), opt.hasResponses)}
 										>
 											<input type="hidden" name="optionId" value={opt.id} />
-											<IconButton label={da.remove} type="submit">✕</IconButton>
+											<IconButton label={m.remove()} type="submit">✕</IconButton>
 										</form>
 									</div>
 								{/if}
@@ -319,15 +383,15 @@
 						<div class="flex items-center gap-2.5">
 							<!-- value="" makes the native picker start empty each render. -->
 							<TextField type="date" name="value" value="" />
-							<Button variant="ghost" type="submit">{da.addDate}</Button>
+							<Button variant="ghost" type="submit">{m.addDate()}</Button>
 						</div>
 						<div class="mt-2.5 flex items-center gap-3.5">
 							<div class="flex flex-1 items-center gap-2">
-								<span class="shrink-0 text-xs font-semibold text-ink-muted">{da.from}</span>
+								<span class="shrink-0 text-xs font-semibold text-ink-muted">{m.from()}</span>
 								<TextField type="time" compact name="startTime" value="" />
 							</div>
 							<div class="flex flex-1 items-center gap-2">
-								<span class="shrink-0 text-xs font-semibold text-ink-muted">{da.to}</span>
+								<span class="shrink-0 text-xs font-semibold text-ink-muted">{m.to()}</span>
 								<TextField type="time" compact name="endTime" value="" />
 							</div>
 						</div>
@@ -339,7 +403,7 @@
 		<!-- Invitees -->
 		<section>
 			<div class="mb-3.5 text-[13px] font-bold uppercase tracking-[0.06em] text-ink-muted">
-				{da.participantsSection}
+				{m.participantsSection()}
 			</div>
 			<div class="flex flex-col gap-2.5">
 				{#each view.invitees as inv, i (inv.id)}
@@ -359,7 +423,7 @@
 								>
 									<input type="hidden" name="inviteeId" value={inv.id} />
 									<TextField name="label" value={inv.label} />
-									<Button variant="ghost" type="submit">{da.save}</Button>
+									<Button variant="ghost" type="submit">{m.save()}</Button>
 								</form>
 							{/if}
 							<span
@@ -367,11 +431,11 @@
 									? 'bg-good-tint text-good'
 									: 'bg-amber-tint text-amber'}"
 							>
-								{inv.answered ? da.answered : da.pending}
+								{inv.answered ? m.answered() : m.pending()}
 							</span>
 							{#if inv.note}
 								<IconButton
-									label={expandedNotes[inv.id] ? da.hideNote : da.showNote}
+									label={expandedNotes[inv.id] ? m.hideNote() : m.showNote()}
 									onclick={() => (expandedNotes[inv.id] = !expandedNotes[inv.id])}
 								>
 									💬
@@ -381,10 +445,10 @@
 								<form
 									method="POST"
 									action="?/removeInvitee"
-									use:enhance={confirmingRefresh(da.confirmDeleteInvitee, true)}
+									use:enhance={confirmingRefresh(m.confirmDeleteInvitee(), true)}
 								>
 									<input type="hidden" name="inviteeId" value={inv.id} />
-									<IconButton label={da.remove} type="submit">✕</IconButton>
+									<IconButton label={m.remove()} type="submit">✕</IconButton>
 								</form>
 							{/if}
 						</div>
@@ -401,7 +465,7 @@
 								variant="ghost"
 								onclick={() => {
 									copy(inv.url);
-								}}>{da.copyLink}</Button
+								}}>{m.copyLink()}</Button
 							>
 						</div>
 					</div>
@@ -412,8 +476,8 @@
 				<form method="POST" action="?/addInvitee" use:enhance={refresh} class="mt-2.5">
 					<div class="rounded-xl border border-dashed border-border bg-card p-3">
 						<div class="flex items-center gap-2.5">
-							<TextField placeholder={da.name} name="label" value="" />
-							<Button variant="ghost" type="submit">{da.addParticipant}</Button>
+							<TextField placeholder={m.name()} name="label" value="" />
+							<Button variant="ghost" type="submit">{m.addParticipant()}</Button>
 						</div>
 					</div>
 				</form>
@@ -421,5 +485,5 @@
 		</section>
 	</div>
 
-	<Toast open={toastOpen} text={da.linkCopied} />
+	<Toast open={toastOpen} text={m.linkCopied()} />
 {/if}

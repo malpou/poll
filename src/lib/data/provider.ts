@@ -4,6 +4,7 @@ import type {
 	EventDraft,
 	EventWithDetails,
 	InviteeContext,
+	Locale,
 	Participant,
 	Preference,
 	ResponseRow
@@ -48,6 +49,8 @@ export interface DataProvider {
 	renameInvitee(inviteeId: string, label: string): Promise<void>;
 	removeInvitee(inviteeId: string): Promise<void>;
 	setEventStatus(eventId: string, status: 'open' | 'closed'): Promise<void>;
+	setEventLocale(eventId: string, locale: Locale): Promise<void>;
+	updateEventDetails(eventId: string, title: string, description: string | null): Promise<void>;
 }
 
 // Swap point: D1 when a platform/DB is present (Workers), mock otherwise

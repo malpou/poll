@@ -1,22 +1,47 @@
-// Danish date rendering for date options, Europe/Copenhagen, lowercase
-// (PROJECT.md convention). starts_at/ends_at are UTC ISO or null.
-// da-DK already renders weekday/month lowercase (lørdag, marts), so no casing.
+// Locale-aware date rendering for date options, Europe/Copenhagen. The poll's
+// stored locale drives weekday/month wording and the "at" prefix (kl./at/à).
+// starts_at/ends_at are UTC ISO or null. da-DK renders weekday/month lowercase
+// (lørdag, marts); en/fr keep their own casing (Intl default).
+import { m } from '$lib/paraglide/messages';
+import type { Locale } from '$lib/types';
 
 const TZ = 'Europe/Copenhagen';
 
-const weekdayFmt = new Intl.DateTimeFormat('da-DK', { timeZone: TZ, weekday: 'long' });
-const dateFmt = new Intl.DateTimeFormat('da-DK', {
-	timeZone: TZ,
-	day: 'numeric',
-	month: 'long',
-	year: 'numeric'
-});
-const timeFmt = new Intl.DateTimeFormat('da-DK', {
-	timeZone: TZ,
-	hour: '2-digit',
-	minute: '2-digit',
-	hour12: false
-});
+// BCP-47 tag per app locale. Region pins date/time conventions.
+const INTL_LOCALE: Record<Locale, string> = {
+	da: 'da-DK',
+	en: 'en-GB',
+	fr: 'fr-FR'
+};
+
+// Cache one formatter trio per locale - Intl.DateTimeFormat construction isn't free.
+const fmtCache = new Map<
+	Locale,
+	{ weekday: Intl.DateTimeFormat; date: Intl.DateTimeFormat; time: Intl.DateTimeFormat }
+>();
+function formatters(locale: Locale) {
+	let f = fmtCache.get(locale);
+	if (!f) {
+		const tag = INTL_LOCALE[locale];
+		f = {
+			weekday: new Intl.DateTimeFormat(tag, { timeZone: TZ, weekday: 'long' }),
+			date: new Intl.DateTimeFormat(tag, {
+				timeZone: TZ,
+				day: 'numeric',
+				month: 'long',
+				year: 'numeric'
+			}),
+			time: new Intl.DateTimeFormat(tag, {
+				timeZone: TZ,
+				hour: '2-digit',
+				minute: '2-digit',
+				hour12: false
+			})
+		};
+		fmtCache.set(locale, f);
+	}
+	return f;
+}
 
 export interface FormattedDate {
 	weekday: string; // "lørdag"
@@ -63,15 +88,21 @@ export function utcIsoToZonedParts(iso: string | null): { value: string; time: s
 
 // Defensive: a date option with no starts_at renders blank rather than crashing
 // (create form requires a date, so this is only reached if data is malformed).
-export function formatDateOption(startsAt: string | null, endsAt: string | null): FormattedDate {
+export function formatDateOption(
+	startsAt: string | null,
+	endsAt: string | null,
+	locale: Locale
+): FormattedDate {
 	if (!startsAt) return { weekday: '', dateLabel: '', timeRange: '' };
+	const fmt = formatters(locale);
 	const start = new Date(startsAt);
-	const startTime = timeFmt.format(start);
-	let timeRange = `kl. ${startTime}`;
-	if (endsAt) timeRange = `kl. ${startTime}–${timeFmt.format(new Date(endsAt))}`;
+	const startTime = fmt.time.format(start);
+	const at = m.timeAt({}, { locale }); // "kl. " / "at " / "à "
+	let timeRange = `${at}${startTime}`;
+	if (endsAt) timeRange = `${at}${startTime}–${fmt.time.format(new Date(endsAt))}`;
 	return {
-		weekday: weekdayFmt.format(start),
-		dateLabel: dateFmt.format(start),
+		weekday: fmt.weekday.format(start),
+		dateLabel: fmt.date.format(start),
 		timeRange
 	};
 }

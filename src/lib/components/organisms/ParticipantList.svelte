@@ -3,7 +3,7 @@
 	import { cubicOut } from 'svelte/easing';
 	import ParticipantRow from '$lib/components/molecules/ParticipantRow.svelte';
 	import Button from '$lib/components/atoms/Button.svelte';
-	import { da } from '$lib/da';
+	import { m } from '$lib/paraglide/messages';
 	import type { Participant } from '$lib/types';
 
 	let {
@@ -21,9 +21,9 @@
 
 <div>
 	<div class="mb-1 text-[13px] font-bold uppercase tracking-[0.06em] text-ink-muted">
-		{da.participantsSection}
+		{m.participantsSection()}
 	</div>
-	<p class="mb-3.5 text-[13px] text-ink-muted">{da.participantsHint}</p>
+	<p class="mb-3.5 text-[13px] text-ink-muted">{m.participantsHint()}</p>
 	<div class="flex flex-col gap-2.5">
 		{#each participants as p, i (p.id)}
 			<div in:fly={{ y: 8, duration: 240, delay: i * 40, easing: cubicOut }}>
@@ -38,5 +38,5 @@
 			</div>
 		{/each}
 	</div>
-	<Button variant="dashed" onclick={onadd}>{da.addParticipant}</Button>
+	<Button variant="dashed" onclick={onadd}>{m.addParticipant()}</Button>
 </div>

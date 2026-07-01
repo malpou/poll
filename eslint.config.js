@@ -5,9 +5,42 @@ import prettier from 'eslint-config-prettier';
 import globals from 'globals';
 import { defineConfig } from 'eslint/config';
 
+// Force user-facing text through Paraglide messages: flag any non-whitespace,
+// non-punctuation literal text node in .svelte markup. svelte-eslint-parser
+// (loaded via svelte.configs.recommended) emits these as SvelteText.
+const noHardcodedText = {
+	meta: {
+		type: 'problem',
+		docs: { description: 'Use Paraglide m.*() for user-facing text, not literal markup text' },
+		schema: []
+	},
+	create(ctx) {
+		return {
+			SvelteText(node) {
+				// Raw <script>/<style> bodies are also SvelteText - skip them.
+				const parentType = node.parent?.type;
+				if (parentType === 'SvelteScriptElement' || parentType === 'SvelteStyleElement') return;
+				if (node.value.trim() === '') return; // whitespace only
+				if (!/[\p{L}\p{N}]/u.test(node.value)) return; // punctuation/symbols only
+				ctx.report({
+					node,
+					message: `Hardcoded text "${node.value.trim()}" — use a Paraglide message (m.*()).`
+				});
+			}
+		};
+	}
+};
+
 export default defineConfig(
 	{
-		ignores: ['.svelte-kit/', '.wrangler/', 'build/', 'node_modules/', 'bun.lock']
+		ignores: [
+			'.svelte-kit/',
+			'.wrangler/',
+			'build/',
+			'node_modules/',
+			'bun.lock',
+			'src/lib/paraglide/'
+		]
 	},
 	js.configs.recommended,
 	ts.configs.strictTypeChecked,
@@ -30,6 +63,7 @@ export default defineConfig(
 	},
 	{
 		files: ['**/*.svelte', '**/*.svelte.ts', '**/*.svelte.js'],
+		plugins: { local: { rules: { 'no-hardcoded-text': noHardcodedText } } },
 		languageOptions: {
 			parserOptions: {
 				projectService: true,
@@ -38,7 +72,9 @@ export default defineConfig(
 		},
 		rules: {
 			// `$bindable()` is a Svelte rune, not a useless prop default.
-			'@typescript-eslint/no-useless-default-assignment': 'off'
+			'@typescript-eslint/no-useless-default-assignment': 'off',
+			// All user-facing copy must go through Paraglide (m.*()).
+			'local/no-hardcoded-text': 'error'
 		}
 	},
 	{

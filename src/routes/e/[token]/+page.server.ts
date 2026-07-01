@@ -3,6 +3,9 @@ import { getProvider } from '$lib/data/provider';
 import { formatDateOption, utcIsoToZonedParts } from '$lib/date';
 import { field, validateTimes } from '$lib/forms';
 import { markBest } from '$lib/results';
+import { setRequestLocale } from '../../../hooks.server';
+import { m } from '$lib/paraglide/messages';
+import { isLocale } from '$lib/paraglide/runtime';
 import type { DateOptionInput } from '$lib/data/provider';
 import type { Preference } from '$lib/types';
 import type { Actions, PageServerLoad } from './$types';
@@ -21,6 +24,9 @@ export const load: PageServerLoad = async ({ params, platform, url }) => {
 	const event = await provider.getEventByOrganizerToken(params.token);
 	// Reveal nothing on an unknown token - same discipline as the response page.
 	if (!event) return { invalid: true as const };
+
+	// The whole dashboard renders in the poll's stored locale (m.*() + dates).
+	setRequestLocale(event.locale);
 
 	const [results, answered, responses] = await Promise.all([
 		provider.getResults(event.id),
@@ -65,8 +71,8 @@ export const load: PageServerLoad = async ({ params, platform, url }) => {
 				preferredNames: names.preferred,
 				availableNames: names.available,
 				unavailableNames: names.unavailable,
-				answeredLabel: `${String(total)} af ${String(totalInvitees)} har svaret`,
-				...formatDateOption(d.startsAt, d.endsAt)
+				answeredLabel: m.answeredLabel({ total, totalInvitees }),
+				...formatDateOption(d.startsAt, d.endsAt, event.locale)
 			};
 		})
 	);
@@ -82,6 +88,7 @@ export const load: PageServerLoad = async ({ params, platform, url }) => {
 		organizerUrl: provider.organizerUrl(url.origin, params.token),
 		title: event.title,
 		description: event.description,
+		locale: event.locale,
 		closed: event.status === 'closed',
 		results: resultsView,
 		options: event.dateOptions.map((d) => {
@@ -93,7 +100,7 @@ export const load: PageServerLoad = async ({ params, platform, url }) => {
 				startTime: start.time,
 				endTime: d.endsAt ? utcIsoToZonedParts(d.endsAt).time : '',
 				hasResponses: optionHasResponses.get(d.id) ?? false,
-				...formatDateOption(d.startsAt, d.endsAt)
+				...formatDateOption(d.startsAt, d.endsAt, event.locale)
 			};
 		}),
 		invitees: event.invitees.map((inv) => ({
@@ -115,6 +122,18 @@ async function resolve(platform: App.Platform | undefined, token: string) {
 }
 
 export const actions = {
+	saveDetails: async ({ params, request, platform }) => {
+		const { provider, event } = await resolve(platform, params.token);
+		if (!event) return fail(404);
+		const form = await request.formData();
+		const title = field(form, 'title');
+		// Validation error copy renders in the poll's own locale.
+		if (!title) return fail(400, { error: m.errorNoTitle({}, { locale: event.locale }) });
+		const description = field(form, 'description');
+		await provider.updateEventDetails(event.id, title, description || null);
+		return { ok: true };
+	},
+
 	addOption: async ({ params, request, platform }) => {
 		const { provider, event } = await resolve(platform, params.token);
 		if (!event) return fail(404);
@@ -191,6 +210,15 @@ export const actions = {
 		const { provider, event } = await resolve(platform, params.token);
 		if (!event) return fail(404);
 		await provider.setEventStatus(event.id, 'open');
+		return { ok: true };
+	},
+
+	setLocale: async ({ params, request, platform }) => {
+		const { provider, event } = await resolve(platform, params.token);
+		if (!event) return fail(404);
+		const locale = field(await request.formData(), 'locale');
+		if (!isLocale(locale)) return fail(400, { error: 'locale' });
+		await provider.setEventLocale(event.id, locale);
 		return { ok: true };
 	}
 } satisfies Actions;

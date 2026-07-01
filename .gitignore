@@ -8,6 +8,9 @@ node_modules
 /.svelte-kit
 /build
 
+# Paraglide (generated from messages/*.json + project.inlang)
+/src/lib/paraglide
+
 # Test artifacts
 .playwright-mcp
 test-results

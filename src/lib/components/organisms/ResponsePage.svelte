@@ -4,7 +4,7 @@
 	import DateOptionCard from '$lib/components/molecules/DateOptionCard.svelte';
 	import TextArea from '$lib/components/atoms/TextArea.svelte';
 	import Toast from '$lib/components/atoms/Toast.svelte';
-	import { da } from '$lib/da';
+	import { m } from '$lib/paraglide/messages';
 	import type { Preference } from '$lib/types';
 
 	interface CardData {
@@ -57,8 +57,8 @@
 {#if !view}
 	<div class="flex min-h-screen flex-col items-center justify-center gap-4 px-6 py-10 text-center">
 		<div class="h-[52px] w-[52px] rotate-45 rounded-[14px] border border-border bg-card-alt"></div>
-		<h1 class="mt-3 text-2xl font-extrabold tracking-[-0.01em] text-ink">{da.linkNotFound}</h1>
-		<p class="max-w-[300px] text-[15px] leading-relaxed text-ink-muted">{da.linkNotFoundSub}</p>
+		<h1 class="mt-3 text-2xl font-extrabold tracking-[-0.01em] text-ink">{m.linkNotFound()}</h1>
+		<p class="max-w-[300px] text-[15px] leading-relaxed text-ink-muted">{m.linkNotFoundSub()}</p>
 	</div>
 {:else}
 	<form
@@ -76,12 +76,12 @@
 				class="mb-[22px] flex items-center gap-2.5 rounded-xl border border-border bg-amber-tint px-4 py-3 text-sm font-semibold text-amber"
 			>
 				<span class="h-2 w-2 shrink-0 rounded-full bg-amber"></span>
-				{da.closedBanner}
+				{m.closedBanner()}
 			</div>
 		{/if}
 
 		<div class="mb-[30px] flex flex-col gap-1.5">
-			<div class="text-[15px] font-semibold text-primary">{da.greeting} {view.name}</div>
+			<div class="text-[15px] font-semibold text-primary">{m.greeting({ name: view.name })}</div>
 			<h1 class="text-[30px] font-extrabold tracking-[-0.02em] text-ink">{view.title}</h1>
 			{#if view.description}
 				<p class="mt-1.5 text-base leading-relaxed text-ink-muted">{view.description}</p>
@@ -89,11 +89,11 @@
 		</div>
 
 		<div class="flex flex-col gap-5">
-			<p class="text-[17px] font-semibold text-ink">{da.responseIntro}</p>
+			<p class="text-[17px] font-semibold text-ink">{m.responseIntro()}</p>
 
 			<div class="flex flex-col gap-3.5">
 				<div class="text-[13px] font-bold uppercase tracking-[0.06em] text-ink-muted">
-					{da.datesQuestion}
+					{m.datesQuestion()}
 				</div>
 				{#each view.dates as d, i (d.id)}
 					<DateOptionCard
@@ -110,10 +110,10 @@
 
 			<div class="mt-1.5 flex flex-col gap-2">
 				<TextArea
-					label={da.noteLabel}
+					label={m.noteLabel()}
 					name="note"
 					bind:value={note}
-					placeholder={da.notePlaceholder}
+					placeholder={m.notePlaceholder()}
 					disabled={view.closed}
 				/>
 			</div>
@@ -132,8 +132,8 @@
 								✓
 							</div>
 							<div class="flex min-w-0 flex-1 flex-col gap-0.5">
-								<div class="text-[15px] font-bold text-ink">{da.savedTitle}</div>
-								<div class="text-[13px] leading-snug text-ink-muted">{da.savedSub}</div>
+								<div class="text-[15px] font-bold text-ink">{m.savedTitle()}</div>
+								<div class="text-[13px] leading-snug text-ink-muted">{m.savedSub()}</div>
 							</div>
 							<button
 								type="button"
@@ -142,13 +142,13 @@
 								}}
 								class="shrink-0 cursor-pointer border-none bg-transparent p-2 text-[13px] font-semibold text-primary"
 							>
-								{da.editAnswer}
+								{m.editAnswer()}
 							</button>
 						</div>
 					{:else}
 						<div class="flex flex-col gap-1.5">
 							{#if !allAnswered}
-								<div class="text-center text-xs text-ink-muted">{da.chooseEach}</div>
+								<div class="text-center text-xs text-ink-muted">{m.chooseEach()}</div>
 							{/if}
 							<button
 								type="submit"
@@ -157,7 +157,7 @@
 									? 'cursor-pointer bg-primary text-white'
 									: 'cursor-default bg-border text-ink-muted'}"
 							>
-								{da.sendAnswer}
+								{m.sendAnswer()}
 							</button>
 						</div>
 					{/if}
@@ -166,5 +166,5 @@
 		{/if}
 	</form>
 
-	<Toast open={toastOpen} text={da.savedTitle} />
+	<Toast open={toastOpen} text={m.savedTitle()} />
 {/if}

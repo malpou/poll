@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { Spring } from 'svelte/motion';
-	import { da } from '$lib/da';
+	import { m } from '$lib/paraglide/messages';
 	import type { Preference } from '$lib/types';
 
 	let {
@@ -15,9 +15,9 @@
 	// Position is 0/1/2 (segment index); we drive translateX as a % of container
 	// width so no measuring is needed. da-DK reduced-motion → instant.
 	const options: { pref: Preference; label: string; color: string }[] = [
-		{ pref: 'preferred', label: da.prefPreferred, color: 'var(--color-amber)' },
-		{ pref: 'available', label: da.prefAvailable, color: 'var(--color-good)' },
-		{ pref: 'unavailable', label: da.prefUnavailable, color: 'var(--color-bad)' }
+		{ pref: 'preferred', label: m.prefPreferred(), color: 'var(--color-amber)' },
+		{ pref: 'available', label: m.prefAvailable(), color: 'var(--color-good)' },
+		{ pref: 'unavailable', label: m.prefUnavailable(), color: 'var(--color-bad)' }
 	];
 
 	const reduced =

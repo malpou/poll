@@ -3,7 +3,7 @@
 	import { cubicOut } from 'svelte/easing';
 	import DateRow from '$lib/components/molecules/DateRow.svelte';
 	import Button from '$lib/components/atoms/Button.svelte';
-	import { da } from '$lib/da';
+	import { m } from '$lib/paraglide/messages';
 	import type { DateOption } from '$lib/types';
 
 	let {
@@ -19,9 +19,9 @@
 
 <div>
 	<div class="mb-1 text-[13px] font-bold uppercase tracking-[0.06em] text-ink-muted">
-		{da.datesSection}
+		{m.datesSection()}
 	</div>
-	<p class="mb-3.5 text-[13px] text-ink-muted">{da.datesHint}</p>
+	<p class="mb-3.5 text-[13px] text-ink-muted">{m.datesHint()}</p>
 	<div class="flex flex-col gap-2.5">
 		{#each dates as date, i (date.id)}
 			<div in:fly={{ y: 8, duration: 240, delay: i * 40, easing: cubicOut }}>
@@ -35,5 +35,5 @@
 			</div>
 		{/each}
 	</div>
-	<Button variant="dashed" onclick={onadd}>{da.addDate}</Button>
+	<Button variant="dashed" onclick={onadd}>{m.addDate()}</Button>
 </div>

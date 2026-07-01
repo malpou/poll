@@ -1,11 +1,11 @@
 <script lang="ts">
 	import CreateEventForm from '$lib/components/organisms/CreateEventForm.svelte';
-	import { da } from '$lib/da';
-	import type { ActionData } from './$types';
+	import { m } from '$lib/paraglide/messages';
+	import type { ActionData, PageData } from './$types';
 
-	let { form }: { form: ActionData } = $props();
+	let { form, data }: { form: ActionData; data: PageData } = $props();
 </script>
 
-<svelte:head><title>{da.createTitle} · {da.appName}</title></svelte:head>
+<svelte:head><title>{m.createTitle()} · {m.appName()}</title></svelte:head>
 
-<CreateEventForm {form} />
+<CreateEventForm {form} suggestedLocale={data.suggestedLocale} />

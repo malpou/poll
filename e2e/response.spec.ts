@@ -1,5 +1,5 @@
 import { test, expect, type Page } from '@playwright/test';
-import { da } from '../src/lib/da';
+import { m } from '../src/lib/paraglide/messages';
 import { responsesFor, seedDateOption, seedEvent, seedInvitee, wipeEvent } from './db';
 
 // The response page needs a seeded invitee link, but no UI surfaces invitee
@@ -66,24 +66,24 @@ test.beforeAll(seed);
 test('valid token shows title, greeting, and every date option', async ({ page }) => {
 	await page.goto(`/r/${OPEN_TOKEN}`);
 	await expect(page.getByRole('heading', { name: TITLE })).toBeVisible();
-	await expect(page.getByText(`${da.greeting} Anna`)).toBeVisible();
+	await expect(page.getByText(m.greeting({ name: 'Anna' }))).toBeVisible();
 	await expect(page.getByTestId(`date-card-${D1}`)).toContainText('lørdag');
 	await expect(page.getByTestId(`date-card-${D2}`)).toContainText('søndag');
 });
 
 test('invalid token shows the friendly not-found and no event data', async ({ page }) => {
 	await page.goto('/r/does-not-exist-token');
-	await expect(page.getByText(da.linkNotFound)).toBeVisible();
+	await expect(page.getByText(m.linkNotFound())).toBeVisible();
 	await expect(page.getByRole('heading', { name: TITLE })).toHaveCount(0);
 });
 
 test('marking options saves the chosen preferences', async ({ page }) => {
 	seed(); // isolate from other tests' writes
 	await page.goto(`/r/${OPEN_TOKEN}`);
-	await mark(page, D1, da.prefPreferred);
-	await mark(page, D2, da.prefUnavailable);
-	await page.getByRole('button', { name: da.sendAnswer }).click();
-	await expect(page.getByText(da.savedSub)).toBeVisible();
+	await mark(page, D1, m.prefPreferred());
+	await mark(page, D2, m.prefUnavailable());
+	await page.getByRole('button', { name: m.sendAnswer() }).click();
+	await expect(page.getByText(m.savedSub())).toBeVisible();
 
 	expect(responseRows()).toEqual([
 		{ date_option_id: D1, preference: 'preferred' },
@@ -94,9 +94,9 @@ test('marking options saves the chosen preferences', async ({ page }) => {
 test('leaving a date unmarked writes no row for it', async ({ page }) => {
 	seed();
 	await page.goto(`/r/${OPEN_TOKEN}`);
-	await mark(page, D1, da.prefAvailable); // D2 left unmarked
+	await mark(page, D1, m.prefAvailable()); // D2 left unmarked
 	await submitForm(page);
-	await expect(page.getByText(da.savedSub)).toBeVisible();
+	await expect(page.getByText(m.savedSub())).toBeVisible();
 
 	// Only the marked date persisted; the unmarked one stays "no answer".
 	expect(responseRows()).toEqual([{ date_option_id: D1, preference: 'available' }]);
@@ -105,35 +105,35 @@ test('leaving a date unmarked writes no row for it', async ({ page }) => {
 test('note round-trips across a reload', async ({ page }) => {
 	seed();
 	await page.goto(`/r/${OPEN_TOKEN}`);
-	await page.getByLabel(da.noteLabel).fill('Jeg kan ikke om morgenen');
-	await mark(page, D1, da.prefPreferred);
-	await mark(page, D2, da.prefAvailable);
-	await page.getByRole('button', { name: da.sendAnswer }).click();
-	await expect(page.getByText(da.savedSub)).toBeVisible();
+	await page.getByLabel(m.noteLabel()).fill('Jeg kan ikke om morgenen');
+	await mark(page, D1, m.prefPreferred());
+	await mark(page, D2, m.prefAvailable());
+	await page.getByRole('button', { name: m.sendAnswer() }).click();
+	await expect(page.getByText(m.savedSub())).toBeVisible();
 
 	await page.reload();
-	await expect(page.getByText(da.savedSub)).toBeVisible(); // confirmation shows on revisit
-	await expect(page.getByLabel(da.noteLabel)).toHaveValue('Jeg kan ikke om morgenen');
+	await expect(page.getByText(m.savedSub())).toBeVisible(); // confirmation shows on revisit
+	await expect(page.getByLabel(m.noteLabel())).toHaveValue('Jeg kan ikke om morgenen');
 });
 
 test('editing while open replaces the choice in place (still one row)', async ({ page }) => {
 	seed();
 	await page.goto(`/r/${OPEN_TOKEN}`);
-	await mark(page, D1, da.prefPreferred);
+	await mark(page, D1, m.prefPreferred());
 	await submitForm(page);
-	await expect(page.getByText(da.savedSub)).toBeVisible();
+	await expect(page.getByText(m.savedSub())).toBeVisible();
 
-	await page.getByRole('button', { name: da.editAnswer }).click();
-	await mark(page, D1, da.prefUnavailable);
+	await page.getByRole('button', { name: m.editAnswer() }).click();
+	await mark(page, D1, m.prefUnavailable());
 	await submitForm(page);
-	await expect(page.getByText(da.savedSub)).toBeVisible();
+	await expect(page.getByText(m.savedSub())).toBeVisible();
 
 	expect(responseRows()).toEqual([{ date_option_id: D1, preference: 'unavailable' }]);
 });
 
 test('closed event renders read-only with the closed banner and no submit', async ({ page }) => {
 	await page.goto(`/r/${CLOSED_TOKEN}`);
-	await expect(page.getByText(da.closedBanner)).toBeVisible();
-	await expect(page.getByRole('button', { name: da.sendAnswer })).toHaveCount(0);
-	await expect(page.getByRole('button', { name: da.prefPreferred }).first()).toBeDisabled();
+	await expect(page.getByText(m.closedBanner())).toBeVisible();
+	await expect(page.getByRole('button', { name: m.sendAnswer() })).toHaveCount(0);
+	await expect(page.getByRole('button', { name: m.prefPreferred() }).first()).toBeDisabled();
 });

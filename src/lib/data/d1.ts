@@ -18,6 +18,7 @@ function mapEvent(r: Record<string, unknown>): EventRow {
 		id: r.id as string,
 		title: r.title as string,
 		description: (r.description as string | null) ?? null,
+		locale: r.locale as EventRow['locale'],
 		organizerToken: r.organizer_token as string,
 		status: r.status as 'open' | 'closed',
 		createdAt: r.created_at as string
@@ -66,10 +67,10 @@ export function d1Provider(db: D1Database): DataProvider {
 			const statements: D1PreparedStatement[] = [
 				db
 					.prepare(
-						`INSERT INTO events (id, title, description, organizer_token, status, created_at)
-						 VALUES (?, ?, ?, ?, 'open', ?)`
+						`INSERT INTO events (id, title, description, locale, organizer_token, status, created_at)
+						 VALUES (?, ?, ?, ?, ?, 'open', ?)`
 					)
-					.bind(eventId, draft.title, draft.description || null, organizerToken, now)
+					.bind(eventId, draft.title, draft.description || null, draft.locale, organizerToken, now)
 			];
 
 			draft.dates.forEach((d, i) => {
@@ -289,6 +290,17 @@ export function d1Provider(db: D1Database): DataProvider {
 
 		async setEventStatus(eventId, status) {
 			await db.prepare(`UPDATE events SET status = ? WHERE id = ?`).bind(status, eventId).run();
+		},
+
+		async setEventLocale(eventId, locale) {
+			await db.prepare(`UPDATE events SET locale = ? WHERE id = ?`).bind(locale, eventId).run();
+		},
+
+		async updateEventDetails(eventId, title, description) {
+			await db
+				.prepare(`UPDATE events SET title = ?, description = ? WHERE id = ?`)
+				.bind(title, description, eventId)
+				.run();
 		}
 	};
 }

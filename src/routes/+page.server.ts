@@ -1,12 +1,23 @@
 import { fail, redirect } from '@sveltejs/kit';
 import { getProvider } from '$lib/data/provider';
 import { newToken } from '$lib/data/shared';
-import { da } from '$lib/da';
+import { m } from '$lib/paraglide/messages';
+import { baseLocale, extractLocaleFromHeader, isLocale } from '$lib/paraglide/runtime';
+import { setRequestLocale } from '../hooks.server';
 import { field, validateTimes } from '$lib/forms';
-import type { DateOption, Participant } from '$lib/types';
-import type { Actions } from './$types';
+import type { DateOption, Locale, Participant } from '$lib/types';
+import type { Actions, PageServerLoad } from './$types';
 
 type Row = Partial<Record<string, string>>;
+
+// The create page is the organizer's own, pre-submit: render it in the browser's
+// preferred locale and pre-select that in the language picker. Falls back to
+// baseLocale (da) when Accept-Language matches none of da/en/fr.
+export const load: PageServerLoad = ({ request }) => {
+	const suggestedLocale: Locale = extractLocaleFromHeader(request) ?? baseLocale;
+	setRequestLocale(suggestedLocale);
+	return { suggestedLocale };
+};
 
 // Rebuild the dates/participants arrays from indexed named inputs
 // (`dates.0.value`, `participants.1.token`, ...). Only string fields are read.
@@ -27,6 +38,8 @@ export const actions = {
 		const form = await request.formData();
 		const title = field(form, 'title');
 		const description = field(form, 'description');
+		const localeField = field(form, 'locale');
+		const locale: Locale = isLocale(localeField) ? localeField : baseLocale;
 
 		// Drop rows the user added but never filled with a date.
 		const dates: DateOption[] = parseIndexed(form, 'dates')
@@ -47,11 +60,11 @@ export const actions = {
 			}))
 			.filter((p) => p.name !== '');
 
-		const draft = { title, description, dates, participants };
+		const draft = { title, description, locale, dates, participants };
 
 		let error: string | null = null;
-		if (!title) error = da.errorNoTitle;
-		else if (dates.length === 0) error = da.errorNoDates;
+		if (!title) error = m.errorNoTitle();
+		else if (dates.length === 0) error = m.errorNoDates();
 		else {
 			for (const d of dates) {
 				error = validateTimes(d.startTime, d.endTime);

@@ -1,6 +1,7 @@
 import { fail } from '@sveltejs/kit';
 import { getProvider } from '$lib/data/provider';
 import { formatDateOption } from '$lib/date';
+import { setRequestLocale } from '../../../hooks.server';
 import type { Preference } from '$lib/types';
 import type { ResponseInput } from '$lib/data/provider';
 import type { Actions, PageServerLoad } from './$types';
@@ -11,6 +12,9 @@ const isPreference = (v: string): v is Preference => PREFERENCES.includes(v);
 export const load: PageServerLoad = async ({ params, platform }) => {
 	const ctx = await getProvider(platform).getInviteeContext(params.token);
 	if (!ctx) return { invalid: true as const };
+
+	// Response page renders in the poll's stored locale for every consumer.
+	setRequestLocale(ctx.event.locale);
 
 	const answers: Record<string, Preference> = {};
 	for (const r of ctx.responses) answers[r.dateOptionId] = r.preference;
@@ -23,7 +27,7 @@ export const load: PageServerLoad = async ({ params, platform }) => {
 		description: ctx.event.description,
 		dates: ctx.dateOptions.map((d) => ({
 			id: d.id,
-			...formatDateOption(d.startsAt, d.endsAt)
+			...formatDateOption(d.startsAt, d.endsAt, ctx.event.locale)
 		})),
 		answers,
 		note: ctx.invitee.note ?? ''

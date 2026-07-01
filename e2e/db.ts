@@ -1,5 +1,5 @@
 import { execFileSync } from 'node:child_process';
-import type { Preference } from '../src/lib/types';
+import type { Locale, Preference } from '../src/lib/types';
 
 // The single home for e2e DB access. Specs seed/read the local D1 through these
 // typed builders and never write SQL themselves - mirroring how src/lib/data/d1.ts
@@ -48,6 +48,7 @@ export interface EventSeed {
 	description?: string | null;
 	organizerToken: string;
 	status: 'open' | 'closed';
+	locale?: Locale; // omit → column default 'da'
 	createdAt?: string;
 }
 export interface DateOptionSeed {
@@ -75,8 +76,8 @@ export interface ResponseSeed {
 
 export function seedEvent(e: EventSeed) {
 	d1(
-		`INSERT INTO events (id, title, description, organizer_token, status, created_at) VALUES
-		   (${lit(e.id)}, ${lit(e.title)}, ${lit(e.description)}, ${lit(e.organizerToken)}, ${lit(e.status)}, ${lit(e.createdAt ?? NOW)});`
+		`INSERT INTO events (id, title, description, organizer_token, status, locale, created_at) VALUES
+		   (${lit(e.id)}, ${lit(e.title)}, ${lit(e.description)}, ${lit(e.organizerToken)}, ${lit(e.status)}, ${lit(e.locale ?? 'da')}, ${lit(e.createdAt ?? NOW)});`
 	);
 }
 
@@ -124,6 +125,11 @@ export function optionIds(eventId: string): string[] {
 	return d1(
 		`SELECT id FROM date_options WHERE event_id = ${lit(eventId)} ORDER BY sort_order`
 	).results.map((r) => r.id as string);
+}
+
+export function eventDetails(eventId: string): { title: string; description: string | null } {
+	const r = d1(`SELECT title, description FROM events WHERE id = ${lit(eventId)}`).results[0];
+	return { title: r.title as string, description: (r.description as string | null) ?? null };
 }
 
 export function inviteeLabels(eventId: string): string[] {

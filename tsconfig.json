@@ -25,7 +25,11 @@
 		"src/**/*.svelte",
 		"tests/**/*.ts",
 		"e2e/**/*.ts"
-	]
+	],
+	// Paraglide's generated server.js trips checkJs against Cloudflare's Request
+	// type; we don't import it (locale is resolved in hooks.server.ts). The typed
+	// m.*() functions and runtime are still checked where our code imports them.
+	"exclude": ["src/lib/paraglide/server.js"]
 	// Path aliases are handled by https://svelte.dev/docs/kit/configuration#alias
 	// except $lib which is handled by https://svelte.dev/docs/kit/configuration#files
 	//
