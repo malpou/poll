@@ -21,11 +21,11 @@
 		<IconButton label={da.remove} onclick={onremove}>✕</IconButton>
 	</div>
 	<div class="mt-2.5 flex items-center gap-3.5">
-		<div class="flex flex-1 items-center gap-2">
+		<div class="flex min-w-0 flex-1 items-center gap-2">
 			<span class="shrink-0 text-xs font-semibold text-ink-muted">{da.from}</span>
 			<TextField type="time" compact name="dates.{index}.startTime" bind:value={date.startTime} />
 		</div>
-		<div class="flex flex-1 items-center gap-2">
+		<div class="flex min-w-0 flex-1 items-center gap-2">
 			<span class="shrink-0 text-xs font-semibold text-ink-muted">{da.to}</span>
 			<TextField type="time" compact name="dates.{index}.endTime" bind:value={date.endTime} />
 		</div>

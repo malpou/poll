@@ -16,7 +16,7 @@
 	} = $props();
 </script>
 
-<label class="flex flex-1 flex-col gap-2">
+<label class="flex min-w-0 flex-1 flex-col gap-2">
 	{#if label}
 		<span class="text-sm font-semibold text-ink">{label}</span>
 	{/if}
