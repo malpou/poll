@@ -2,15 +2,18 @@
 
 ## Purpose
 
-Give the organizer a unique response link for each recipient, where a recipient
-may be one person or a whole group.
+Give the organizer the right link(s) to distribute: in assigned mode a unique
+response link per recipient (one person or a whole group); in open mode a single
+shared link anyone can respond through.
 
 ## Requirements
 
-### Requirement: Add invitees
+### Requirement: Add invitees (assigned mode)
 
-The system SHALL let the organizer add invitees to an event, each with a display
-label, and SHALL generate an unguessable token per invitee.
+In assigned mode the system SHALL let the organizer add invitees to an event, each
+with a display label, and SHALL generate an unguessable token per invitee. Open
+mode has no hand-added roster - submitters name themselves through the shared link
+(see the availability-response spec).
 
 #### Scenario: Add an individual invitee
 
@@ -28,19 +31,28 @@ label, and SHALL generate an unguessable token per invitee.
 
 ### Requirement: Distribute links
 
-The system SHALL let the organizer view and copy each invitee's link for sending
-by their own means (email, text, etc.).
+The system SHALL let the organizer view and copy the link(s) to send by their own
+means (email, text, etc.): each invitee's personal link in assigned mode, or the
+one shared link in open mode.
 
-#### Scenario: Copy a link
+#### Scenario: Copy a personal link (assigned mode)
 
-- GIVEN an invitee exists
+- GIVEN an assigned-mode invitee exists
 - WHEN the organizer copies the invitee's link
-- THEN the full absolute URL is placed on the clipboard
+- THEN the full absolute `/r/{token}` URL is placed on the clipboard
 
-### Requirement: Rename and remove invitees
+#### Scenario: Copy the shared link (open mode)
 
-The system SHALL let the organizer rename or remove an invitee while the event is
-open.
+- GIVEN an open-mode event
+- WHEN the organizer copies the shared link (shown prominently at the top of the
+  dashboard, distinct from the private organizer link)
+- THEN the full absolute `/s/{share_token}` URL is placed on the clipboard
+
+### Requirement: Rename and remove invitees (assigned mode)
+
+In assigned mode the system SHALL let the organizer rename or remove an invitee
+while the event is open. In open mode the roster is read-only (submitters name
+themselves), so there is no rename/remove.
 
 #### Scenario: Remove an invitee
 

@@ -1,8 +1,13 @@
 # Prompt for Claude Design - "Rundvisning i DR Byen" date poll
 
-> Paste everything below into Claude Design. Instructions are in English; every
-> user-facing string is Danish and listed in the copy table - use those exact
-> strings, don't translate the labels yourself.
+> Paste everything below into Claude Design. Instructions are in English. The copy
+> table lists the Danish strings; the shipped app is multilingual (Danish, English,
+> French) with the same strings translated in `messages/{da,en,fr}.json`. Use the
+> listed strings for the Danish rendering, don't translate the labels yourself.
+>
+> Note: this is the original design brief. The app has since gained a second poll
+> mode (open / shared link) and per-poll language - see specs/PROJECT.md for the
+> current model; the visual direction below still holds.
 
 ---
 
@@ -10,27 +15,33 @@
 
 A small, warm, mobile-first web UI for collecting preferred dates for a family
 **rundvisning (guided tour) at DR Byen** in Copenhagen. One organizer seeds a few
-candidate dates; each family member or group opens a **personal link** (received
-by email) and marks how each date suits them. The organizer sees the aggregate
-and picks a date. No logins - the link is the credential.
+candidate dates; people mark how each date suits them, either via a **personal
+link** (assigned mode) or a single **shared link** where they name themselves
+(open mode). The organizer sees the aggregate and picks a date. No logins - the
+link is the credential.
 
-Three screens, in priority order:
+Screens, in priority order:
 
-1. **Response page** (`/r/{token}`) - the star. This is what gets mailed out and
-   opened on a phone. Make it feel personal and effortless.
+1. **Response page** (`/r/{token}`, and `/s/{share_token}` for open mode) - the
+   star. Opened on a phone; make it feel personal and effortless. In open mode it
+   also asks for the visitor's name.
 2. **Results / dashboard** (`/e/{token}`) - organizer sees counts per date and who
-   hasn't answered yet.
-3. **Create event** (`/`) - organizer sets title, description, dates, and adds
-   participants (each generating a copyable link).
+   has answered.
+3. **Create event** (`/`) - organizer sets title, description, language, poll mode,
+   and dates. In assigned mode they add participants (each generating a copyable
+   link); in open mode they get one shared link to distribute.
 
 Mobile-first; scale gracefully to desktop for the organizer views.
 
 ## Data the UI reflects
 
-- Event: title, description, list of date options, status (open / closed).
+- Event: title, description, language, poll mode, list of date options, status
+  (open / closed).
 - Each date option has one preference per participant: **Foretrukket**,
   **Kan godt**, or **Kan ikke**.
-- A participant is one person OR a group; one link = one response set.
+- In assigned mode a participant is one person or group the organizer added (one
+  link = one response set); in open mode a participant self-identifies by name
+  through the shared link.
 - Participant may leave an optional note.
 
 ## Visual direction
@@ -98,19 +109,28 @@ canvas library.
 
 **Results / dashboard (organizer):**
 
-- Per date: a row with the date, three animated count bars (Foretrukket / Kan godt
-  / Kan ikke), and totals. Best date highlighted at top with a "Bedste dato" badge.
-- A participant list showing who has answered and who is "Mangler at svare".
-- Controls: "Luk afstemning" / "Åbn afstemning igen".
+- One "who answered" summary under the Results heading (assigned: "X af Y har
+  svaret"; open: "X har svaret").
+- Per date: a row with the date and three animated count bars (Foretrukket / Kan
+  godt / Kan ikke). Best date highlighted at top with a "Bedste dato" badge.
+- A participant list: assigned mode shows who has answered and who is "Mangler at
+  svare"; open mode lists the submitters (read-only) plus the shared link at the top.
+- Controls: language + mode (shown as text, edited in the details Edit→Save block);
+  "Luk afstemning" / "Åbn afstemning igen".
 
 **Create event (organizer):**
 
-- Fields: Titel, Beskrivelse, then a repeatable "Mulige datoer" list with "Tilføj
-  dato".
-- A "Deltagere" section: add each participant by name; each row shows a "Kopiér
-  link" button (copying triggers a small "Linket er kopieret" toast).
+- Fields: Titel, Beskrivelse, Sprog (language), poll mode, then a repeatable
+  "Mulige datoer" list with "Tilføj dato".
+- Assigned mode: a "Deltagere" section to add each participant by name; each row
+  shows a "Kopiér link" button (copying triggers a "Linket er kopieret" toast).
+  Open mode hides this - one shared link is distributed instead.
 
 ## Danish copy - use these exact strings
+
+These are the Danish (`messages/da.json`) strings; English and French equivalents
+live in `messages/en.json` / `messages/fr.json`. Open mode adds a few more (shared
+link, name prompt, edit link) - see the message files for the full set.
 
 | Context                          | Danish string                                                     |
 | -------------------------------- | ----------------------------------------------------------------- |

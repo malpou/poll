@@ -10,23 +10,33 @@ option.
 ### Requirement: Per-option summary
 
 The system SHALL show, for each date option, the count of invitees marking it
-Preferred, Available, and Unavailable, plus how many have not answered that date.
+Preferred, Available, and Unavailable, and SHALL show one overall "who answered"
+summary under the results heading.
 
 #### Scenario: View the summary
 
 - GIVEN an event with several responses
 - WHEN the organizer opens the results view
 - THEN each date option shows its Preferred / Available / Unavailable counts
+- AND a single summary under the heading shows how many have answered:
+  "X of Y answered" in assigned mode, and "X answered" in open mode (no fixed
+  roster, so no denominator)
 
 ### Requirement: Response status
 
-The system SHALL show which invitees have responded and which have not.
+The system SHALL show who has answered.
 
-#### Scenario: Outstanding invitees
+#### Scenario: Outstanding invitees (assigned mode)
 
-- GIVEN some invitees have not responded
+- GIVEN some invitees on an assigned-mode event have not responded
 - WHEN the organizer opens the results view
 - THEN those invitees are listed as pending
+
+#### Scenario: Open-mode respondents
+
+- GIVEN an open-mode event with submissions
+- WHEN the organizer opens the results view
+- THEN everyone who submitted is listed (read-only), growing as new names arrive
 
 ### Requirement: Best-option highlight
 

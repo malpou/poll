@@ -231,7 +231,26 @@
 			</div>
 		</div>
 
-		<!-- Save-your-link warning: the /e URL is the only way back to the results. -->
+		{#if view.pollMode === 'open'}
+			<!-- The link to hand out. Kept at the top and visually primary so it's clearly
+			     the one to share - the organizer /e link below is private. -->
+			<div class="mb-4 rounded-xl border border-primary bg-primary-tint px-4 py-3.5">
+				<div class="text-sm font-bold text-primary">{m.shareLinkTitle()}</div>
+				<p class="mt-1.5 text-[13px] leading-relaxed text-ink">{m.shareLinkHint()}</p>
+				<div class="mt-2.5 flex flex-wrap items-center gap-2.5">
+					<LinkChip text={view.shareUrl.replace(/^https?:\/\//, '')} />
+					<Button
+						variant="ghost"
+						onclick={() => {
+							copy(view.shareUrl);
+						}}>{m.copyLink()}</Button
+					>
+				</div>
+			</div>
+		{/if}
+
+		<!-- Save-your-link warning: the /e URL is the only way back to the results and
+		     is private - never the link to share (open mode has its own above). -->
 		<div class="mb-6 rounded-xl border border-amber bg-amber-tint px-4 py-3.5">
 			<div class="flex items-center gap-2 text-sm font-bold text-amber">
 				<span class="text-base leading-none">⚠</span>
@@ -433,24 +452,10 @@
 			</div>
 
 			{#if view.pollMode === 'open'}
-				<!-- Open mode: one shared link. No hand-added roster - the list below is
-				     read-only (names come from submissions). -->
-				<div class="rounded-xl border border-border bg-card px-4 py-3.5">
-					<div class="text-sm font-bold text-ink">{m.shareLinkTitle()}</div>
-					<p class="mt-1.5 text-[13px] leading-relaxed text-ink-muted">{m.shareLinkHint()}</p>
-					<div class="mt-2.5 flex flex-wrap items-center gap-2.5">
-						<LinkChip text={view.shareUrl.replace(/^https?:\/\//, '')} />
-						<Button
-							variant="ghost"
-							onclick={() => {
-								copy(view.shareUrl);
-							}}>{m.copyLink()}</Button
-						>
-					</div>
-				</div>
-
+				<!-- Open mode: the shared link lives at the top. Here we just list the
+				     respondents read-only (names come from submissions). -->
 				{#if view.invitees.length > 0}
-					<div class="mt-2.5 flex flex-col gap-2.5">
+					<div class="flex flex-col gap-2.5">
 						{#each view.invitees as inv, i (inv.id)}
 							<div
 								in:fly={{ y: 8, duration: 240, delay: i * 40, easing: cubicOut }}
@@ -477,6 +482,8 @@
 							</div>
 						{/each}
 					</div>
+				{:else}
+					<p class="text-[13px] leading-relaxed text-ink-muted">{m.shareLinkHint()}</p>
 				{/if}
 			{:else}
 				<div class="flex flex-col gap-2.5">

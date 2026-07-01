@@ -2,8 +2,9 @@
 
 ## Purpose
 
-Let a recipient open their personal link and record a preference for each date
-option.
+Let a recipient record a preference for each date option - either through their
+personal invitee link (assigned mode) or the shared link (open mode, where they
+name themselves).
 
 ## Requirements
 
@@ -23,6 +24,22 @@ invitee link, without requiring a login.
 
 - GIVEN no invitee has token X
 - WHEN a request loads `/r/X`
+- THEN the system shows a friendly "link not found" message and no event data
+
+#### Scenario: Open the shared link (open mode)
+
+- GIVEN an open-mode event with share token S
+- WHEN a new visitor loads `/s/S`
+- THEN the system shows the event title, a required name field, and every date option
+- WHEN they enter a name and submit
+- THEN an invitee record is created under that name and their choices are saved
+- AND they are shown a personal `/r/{token}` edit link to save
+- AND a cookie remembers this browser, so a revisit to `/s/S` edits their answer in place
+
+#### Scenario: Open an invalid shared link
+
+- GIVEN no event has share token Y (or the event is not in open mode)
+- WHEN a request loads `/s/Y`
 - THEN the system shows a friendly "link not found" message and no event data
 
 ### Requirement: Record preferences

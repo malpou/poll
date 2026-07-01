@@ -2,32 +2,42 @@
 
 [![CI](https://github.com/malpou/family-date-poll/actions/workflows/ci.yml/badge.svg)](https://github.com/malpou/family-date-poll/actions/workflows/ci.yml)
 
-A tiny, no-login date poll. One organizer seeds a few candidate dates, sends
-each person a personal link, and sees at a glance which date suits everyone -
-originally built to schedule a _rundvisning i DR Byen_, but it works for any
-"når passer det jer?" question.
+A tiny, no-login date poll. One organizer seeds a few candidate dates and sees
+at a glance which date suits everyone - originally built to schedule a
+_rundvisning i DR Byen_, but it works for any "when suits you?" question.
 
-Live at **[poll.malpou.io](https://poll.malpou.io)**. All user-facing text is
-Danish.
+Live at **[poll.malpou.io](https://poll.malpou.io)**. Each poll renders in its
+chosen language - **Danish, English, or French**.
 
 ## How it works
 
 No accounts. Access is by **capability URL** - whoever holds a token can act,
 and tokens are unguessable and never listed.
 
-| Route                  | Who           | What                                                                                        |
-| ---------------------- | ------------- | ------------------------------------------------------------------------------------------- |
-| `/`                    | anyone        | Create a poll: title, description, candidate dates (optional start/end times), participants |
-| `/e/{organizer_token}` | the organizer | Dashboard: manage dates & invitees, copy links, see results, close/reopen                   |
-| `/r/{invitee_token}`   | an invitee    | Mark each date **Foretrukket / Kan godt / Kan ikke**, add a note, submit                    |
+A poll runs in one of two modes, chosen at creation and switchable later:
 
-The organizer link is the secret - treat it like a password. Each invitee gets
-their own link to copy and send by their own means (email, text, …).
+- **Named people** - the organizer adds each participant, and everyone gets
+  their own personal `/r/{invitee_token}` link to copy and send.
+- **Anyone with the link** - one shared `/s/{share_token}` link. Whoever opens
+  it enters their own name and answer; a browser cookie lets them come back and
+  edit, plus they get a personal edit link to save.
+
+| Route                  | Who                | What                                                                                          |
+| ---------------------- | ------------------ | --------------------------------------------------------------------------------------------- |
+| `/`                    | anyone             | Create a poll: title, description, language, mode, candidate dates (optional start/end times) |
+| `/e/{organizer_token}` | the organizer      | Dashboard: manage dates & people, copy links, see results, switch mode/language, close/reopen |
+| `/r/{invitee_token}`   | a named invitee    | Mark each date **preferred / available / unavailable**, add a note, submit                    |
+| `/s/{share_token}`     | anyone (open mode) | Enter a name, mark each date, add a note, submit                                              |
+
+The organizer link is private - treat it like a password, never share it. In
+open mode the **shared link** (`/s/…`) is the one to hand out; the dashboard
+shows it prominently at the top.
 
 ## Stack
 
 - **SvelteKit 2** + **Svelte 5** (runes) + **Tailwind 4**
 - **Cloudflare Workers/Pages** hosting, **D1** (SQLite) for storage
+- **Paraglide** (inlang) for DA/EN/FR messages, compiled from `messages/{da,en,fr}.json`
 - **bun** for install, scripts, and lockfile
 - **Playwright** for end-to-end smoke tests
 
@@ -78,32 +88,3 @@ bun run deploy     # publish to Cloudflare
 
 Requires a Cloudflare account with a D1 database bound as `DB` and the
 `poll.malpou.io` route configured. See `wrangler.toml`.
-
-## Project layout
-
-```
-specs/                       the source of truth - see below
-src/lib/components/          atoms / molecules / organisms
-src/lib/data/                DataProvider: provider.ts, mock.ts, d1.ts
-src/lib/da.ts                all Danish strings, in one place
-src/routes/                  /, /e/[token], /r/[token]
-migrations/                  D1 schema, versioned
-e2e/                         Playwright smoke tests
-.claude/skills/plan-issue/   plan an implementation from a GitHub issue
-```
-
-## Specs & roadmap
-
-The behavior is specified up front in [`specs/`](specs/) - `PROJECT.md` (data
-model, routes, security, conventions), `DESIGN.md` (visual + Danish copy), and
-one folder per capability (`event-management`, `invitee-links`,
-`availability-response`, `results`). Work is tracked as
-[iteration issues](https://github.com/malpou/family-date-poll/issues), each
-referencing the spec it implements and carrying its own e2e acceptance checks.
-
-To start on an issue, the `plan-issue` skill reads the issue + its specs and
-drafts a spec-grounded implementation plan (in plan mode):
-
-```
-/plan-issue 3
-```

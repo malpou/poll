@@ -21,20 +21,30 @@ for this write volume.
 ## Security model
 
 - No logins. Access is via **capability URLs**: whoever holds a token can act.
-- Two token kinds:
-  - `organizer_token` - full management of one event
-  - `invitee_token` - respond as one invitee on one event
+- Three token kinds:
+  - `organizer_token` - full management of one event (private, never shared)
+  - `invitee_token` - respond as one invitee on one event (`/r/…`)
+  - `share_token` - open-mode shared link anyone can respond through (`/s/…`)
 - Tokens are unguessable and never listed publicly. Treat the organizer link as
   a secret. Decision: capability URL only for v1 - no passphrase. Mitigate leak
   risk by keeping tokens out of logs, referrers, and analytics.
 
 ## Data model (D1)
 
-- `events(id, title, description, organizer_token, status, created_at)`
+- `events(id, title, description, locale, poll_mode, organizer_token, share_token, status, created_at)`
   - status ∈ {open, closed}
+  - locale ∈ {da, en, fr} - the language the whole poll renders in
+  - poll_mode ∈ {assigned, open}, default assigned. `assigned`: organizer adds
+    named invitees, each with a personal `/r` link. `open`: one shared `/s` link
+    anyone can submit through, naming themselves
+  - share_token - unique; the open-mode shared link. Minted for every event so a
+    poll can switch to open later without a migration
 - `date_options(id, event_id, starts_at, ends_at, label, sort_order)`
   - `starts_at` and `ends_at` are both optional (nullable); `ends_at` requires `starts_at`
 - `invitees(id, event_id, label, token, note, created_at)`
+  - in open mode, an invitee row is created on submit (label = the name the
+    submitter typed), so open submitters are ordinary invitees - results and
+    aggregation are identical to assigned mode
 - `responses(invitee_id, date_option_id, preference, updated_at)`
   - preference ∈ {preferred, available, unavailable}
   - primary key (invitee_id, date_option_id)
@@ -42,15 +52,22 @@ for this write volume.
 
 ## Routes
 
-- `/` create a new event
-- `/e/{organizer_token}` organizer dashboard: options, invitees, results
-- `/r/{invitee_token}` recipient response page
+- `/` create a new event (title, description, language, mode, dates; participants
+  in assigned mode)
+- `/e/{organizer_token}` organizer dashboard: options, people/results, mode +
+  language, shared link (open mode)
+- `/r/{invitee_token}` recipient response page (assigned invitee, or an open
+  submitter's personal edit link)
+- `/s/{share_token}` open-mode shared page: name yourself, answer, submit. A
+  cookie remembers the browser so a revisit edits its own answer via `/r`
 
 ## Conventions
 
 - Mutations use SvelteKit form actions; token is validated in every load/action.
-- Language: all user-facing text is Danish. Weekdays/months render in Danish,
-  lowercase (lørdag, marts). Keep copy in one `da` strings module for consistency.
+- Language: polls render in Danish, English, or French, chosen per poll (the
+  `locale` column) at creation and changeable on the dashboard. User-facing
+  strings live in `messages/{da,en,fr}.json`, compiled to typed `m.*()` via
+  Paraglide. Weekdays/months render in the poll's language, lowercase.
 - Timezone: store `starts_at`/`ends_at` as UTC ISO; render in Europe/Copenhagen.
 - Motion: user-facing UI follows the animations.dev principles (ease-out enter/exit,
   ease-in-out for on-screen movement, spring for the state selector, staggered list

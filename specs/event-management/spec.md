@@ -9,15 +9,18 @@ manage the event through a secret organizer link.
 
 ### Requirement: Event creation
 
-The system SHALL allow anyone to create an event with a title and one or more
-candidate date options, and SHALL return a secret organizer link for it.
+The system SHALL allow anyone to create an event with a title, a language, a poll
+mode, and one or more candidate date options, and SHALL return a secret organizer
+link for it.
 
 #### Scenario: Create an event with options
 
 - GIVEN a visitor on the create page
-- WHEN they submit a title and at least one date option
+- WHEN they submit a title, a language, a poll mode (assigned or open), and at
+  least one date option
 - THEN the system creates the event with status "open"
-- AND generates an unguessable organizer token
+- AND generates an unguessable organizer token and a share token
+- AND in assigned mode records the participants they added
 - AND redirects them to the organizer dashboard for that token
 
 #### Scenario: Reject an event with no options
@@ -97,3 +100,23 @@ reopen it.
 - GIVEN an open event
 - WHEN the organizer closes it
 - THEN new and existing invitees can view but not change their responses
+
+### Requirement: Switch mode and language
+
+The system SHALL let the organizer change an event's poll mode and language after
+creation, editing them alongside the title and description. Switching mode SHALL
+preserve all existing invitees and responses; it only changes how new people
+submit.
+
+#### Scenario: Switch assigned to open
+
+- GIVEN an assigned-mode event with invitees and responses
+- WHEN the organizer switches it to open mode
+- THEN the shared `/s` link becomes the way to submit
+- AND all existing invitees and their responses remain and keep counting
+
+#### Scenario: Change language
+
+- GIVEN an event in one language
+- WHEN the organizer picks another language
+- THEN the dashboard and every response page render in the new language
