@@ -38,7 +38,7 @@
 	const seed = untrack(() => (data.invalid ? null : data));
 	let answers = $state<Record<string, Preference | undefined>>({ ...(seed?.answers ?? {}) });
 	let note = $state(seed?.note ?? '');
-	let submitted = $state(false);
+	let submitted = $state(Object.keys(seed?.answers ?? {}).length > 0);
 	let toastOpen = $state(false);
 	let toastTimer: ReturnType<typeof setTimeout> | undefined;
 

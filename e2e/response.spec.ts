@@ -122,6 +122,7 @@ test('note round-trips across a reload', async ({ page }) => {
 	await expect(page.getByText(da.savedSub)).toBeVisible();
 
 	await page.reload();
+	await expect(page.getByText(da.savedSub)).toBeVisible(); // confirmation shows on revisit
 	await expect(page.getByLabel(da.noteLabel)).toHaveValue('Jeg kan ikke om morgenen');
 });
 
