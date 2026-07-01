@@ -7,6 +7,7 @@
 	import LinkChip from '$lib/components/atoms/LinkChip.svelte';
 	import Button from '$lib/components/atoms/Button.svelte';
 	import Toast from '$lib/components/atoms/Toast.svelte';
+	import { Check, Copy, Send } from '@lucide/svelte';
 	import { m } from '$lib/paraglide/messages';
 	import type { Preference } from '$lib/types';
 
@@ -173,9 +174,9 @@
 						<div class="flex flex-col gap-3">
 							<div class="flex items-center gap-3">
 								<div
-									class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-good-tint text-[17px] font-bold text-good"
+									class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-good-tint text-good"
 								>
-									✓
+									<Check size={18} />
 								</div>
 								<div class="flex min-w-0 flex-1 flex-col gap-0.5">
 									<div class="text-[15px] font-bold text-ink">{m.savedTitle()}</div>
@@ -199,9 +200,11 @@
 										<LinkChip text={editUrl.replace(/^https?:\/\//, '')} />
 										<Button
 											variant="ghost"
+											iconOnly
+											label={m.copyLink()}
 											onclick={() => {
 												if (editUrl) copy(editUrl);
-											}}>{m.copyLink()}</Button
+											}}><Copy size={16} /></Button
 										>
 									</div>
 								</div>
@@ -215,10 +218,11 @@
 							<button
 								type="submit"
 								disabled={!allAnswered}
-								class="h-[52px] w-full rounded-[14px] text-base font-bold transition-colors duration-150 {allAnswered
+								class="flex h-[52px] w-full items-center justify-center gap-2 rounded-[14px] text-base font-bold transition-colors duration-150 {allAnswered
 									? 'cursor-pointer bg-primary text-white'
 									: 'cursor-default bg-border text-ink-muted'}"
 							>
+								<Send size={18} />
 								{m.sendAnswer()}
 							</button>
 						</div>

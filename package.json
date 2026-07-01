@@ -24,6 +24,7 @@
 		"@cloudflare/workers-types": "^4.20260701.1",
 		"@eslint/js": "^10.0.1",
 		"@inlang/paraglide-js": "^2.20.2",
+		"@lucide/svelte": "^1.23.0",
 		"@playwright/test": "^1.61.1",
 		"@sveltejs/adapter-cloudflare": "^7.2.9",
 		"@sveltejs/kit": "^2.63.0",

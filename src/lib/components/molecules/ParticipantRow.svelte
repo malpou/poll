@@ -3,6 +3,7 @@
 	import IconButton from '$lib/components/atoms/IconButton.svelte';
 	import LinkChip from '$lib/components/atoms/LinkChip.svelte';
 	import Button from '$lib/components/atoms/Button.svelte';
+	import { X, Copy } from '@lucide/svelte';
 	import type { Participant } from '$lib/types';
 	import { m } from '$lib/paraglide/messages';
 	import { helpers } from '$lib/data/shared';
@@ -31,15 +32,17 @@
 			bind:value={participant.name}
 		/>
 		<input type="hidden" name="participants.{index}.token" value={participant.token} />
-		<IconButton label={m.remove()} onclick={onremove}>✕</IconButton>
+		<IconButton label={m.remove()} onclick={onremove}><X size={16} /></IconButton>
 	</div>
 	<div class="mt-2.5 flex flex-wrap items-center gap-2.5">
 		<LinkChip text={url.replace(/^https?:\/\//, '')} />
 		<Button
 			variant="ghost"
+			iconOnly
+			label={m.copyLink()}
 			onclick={() => {
 				oncopy(url);
-			}}>{m.copyLink()}</Button
+			}}><Copy size={16} /></Button
 		>
 	</div>
 </div>

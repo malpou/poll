@@ -9,6 +9,19 @@
 	import IconButton from '$lib/components/atoms/IconButton.svelte';
 	import LinkChip from '$lib/components/atoms/LinkChip.svelte';
 	import Toast from '$lib/components/atoms/Toast.svelte';
+	import {
+		X,
+		TriangleAlert,
+		ChevronUp,
+		ChevronDown,
+		MessageSquare,
+		Copy,
+		Pencil,
+		Check,
+		Plus,
+		Lock,
+		LockOpen
+	} from '@lucide/svelte';
 	import { m } from '$lib/paraglide/messages';
 	import type { Locale, PollMode } from '$lib/types';
 
@@ -183,12 +196,14 @@
 						</select>
 					</label>
 					<div class="flex items-center gap-2.5">
-						<Button variant="ghost" type="submit">{m.save()}</Button>
+						<Button variant="ghost" type="submit" iconOnly label={m.save()}
+							><Check size={16} /></Button
+						>
 						<IconButton
 							label={m.remove()}
 							onclick={() => {
 								editingDetails = false;
-							}}>✕</IconButton
+							}}><X size={16} /></IconButton
 						>
 					</div>
 				</form>
@@ -215,7 +230,7 @@
 							variant="ghost"
 							onclick={() => {
 								editingDetails = true;
-							}}>{m.edit()}</Button
+							}}><Pencil size={14} />{m.edit()}</Button
 						>
 					</div>
 				{/if}
@@ -225,7 +240,9 @@
 			<div class="mt-5 flex flex-wrap items-center gap-2.5">
 				<form method="POST" action={view.closed ? '?/reopen' : '?/close'} use:enhance={refresh}>
 					<Button variant="ghost" type="submit">
-						{view.closed ? m.reopenPoll() : m.closePoll()}
+						{#if view.closed}<LockOpen size={14} />{m.reopenPoll()}{:else}<Lock
+								size={14}
+							/>{m.closePoll()}{/if}
 					</Button>
 				</form>
 			</div>
@@ -241,9 +258,11 @@
 					<LinkChip text={view.shareUrl.replace(/^https?:\/\//, '')} />
 					<Button
 						variant="ghost"
+						iconOnly
+						label={m.copyLink()}
 						onclick={() => {
 							copy(view.shareUrl);
-						}}>{m.copyLink()}</Button
+						}}><Copy size={16} /></Button
 					>
 				</div>
 			</div>
@@ -253,7 +272,7 @@
 		     is private - never the link to share (open mode has its own above). -->
 		<div class="mb-6 rounded-xl border border-amber bg-amber-tint px-4 py-3.5">
 			<div class="flex items-center gap-2 text-sm font-bold text-amber">
-				<span class="text-base leading-none">⚠</span>
+				<TriangleAlert size={16} class="shrink-0" />
 				{m.organizerLinkTitle()}
 			</div>
 			<p class="mt-1.5 text-[13px] leading-relaxed text-ink">{m.organizerLinkWarning()}</p>
@@ -261,9 +280,11 @@
 				<LinkChip text={view.organizerUrl.replace(/^https?:\/\//, '')} />
 				<Button
 					variant="ghost"
+					iconOnly
+					label={m.copyLink()}
 					onclick={() => {
 						copy(view.organizerUrl);
-					}}>{m.copyLink()}</Button
+					}}><Copy size={16} /></Button
 				>
 			</div>
 		</div>
@@ -314,7 +335,9 @@
 											label={expandedResults[r.id] ? m.hideWho() : m.showWho()}
 											onclick={() => (expandedResults[r.id] = !expandedResults[r.id])}
 										>
-											{expandedResults[r.id] ? '▲' : '▾'}
+											{#if expandedResults[r.id]}<ChevronUp size={16} />{:else}<ChevronDown
+													size={16}
+												/>{/if}
 										</IconButton>
 									{/if}
 								</div>
@@ -368,12 +391,14 @@
 								<input type="hidden" name="optionId" value={opt.id} />
 								<div class="flex items-center gap-2.5">
 									<TextField type="date" name="value" value={opt.value} />
-									<Button variant="ghost" type="submit">{m.save()}</Button>
+									<Button variant="ghost" type="submit" iconOnly label={m.save()}
+										><Check size={16} /></Button
+									>
 									<IconButton
 										label={m.remove()}
 										onclick={() => {
 											editing = null;
-										}}>✕</IconButton
+										}}><X size={16} /></IconButton
 									>
 								</div>
 								<div class="flex items-center gap-3.5">
@@ -402,9 +427,11 @@
 									<div class="flex shrink-0 items-center gap-2">
 										<Button
 											variant="ghost"
+											iconOnly
+											label={m.edit()}
 											onclick={() => {
 												editing = opt.id;
-											}}>{m.edit()}</Button
+											}}><Pencil size={16} /></Button
 										>
 										<form
 											method="POST"
@@ -412,7 +439,7 @@
 											use:enhance={confirmingRefresh(m.confirmDeleteOption(), opt.hasResponses)}
 										>
 											<input type="hidden" name="optionId" value={opt.id} />
-											<IconButton label={m.remove()} type="submit">✕</IconButton>
+											<IconButton label={m.remove()} type="submit"><X size={16} /></IconButton>
 										</form>
 									</div>
 								{/if}
@@ -428,7 +455,7 @@
 						<div class="flex items-center gap-2.5">
 							<!-- value="" makes the native picker start empty each render. -->
 							<TextField type="date" name="value" value="" />
-							<Button variant="ghost" type="submit">{m.addDate()}</Button>
+							<Button variant="ghost" type="submit"><Plus size={14} />{m.addDate()}</Button>
 						</div>
 						<div class="mt-2.5 flex items-center gap-3.5">
 							<div class="flex flex-1 items-center gap-2">
@@ -468,7 +495,7 @@
 											label={expandedNotes[inv.id] ? m.hideNote() : m.showNote()}
 											onclick={() => (expandedNotes[inv.id] = !expandedNotes[inv.id])}
 										>
-											💬
+											<MessageSquare size={16} />
 										</IconButton>
 									{/if}
 								</div>
@@ -504,7 +531,9 @@
 									>
 										<input type="hidden" name="inviteeId" value={inv.id} />
 										<TextField name="label" value={inv.label} />
-										<Button variant="ghost" type="submit">{m.save()}</Button>
+										<Button variant="ghost" type="submit" iconOnly label={m.save()}
+											><Check size={16} /></Button
+										>
 									</form>
 								{/if}
 								<span
@@ -529,7 +558,7 @@
 										use:enhance={confirmingRefresh(m.confirmDeleteInvitee(), true)}
 									>
 										<input type="hidden" name="inviteeId" value={inv.id} />
-										<IconButton label={m.remove()} type="submit">✕</IconButton>
+										<IconButton label={m.remove()} type="submit"><X size={16} /></IconButton>
 									</form>
 								{/if}
 							</div>
@@ -544,9 +573,11 @@
 								<LinkChip text={inv.url.replace(/^https?:\/\//, '')} />
 								<Button
 									variant="ghost"
+									iconOnly
+									label={m.copyLink()}
 									onclick={() => {
 										copy(inv.url);
-									}}>{m.copyLink()}</Button
+									}}><Copy size={16} /></Button
 								>
 							</div>
 						</div>
@@ -558,7 +589,8 @@
 						<div class="rounded-xl border border-dashed border-border bg-card p-3">
 							<div class="flex items-center gap-2.5">
 								<TextField placeholder={m.name()} name="label" value="" />
-								<Button variant="ghost" type="submit">{m.addParticipant()}</Button>
+								<Button variant="ghost" type="submit"><Plus size={14} />{m.addParticipant()}</Button
+								>
 							</div>
 						</div>
 					</form>

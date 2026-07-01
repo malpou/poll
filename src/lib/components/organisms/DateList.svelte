@@ -3,6 +3,7 @@
 	import { cubicOut } from 'svelte/easing';
 	import DateRow from '$lib/components/molecules/DateRow.svelte';
 	import Button from '$lib/components/atoms/Button.svelte';
+	import { Plus } from '@lucide/svelte';
 	import { m } from '$lib/paraglide/messages';
 	import type { DateOption } from '$lib/types';
 
@@ -35,5 +36,5 @@
 			</div>
 		{/each}
 	</div>
-	<Button variant="dashed" onclick={onadd}>{m.addDate()}</Button>
+	<Button variant="dashed" onclick={onadd}><Plus size={16} />{m.addDate()}</Button>
 </div>

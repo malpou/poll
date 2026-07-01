@@ -3,6 +3,7 @@
 	import { cubicOut } from 'svelte/easing';
 	import ParticipantRow from '$lib/components/molecules/ParticipantRow.svelte';
 	import Button from '$lib/components/atoms/Button.svelte';
+	import { Plus } from '@lucide/svelte';
 	import { m } from '$lib/paraglide/messages';
 	import type { Participant } from '$lib/types';
 
@@ -38,5 +39,5 @@
 			</div>
 		{/each}
 	</div>
-	<Button variant="dashed" onclick={onadd}>{m.addParticipant()}</Button>
+	<Button variant="dashed" onclick={onadd}><Plus size={16} />{m.addParticipant()}</Button>
 </div>

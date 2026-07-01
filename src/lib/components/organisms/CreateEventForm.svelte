@@ -2,6 +2,7 @@
 	import TextField from '$lib/components/atoms/TextField.svelte';
 	import TextArea from '$lib/components/atoms/TextArea.svelte';
 	import Button from '$lib/components/atoms/Button.svelte';
+	import { Check } from '@lucide/svelte';
 	import DateList from '$lib/components/organisms/DateList.svelte';
 	import ParticipantList from '$lib/components/organisms/ParticipantList.svelte';
 	import Toast from '$lib/components/atoms/Toast.svelte';
@@ -136,7 +137,7 @@
 		{/if}
 
 		<div class="mt-2 flex items-center gap-3.5">
-			<Button variant="primary" type="submit">{m.create()}</Button>
+			<Button variant="primary" type="submit"><Check size={18} />{m.create()}</Button>
 			{#if form?.error}
 				<div class="text-sm font-semibold text-bad">{form.error}</div>
 			{/if}
