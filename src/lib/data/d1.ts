@@ -179,6 +179,13 @@ export function d1Provider(db: D1Database): DataProvider {
 			await db.batch(statements);
 		},
 
+		async saveNote(inviteeId, note) {
+			await db
+				.prepare(`UPDATE invitees SET note = ? WHERE id = ?`)
+				.bind(note || null, inviteeId)
+				.run();
+		},
+
 		async getResults(eventId: string): Promise<DateOptionResult[]> {
 			const invitee = await db
 				.prepare(`SELECT COUNT(*) AS n FROM invitees WHERE event_id = ?`)

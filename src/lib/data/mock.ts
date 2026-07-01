@@ -26,6 +26,10 @@ export const mockProvider: DataProvider = {
 		console.log('[mock] saveResponses', { inviteeId, answers });
 	},
 
+	async saveNote(inviteeId, note) {
+		console.log('[mock] saveNote', { inviteeId, note });
+	},
+
 	async getResults() {
 		return [];
 	}

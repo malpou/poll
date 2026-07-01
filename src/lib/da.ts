@@ -22,5 +22,23 @@ export const da = {
 	errorNoTitle: 'Giv afstemningen en titel',
 	errorNoDates: 'Tilføj mindst én dato',
 	errorEndNeedsStart: 'Angiv et starttidspunkt før du sætter et sluttidspunkt',
-	errorEndBeforeStart: 'Sluttidspunkt kan ikke ligge før starttidspunkt'
+	errorEndBeforeStart: 'Sluttidspunkt kan ikke ligge før starttidspunkt',
+
+	// Response page (/r/[token])
+	greeting: 'Hej',
+	responseIntro: 'Vælg de datoer, der passer dig bedst',
+	datesQuestion: 'Hvordan passer datoerne dig?',
+	prefPreferred: 'Foretrukket',
+	prefAvailable: 'Kan godt',
+	prefUnavailable: 'Kan ikke',
+	noteLabel: 'Bemærkning (valgfri)',
+	notePlaceholder: 'Fx: Jeg kan ikke om morgenen',
+	sendAnswer: 'Send svar',
+	savedTitle: 'Tak! Dit svar er gemt.',
+	savedSub: 'Du kan ændre dit svar, indtil afstemningen lukker.',
+	editAnswer: 'Rediger',
+	closedBanner: 'Afstemningen er lukket',
+	linkNotFound: 'Linket findes ikke',
+	linkNotFoundSub: 'Tjek at du har hele linket med, eller bed arrangøren sende det igen.',
+	chooseEach: 'Vælg en mulighed for hver dato'
 } as const;

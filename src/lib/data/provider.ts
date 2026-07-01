@@ -26,6 +26,7 @@ export interface DataProvider {
 	getEventByOrganizerToken(token: string): Promise<EventWithDetails | null>;
 	getInviteeContext(inviteeToken: string): Promise<InviteeContext | null>;
 	saveResponses(inviteeId: string, answers: ResponseInput[]): Promise<void>;
+	saveNote(inviteeId: string, note: string): Promise<void>;
 	getResults(eventId: string): Promise<DateOptionResult[]>;
 }
 
