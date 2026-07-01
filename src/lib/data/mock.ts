@@ -20,6 +20,16 @@ export const mockProvider: DataProvider = {
 		return null;
 	},
 
+	async getShareContext() {
+		return null;
+	},
+
+	async submitOpenResponse() {
+		return { token: newToken() };
+	},
+
+	async setPollMode() {},
+
 	async saveResponses() {},
 
 	async saveNote() {},

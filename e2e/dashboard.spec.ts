@@ -225,14 +225,14 @@ const resp = (inviteeId: string, dateOptionId: string, preference: Preference): 
 	preference
 });
 
-// Each option renders one result card; its "{n} af 3 har svaret" label is unique
-// per option, so we locate the card by that label and assert on its contents.
-function cardByAnswered(page: Page, label: string) {
+// Locate a result card by the date weekday it renders (each option is a distinct
+// date), so we can assert on that specific card's contents.
+function cardByWeekday(page: Page, weekday: string) {
 	return page
 		.locator('section')
 		.filter({ hasText: m.resultsSection() })
 		.locator('div')
-		.filter({ hasText: label })
+		.filter({ hasText: weekday })
 		.filter({ has: page.getByText(m.prefPreferred()) });
 }
 
@@ -252,8 +252,8 @@ test('per-option counts and a clear winner is highlighted', async ({ page }) => 
 	]);
 	await page.goto(`/e/${R_OTOK}`);
 
-	// Winner rb is the only fully-answered option (3 of 3) and carries the badge.
-	const winner = cardByAnswered(page, m.answeredLabel({ total: 3, totalInvitees: 3 }));
+	// Winner rb (søndag 20 Sep) is the fully-answered option and carries the badge.
+	const winner = cardByWeekday(page, 'søndag');
 	await expect(winner.getByText(m.bestDate())).toBeVisible();
 
 	// Exactly one best-date badge → clear winner, not a tie.
@@ -279,7 +279,7 @@ test('pending invitees are listed as Mangler at svare', async ({ page }) => {
 	// Anna answers; Bo and Ced do not → two pending, one answered.
 	seedResults([resp('ri1', 'ra', 'preferred')]);
 	await page.goto(`/e/${R_OTOK}`);
-	// Exact match: the "{n} af 3 har svaret" labels also contain "har svaret".
+	// Exact match: the summary "n af 3 har svaret" label also contains "har svaret".
 	await expect(page.getByText(m.pending(), { exact: true })).toHaveCount(2); // Bo + Ced
 	await expect(page.getByText(m.answered(), { exact: true })).toHaveCount(1); // Anna
 });

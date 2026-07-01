@@ -8,7 +8,8 @@ import type {
 	InviteeContext,
 	InviteeRow,
 	ResponseRow,
-	Preference
+	Preference,
+	ShareContext
 } from '$lib/types';
 import { helpers, id, newToken, RESULTS_SQL } from './shared';
 import { zonedToUtcIso } from '$lib/date';
@@ -19,7 +20,9 @@ function mapEvent(r: Record<string, unknown>): EventRow {
 		title: r.title as string,
 		description: (r.description as string | null) ?? null,
 		locale: r.locale as EventRow['locale'],
+		pollMode: r.poll_mode as EventRow['pollMode'],
 		organizerToken: r.organizer_token as string,
+		shareToken: r.share_token as string,
 		status: r.status as 'open' | 'closed',
 		createdAt: r.created_at as string
 	};
@@ -63,14 +66,24 @@ export function d1Provider(db: D1Database): DataProvider {
 			const now = new Date().toISOString();
 			const eventId = id('event');
 			const organizerToken = newToken();
+			const shareToken = newToken();
 
 			const statements: D1PreparedStatement[] = [
 				db
 					.prepare(
-						`INSERT INTO events (id, title, description, locale, organizer_token, status, created_at)
-						 VALUES (?, ?, ?, ?, ?, 'open', ?)`
+						`INSERT INTO events (id, title, description, locale, poll_mode, organizer_token, share_token, status, created_at)
+						 VALUES (?, ?, ?, ?, ?, ?, ?, 'open', ?)`
 					)
-					.bind(eventId, draft.title, draft.description || null, draft.locale, organizerToken, now)
+					.bind(
+						eventId,
+						draft.title,
+						draft.description || null,
+						draft.locale,
+						draft.pollMode,
+						organizerToken,
+						shareToken,
+						now
+					)
 			];
 
 			draft.dates.forEach((d, i) => {
@@ -154,6 +167,42 @@ export function d1Provider(db: D1Database): DataProvider {
 				dateOptions: dates.results.map(mapDateOption),
 				responses: responses.results.map(mapResponse)
 			};
+		},
+
+		async getShareContext(shareToken: string): Promise<ShareContext | null> {
+			const eventRow = await db
+				.prepare(`SELECT * FROM events WHERE share_token = ?`)
+				.bind(shareToken)
+				.first();
+			if (!eventRow) return null;
+			const event = mapEvent(eventRow);
+			// Only open polls accept shared-link submissions.
+			if (event.pollMode !== 'open') return null;
+
+			const dates = await db
+				.prepare(`SELECT * FROM date_options WHERE event_id = ? ORDER BY sort_order`)
+				.bind(event.id)
+				.all();
+			return { event, dateOptions: dates.results.map(mapDateOption) };
+		},
+
+		async submitOpenResponse(eventId, name, answers, note) {
+			// Mint the invitee row directly so we hold its id (token is the edit link).
+			const inviteeId = id('p');
+			const token = newToken();
+			await db
+				.prepare(
+					`INSERT INTO invitees (id, event_id, label, token, note, created_at)
+					 VALUES (?, ?, ?, ?, ?, ?)`
+				)
+				.bind(inviteeId, eventId, name, token, note || null, new Date().toISOString())
+				.run();
+			await this.saveResponses(inviteeId, answers);
+			return { token };
+		},
+
+		async setPollMode(eventId, mode) {
+			await db.prepare(`UPDATE events SET poll_mode = ? WHERE id = ?`).bind(mode, eventId).run();
 		},
 
 		async saveResponses(inviteeId, answers) {

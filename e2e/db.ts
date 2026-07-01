@@ -49,6 +49,8 @@ export interface EventSeed {
 	organizerToken: string;
 	status: 'open' | 'closed';
 	locale?: Locale; // omit → column default 'da'
+	pollMode?: 'assigned' | 'open'; // omit → column default 'assigned'
+	shareToken?: string; // open-mode shared link token
 	createdAt?: string;
 }
 export interface DateOptionSeed {
@@ -76,8 +78,8 @@ export interface ResponseSeed {
 
 export function seedEvent(e: EventSeed) {
 	d1(
-		`INSERT INTO events (id, title, description, organizer_token, status, locale, created_at) VALUES
-		   (${lit(e.id)}, ${lit(e.title)}, ${lit(e.description)}, ${lit(e.organizerToken)}, ${lit(e.status)}, ${lit(e.locale ?? 'da')}, ${lit(e.createdAt ?? NOW)});`
+		`INSERT INTO events (id, title, description, organizer_token, status, locale, poll_mode, share_token, created_at) VALUES
+		   (${lit(e.id)}, ${lit(e.title)}, ${lit(e.description)}, ${lit(e.organizerToken)}, ${lit(e.status)}, ${lit(e.locale ?? 'da')}, ${lit(e.pollMode ?? 'assigned')}, ${lit(e.shareToken ?? null)}, ${lit(e.createdAt ?? NOW)});`
 	);
 }
 
@@ -146,6 +148,17 @@ export function responsesFor(
 	).results.map((r) => ({
 		date_option_id: r.date_option_id as string,
 		preference: r.preference as Preference
+	}));
+}
+
+// Invitees created for an event, oldest first (open submissions land here too).
+export function inviteesFor(eventId: string): { id: string; label: string; token: string }[] {
+	return d1(
+		`SELECT id, label, token FROM invitees WHERE event_id = ${lit(eventId)} ORDER BY created_at, id`
+	).results.map((r) => ({
+		id: r.id as string,
+		label: r.label as string,
+		token: r.token as string
 	}));
 }
 

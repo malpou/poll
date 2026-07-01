@@ -9,7 +9,7 @@
 	import { browser } from '$app/environment';
 	import { m } from '$lib/paraglide/messages';
 	import { helpers } from '$lib/data/shared';
-	import type { DateOption, Locale, Participant } from '$lib/types';
+	import type { DateOption, Locale, Participant, PollMode } from '$lib/types';
 
 	// The create action's fail() payload; null on first render / success.
 	// suggestedLocale seeds the picker from the visitor's Accept-Language.
@@ -22,6 +22,9 @@
 	// Seed once from the browser-suggested locale; the picker owns it afterwards.
 	// svelte-ignore state_referenced_locally
 	let locale = $state<Locale>(suggestedLocale);
+	// 'assigned': organizer names everyone up front (one link each). 'open': one
+	// shared link, anyone submits their own name. Default keeps the current flow.
+	let pollMode = $state<PollMode>('assigned');
 	let dates = $state<DateOption[]>([helpers.blankDate()]);
 	let participants = $state<Participant[]>([helpers.blankParticipant()]);
 
@@ -102,14 +105,35 @@
 			<DateList bind:dates onadd={addDate} onremove={removeDate} />
 		</div>
 
-		<div class="mb-9">
-			<ParticipantList
-				bind:participants
-				onadd={addParticipant}
-				onremove={removeParticipant}
-				oncopy={copy}
-			/>
+		<!-- Poll mode. Hidden input carries the value; the select drives it. -->
+		<input type="hidden" name="pollMode" value={pollMode} />
+		<div class="mb-9 flex flex-col gap-2">
+			<span class="text-sm font-semibold text-ink">{m.fieldMode()}</span>
+			<select
+				value={pollMode}
+				onchange={(e) => {
+					pollMode = e.currentTarget.value as PollMode;
+				}}
+				class="h-[46px] w-full rounded-[10px] border border-border bg-card px-3.5 text-[15px] text-ink outline-none focus:border-primary"
+			>
+				<option value="assigned">{m.modeAssigned()}</option>
+				<option value="open">{m.modeOpen()}</option>
+			</select>
+			<p class="text-[13px] leading-relaxed text-ink-muted">
+				{pollMode === 'open' ? m.modeOpenHint() : m.modeAssignedHint()}
+			</p>
 		</div>
+
+		{#if pollMode === 'assigned'}
+			<div class="mb-9">
+				<ParticipantList
+					bind:participants
+					onadd={addParticipant}
+					onremove={removeParticipant}
+					oncopy={copy}
+				/>
+			</div>
+		{/if}
 
 		<div class="mt-2 flex items-center gap-3.5">
 			<Button variant="primary" type="submit">{m.create()}</Button>

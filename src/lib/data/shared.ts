@@ -47,5 +47,10 @@ export const helpers = {
 
 	organizerUrl(origin: string, token: string): string {
 		return `${origin}/e/${token}`;
+	},
+
+	// Open-mode shared submission link. One per event; anyone with it can respond.
+	shareUrl(origin: string, token: string): string {
+		return `${origin}/s/${token}`;
 	}
 };

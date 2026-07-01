@@ -59,7 +59,6 @@ export const load: PageServerLoad = async ({ params, platform, url }) => {
 				available: [],
 				unavailable: []
 			};
-			const total = c.preferred + c.available + c.unavailable;
 			return {
 				id: d.id,
 				preferred: c.preferred,
@@ -71,7 +70,6 @@ export const load: PageServerLoad = async ({ params, platform, url }) => {
 				preferredNames: names.preferred,
 				availableNames: names.available,
 				unavailableNames: names.unavailable,
-				answeredLabel: m.answeredLabel({ total, totalInvitees }),
 				...formatDateOption(d.startsAt, d.endsAt, event.locale)
 			};
 		})
@@ -86,11 +84,19 @@ export const load: PageServerLoad = async ({ params, platform, url }) => {
 		invalid: false as const,
 		token: params.token,
 		organizerUrl: provider.organizerUrl(url.origin, params.token),
+		shareUrl: provider.shareUrl(url.origin, event.shareToken),
 		title: event.title,
 		description: event.description,
 		locale: event.locale,
+		pollMode: event.pollMode,
 		closed: event.status === 'closed',
 		results: resultsView,
+		// One summary of who has answered, shown under the results heading. Open mode
+		// has no fixed roster, so it drops the "of Y" denominator.
+		respondedLabel:
+			event.pollMode === 'open'
+				? m.answeredLabelOpen({ total: answered.size })
+				: m.answeredLabel({ total: answered.size, totalInvitees }),
 		options: event.dateOptions.map((d) => {
 			// Copenhagen wall-clock parts for the edit form's native inputs.
 			const start = utcIsoToZonedParts(d.startsAt);
@@ -131,6 +137,18 @@ export const actions = {
 		if (!title) return fail(400, { error: m.errorNoTitle({}, { locale: event.locale }) });
 		const description = field(form, 'description');
 		await provider.updateEventDetails(event.id, title, description || null);
+
+		// Language + mode live in the same edit block; apply them here too. Mode
+		// switching keeps every existing invitee and response - it only changes how
+		// new people submit.
+		const locale = field(form, 'locale');
+		if (isLocale(locale) && locale !== event.locale)
+			await provider.setEventLocale(event.id, locale);
+
+		const mode = field(form, 'pollMode');
+		if ((mode === 'assigned' || mode === 'open') && mode !== event.pollMode) {
+			await provider.setPollMode(event.id, mode);
+		}
 		return { ok: true };
 	},
 
@@ -210,15 +228,6 @@ export const actions = {
 		const { provider, event } = await resolve(platform, params.token);
 		if (!event) return fail(404);
 		await provider.setEventStatus(event.id, 'open');
-		return { ok: true };
-	},
-
-	setLocale: async ({ params, request, platform }) => {
-		const { provider, event } = await resolve(platform, params.token);
-		if (!event) return fail(404);
-		const locale = field(await request.formData(), 'locale');
-		if (!isLocale(locale)) return fail(400, { error: 'locale' });
-		await provider.setEventLocale(event.id, locale);
 		return { ok: true };
 	}
 } satisfies Actions;

@@ -10,7 +10,7 @@
 	import LinkChip from '$lib/components/atoms/LinkChip.svelte';
 	import Toast from '$lib/components/atoms/Toast.svelte';
 	import { m } from '$lib/paraglide/messages';
-	import type { Locale } from '$lib/types';
+	import type { Locale, PollMode } from '$lib/types';
 
 	interface OptionView {
 		id: string;
@@ -33,7 +33,6 @@
 		preferredNames: string[];
 		availableNames: string[];
 		unavailableNames: string[];
-		answeredLabel: string;
 		isBest: boolean;
 		weekday: string;
 		dateLabel: string;
@@ -50,14 +49,21 @@
 		invalid: false;
 		token: string;
 		organizerUrl: string;
+		shareUrl: string;
 		title: string;
 		description: string | null;
 		locale: Locale;
+		pollMode: PollMode;
 		closed: boolean;
+		respondedLabel: string;
 		results: ResultView[];
 		options: OptionView[];
 		invitees: InviteeView[];
 	}
+
+	// Plain-text labels for the non-edit header. Keyed by the poll's stored values.
+	const localeLabel = (l: Locale) => ({ da: m.langDa(), en: m.langEn(), fr: m.langFr() })[l];
+	const modeLabel = (mo: PollMode) => (mo === 'open' ? m.modeOpen() : m.modeAssigned());
 
 	let { data }: { data: { invalid: true } | ValidData } = $props();
 	const view = $derived<ValidData | null>(data.invalid ? null : data);
@@ -152,6 +158,30 @@
 						name="description"
 						value={view.description ?? ''}
 					/>
+					<!-- Language + mode edited alongside title/description; saved together. -->
+					<label class="flex flex-col gap-2">
+						<span class="text-sm font-semibold text-ink">{m.fieldMode()}</span>
+						<select
+							name="pollMode"
+							value={view.pollMode}
+							class="h-[46px] w-full rounded-[10px] border border-border bg-card px-3.5 text-[15px] text-ink outline-none focus:border-primary"
+						>
+							<option value="assigned">{m.modeAssigned()}</option>
+							<option value="open">{m.modeOpen()}</option>
+						</select>
+					</label>
+					<label class="flex flex-col gap-2">
+						<span class="text-sm font-semibold text-ink">{m.fieldLanguage()}</span>
+						<select
+							name="locale"
+							value={view.locale}
+							class="h-[46px] w-full rounded-[10px] border border-border bg-card px-3.5 text-[15px] text-ink outline-none focus:border-primary"
+						>
+							<option value="da">{m.langDa()}</option>
+							<option value="en">{m.langEn()}</option>
+							<option value="fr">{m.langFr()}</option>
+						</select>
+					</label>
 					<div class="flex items-center gap-2.5">
 						<Button variant="ghost" type="submit">{m.save()}</Button>
 						<IconButton
@@ -165,8 +195,20 @@
 			{:else}
 				<h1 class="mt-1 text-[28px] font-extrabold tracking-[-0.02em] text-ink">{view.title}</h1>
 				{#if view.description}
-					<p class="mt-1.5 text-[15px] leading-relaxed text-ink-muted">{view.description}</p>
+					<p class="mt-1.5 whitespace-pre-line text-[15px] leading-relaxed text-ink-muted">
+						{view.description}
+					</p>
 				{/if}
+				<div class="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-[13px] text-ink-muted">
+					<span
+						>{m.fieldMode()}:
+						<span class="font-semibold text-ink">{modeLabel(view.pollMode)}</span></span
+					>
+					<span
+						>{m.fieldLanguage()}:
+						<span class="font-semibold text-ink">{localeLabel(view.locale)}</span></span
+					>
+				</div>
 				{#if !view.closed}
 					<div class="mt-3">
 						<Button
@@ -181,21 +223,6 @@
 
 			<!-- Poll controls on their own row, under the title/description. -->
 			<div class="mt-5 flex flex-wrap items-center gap-2.5">
-				<!-- Change the poll's language; auto-submits and reloads in the new locale. -->
-				<form method="POST" action="?/setLocale" use:enhance={refresh}>
-					<label class="sr-only" for="poll-locale">{m.fieldLanguage()}</label>
-					<select
-						id="poll-locale"
-						name="locale"
-						value={view.locale}
-						onchange={(e) => e.currentTarget.form?.requestSubmit()}
-						class="h-9 rounded-lg border border-border bg-card px-2 text-[13px] font-semibold text-ink outline-none focus:border-primary"
-					>
-						<option value="da">{m.langDa()}</option>
-						<option value="en">{m.langEn()}</option>
-						<option value="fr">{m.langFr()}</option>
-					</select>
-				</form>
 				<form method="POST" action={view.closed ? '?/reopen' : '?/close'} use:enhance={refresh}>
 					<Button variant="ghost" type="submit">
 						{view.closed ? m.reopenPoll() : m.closePoll()}
@@ -234,9 +261,11 @@
 		<!-- Results -->
 		{#if view.results.length > 0}
 			<section class="mb-10">
-				<div class="mb-3.5 text-[13px] font-bold uppercase tracking-[0.06em] text-ink-muted">
+				<div class="mb-1 text-[13px] font-bold uppercase tracking-[0.06em] text-ink-muted">
 					{m.resultsSection()}
 				</div>
+				<!-- One "who answered" summary for the whole poll, not per card. -->
+				<div class="mb-3.5 text-[13px] font-semibold text-ink-muted">{view.respondedLabel}</div>
 				<div class="flex flex-col gap-3">
 					{#each view.results as r, i (r.id)}
 						<div
@@ -261,9 +290,6 @@
 									{/if}
 								</div>
 								<div class="flex items-center gap-2">
-									<div class="whitespace-nowrap text-[13px] font-semibold text-ink-muted">
-										{r.answeredLabel}
-									</div>
 									{#if r.preferred + r.available + r.unavailable > 0}
 										<IconButton
 											label={expandedResults[r.id] ? m.hideWho() : m.showWho()}
@@ -400,87 +426,136 @@
 			{/if}
 		</section>
 
-		<!-- Invitees -->
+		<!-- Invitees / shared link -->
 		<section>
 			<div class="mb-3.5 text-[13px] font-bold uppercase tracking-[0.06em] text-ink-muted">
 				{m.participantsSection()}
 			</div>
-			<div class="flex flex-col gap-2.5">
-				{#each view.invitees as inv, i (inv.id)}
-					<div
-						in:fly={{ y: 8, duration: 240, delay: i * 40, easing: cubicOut }}
-						class="rounded-xl border border-border bg-card p-3"
-					>
-						<div class="flex items-center gap-2.5">
-							{#if view.closed}
-								<div class="flex-1 text-[15px] font-semibold text-ink">{inv.label}</div>
-							{:else}
-								<form
-									method="POST"
-									action="?/renameInvitee"
-									use:enhance={refresh}
-									class="flex flex-1 items-center gap-2.5"
-								>
-									<input type="hidden" name="inviteeId" value={inv.id} />
-									<TextField name="label" value={inv.label} />
-									<Button variant="ghost" type="submit">{m.save()}</Button>
-								</form>
-							{/if}
-							<span
-								class="whitespace-nowrap rounded-full px-2.5 py-1 text-[11px] font-bold {inv.answered
-									? 'bg-good-tint text-good'
-									: 'bg-amber-tint text-amber'}"
-							>
-								{inv.answered ? m.answered() : m.pending()}
-							</span>
-							{#if inv.note}
-								<IconButton
-									label={expandedNotes[inv.id] ? m.hideNote() : m.showNote()}
-									onclick={() => (expandedNotes[inv.id] = !expandedNotes[inv.id])}
-								>
-									💬
-								</IconButton>
-							{/if}
-							{#if !view.closed}
-								<form
-									method="POST"
-									action="?/removeInvitee"
-									use:enhance={confirmingRefresh(m.confirmDeleteInvitee(), true)}
-								>
-									<input type="hidden" name="inviteeId" value={inv.id} />
-									<IconButton label={m.remove()} type="submit">✕</IconButton>
-								</form>
-							{/if}
-						</div>
-						{#if inv.note && expandedNotes[inv.id]}
-							<div
-								class="mt-2.5 rounded-lg bg-card-alt px-3 py-2 text-[13px] leading-relaxed text-ink-muted"
-							>
-								{inv.note}
-							</div>
-						{/if}
-						<div class="mt-2.5 flex flex-wrap items-center gap-2.5">
-							<LinkChip text={inv.url.replace(/^https?:\/\//, '')} />
-							<Button
-								variant="ghost"
-								onclick={() => {
-									copy(inv.url);
-								}}>{m.copyLink()}</Button
-							>
-						</div>
-					</div>
-				{/each}
-			</div>
 
-			{#if !view.closed}
-				<form method="POST" action="?/addInvitee" use:enhance={refresh} class="mt-2.5">
-					<div class="rounded-xl border border-dashed border-border bg-card p-3">
-						<div class="flex items-center gap-2.5">
-							<TextField placeholder={m.name()} name="label" value="" />
-							<Button variant="ghost" type="submit">{m.addParticipant()}</Button>
-						</div>
+			{#if view.pollMode === 'open'}
+				<!-- Open mode: one shared link. No hand-added roster - the list below is
+				     read-only (names come from submissions). -->
+				<div class="rounded-xl border border-border bg-card px-4 py-3.5">
+					<div class="text-sm font-bold text-ink">{m.shareLinkTitle()}</div>
+					<p class="mt-1.5 text-[13px] leading-relaxed text-ink-muted">{m.shareLinkHint()}</p>
+					<div class="mt-2.5 flex flex-wrap items-center gap-2.5">
+						<LinkChip text={view.shareUrl.replace(/^https?:\/\//, '')} />
+						<Button
+							variant="ghost"
+							onclick={() => {
+								copy(view.shareUrl);
+							}}>{m.copyLink()}</Button
+						>
 					</div>
-				</form>
+				</div>
+
+				{#if view.invitees.length > 0}
+					<div class="mt-2.5 flex flex-col gap-2.5">
+						{#each view.invitees as inv, i (inv.id)}
+							<div
+								in:fly={{ y: 8, duration: 240, delay: i * 40, easing: cubicOut }}
+								class="rounded-xl border border-border bg-card p-3"
+							>
+								<div class="flex items-center gap-2.5">
+									<div class="flex-1 text-[15px] font-semibold text-ink">{inv.label}</div>
+									{#if inv.note}
+										<IconButton
+											label={expandedNotes[inv.id] ? m.hideNote() : m.showNote()}
+											onclick={() => (expandedNotes[inv.id] = !expandedNotes[inv.id])}
+										>
+											💬
+										</IconButton>
+									{/if}
+								</div>
+								{#if inv.note && expandedNotes[inv.id]}
+									<div
+										class="mt-2.5 rounded-lg bg-card-alt px-3 py-2 text-[13px] leading-relaxed text-ink-muted"
+									>
+										{inv.note}
+									</div>
+								{/if}
+							</div>
+						{/each}
+					</div>
+				{/if}
+			{:else}
+				<div class="flex flex-col gap-2.5">
+					{#each view.invitees as inv, i (inv.id)}
+						<div
+							in:fly={{ y: 8, duration: 240, delay: i * 40, easing: cubicOut }}
+							class="rounded-xl border border-border bg-card p-3"
+						>
+							<div class="flex items-center gap-2.5">
+								{#if view.closed}
+									<div class="flex-1 text-[15px] font-semibold text-ink">{inv.label}</div>
+								{:else}
+									<form
+										method="POST"
+										action="?/renameInvitee"
+										use:enhance={refresh}
+										class="flex flex-1 items-center gap-2.5"
+									>
+										<input type="hidden" name="inviteeId" value={inv.id} />
+										<TextField name="label" value={inv.label} />
+										<Button variant="ghost" type="submit">{m.save()}</Button>
+									</form>
+								{/if}
+								<span
+									class="whitespace-nowrap rounded-full px-2.5 py-1 text-[11px] font-bold {inv.answered
+										? 'bg-good-tint text-good'
+										: 'bg-amber-tint text-amber'}"
+								>
+									{inv.answered ? m.answered() : m.pending()}
+								</span>
+								{#if inv.note}
+									<IconButton
+										label={expandedNotes[inv.id] ? m.hideNote() : m.showNote()}
+										onclick={() => (expandedNotes[inv.id] = !expandedNotes[inv.id])}
+									>
+										💬
+									</IconButton>
+								{/if}
+								{#if !view.closed}
+									<form
+										method="POST"
+										action="?/removeInvitee"
+										use:enhance={confirmingRefresh(m.confirmDeleteInvitee(), true)}
+									>
+										<input type="hidden" name="inviteeId" value={inv.id} />
+										<IconButton label={m.remove()} type="submit">✕</IconButton>
+									</form>
+								{/if}
+							</div>
+							{#if inv.note && expandedNotes[inv.id]}
+								<div
+									class="mt-2.5 rounded-lg bg-card-alt px-3 py-2 text-[13px] leading-relaxed text-ink-muted"
+								>
+									{inv.note}
+								</div>
+							{/if}
+							<div class="mt-2.5 flex flex-wrap items-center gap-2.5">
+								<LinkChip text={inv.url.replace(/^https?:\/\//, '')} />
+								<Button
+									variant="ghost"
+									onclick={() => {
+										copy(inv.url);
+									}}>{m.copyLink()}</Button
+								>
+							</div>
+						</div>
+					{/each}
+				</div>
+
+				{#if !view.closed}
+					<form method="POST" action="?/addInvitee" use:enhance={refresh} class="mt-2.5">
+						<div class="rounded-xl border border-dashed border-border bg-card p-3">
+							<div class="flex items-center gap-2.5">
+								<TextField placeholder={m.name()} name="label" value="" />
+								<Button variant="ghost" type="submit">{m.addParticipant()}</Button>
+							</div>
+						</div>
+					</form>
+				{/if}
 			{/if}
 		</section>
 	</div>

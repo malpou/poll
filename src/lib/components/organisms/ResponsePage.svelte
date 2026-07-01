@@ -2,7 +2,10 @@
 	import { untrack } from 'svelte';
 	import { enhance } from '$app/forms';
 	import DateOptionCard from '$lib/components/molecules/DateOptionCard.svelte';
+	import TextField from '$lib/components/atoms/TextField.svelte';
 	import TextArea from '$lib/components/atoms/TextArea.svelte';
+	import LinkChip from '$lib/components/atoms/LinkChip.svelte';
+	import Button from '$lib/components/atoms/Button.svelte';
 	import Toast from '$lib/components/atoms/Toast.svelte';
 	import { m } from '$lib/paraglide/messages';
 	import type { Preference } from '$lib/types';
@@ -13,21 +16,27 @@
 		dateLabel: string;
 		timeRange: string;
 	}
+	// Assigned (/r): name/answers/note come from the load. Open (/s): submitter
+	// names themselves, so those are absent until the form is filled.
 	interface ValidData {
 		invalid: false;
 		closed: boolean;
-		name: string;
+		name?: string;
 		title: string;
 		description: string | null;
 		dates: CardData[];
-		answers: Record<string, Preference>;
-		note: string;
+		answers?: Record<string, Preference>;
+		note?: string;
 	}
 
 	let {
-		data
+		data,
+		mode = 'assigned',
+		action = '?/save'
 	}: {
 		data: { invalid: true } | ValidData;
+		mode?: 'assigned' | 'open';
+		action?: string;
 	} = $props();
 
 	// Narrowed view for the template - avoids re-checking the union per binding.
@@ -36,21 +45,40 @@
 	// Local editable state, seeded once from the load (revisits pre-select).
 	// data only changes on navigation, which remounts this component.
 	const seed = untrack(() => (data.invalid ? null : data));
+	let name = $state(seed?.name ?? '');
 	let answers = $state<Record<string, Preference | undefined>>({ ...(seed?.answers ?? {}) });
 	let note = $state(seed?.note ?? '');
 	let submitted = $state(Object.keys(seed?.answers ?? {}).length > 0);
+	// Personal edit link handed back after an open submission (from the action).
+	let editUrl = $state<string | null>(null);
 	let toastOpen = $state(false);
+	let toastText = $state('');
 	let toastTimer: ReturnType<typeof setTimeout> | undefined;
 
-	const allAnswered = $derived(
-		!!view && view.dates.length > 0 && view.dates.every((d) => answers[d.id] !== undefined)
-	);
-
-	function onSubmitted() {
-		submitted = true;
+	function toast(text: string) {
+		toastText = text;
 		clearTimeout(toastTimer);
 		toastOpen = true;
 		toastTimer = setTimeout(() => (toastOpen = false), 3000);
+	}
+
+	const nameOk = $derived(mode === 'assigned' || name.trim().length > 0);
+	const allAnswered = $derived(
+		!!view &&
+			nameOk &&
+			view.dates.length > 0 &&
+			view.dates.every((d) => answers[d.id] !== undefined)
+	);
+
+	function copy(url: string) {
+		void navigator.clipboard.writeText(url).catch(() => undefined);
+		toast(m.linkCopied());
+	}
+
+	function onSubmitted(url: string | null) {
+		submitted = true;
+		editUrl = url;
+		toast(m.savedTitle());
 	}
 </script>
 
@@ -63,10 +91,14 @@
 {:else}
 	<form
 		method="POST"
-		action="?/save"
+		{action}
 		use:enhance={() =>
 			({ result, update }) => {
-				if (result.type === 'success') onSubmitted();
+				if (result.type === 'success') {
+					const url =
+						result.data && typeof result.data.editUrl === 'string' ? result.data.editUrl : null;
+					onSubmitted(url);
+				}
 				return update({ reset: false });
 			}}
 		class="mx-auto max-w-[480px] px-5 pb-32 pt-8"
@@ -81,14 +113,27 @@
 		{/if}
 
 		<div class="mb-[30px] flex flex-col gap-1.5">
-			<div class="text-[15px] font-semibold text-primary">{m.greeting({ name: view.name })}</div>
+			{#if mode === 'assigned'}
+				<div class="text-[15px] font-semibold text-primary">
+					{m.greeting({ name: view.name ?? '' })}
+				</div>
+			{:else if name.trim()}
+				<div class="text-[15px] font-semibold text-primary">
+					{m.greeting({ name: name.trim() })}
+				</div>
+			{/if}
 			<h1 class="text-[30px] font-extrabold tracking-[-0.02em] text-ink">{view.title}</h1>
 			{#if view.description}
-				<p class="mt-1.5 text-base leading-relaxed text-ink-muted">{view.description}</p>
+				<p class="mt-1.5 whitespace-pre-line text-base leading-relaxed text-ink-muted">
+					{view.description}
+				</p>
 			{/if}
 		</div>
 
 		<div class="flex flex-col gap-5">
+			{#if mode === 'open'}
+				<TextField label={m.namePrompt()} name="name" bind:value={name} placeholder={m.name()} />
+			{/if}
 			<p class="text-[17px] font-semibold text-ink">{m.responseIntro()}</p>
 
 			<div class="flex flex-col gap-3.5">
@@ -125,25 +170,42 @@
 			>
 				<div class="w-full max-w-[480px]">
 					{#if submitted}
-						<div class="flex items-center gap-3">
-							<div
-								class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-good-tint text-[17px] font-bold text-good"
-							>
-								✓
+						<div class="flex flex-col gap-3">
+							<div class="flex items-center gap-3">
+								<div
+									class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-good-tint text-[17px] font-bold text-good"
+								>
+									✓
+								</div>
+								<div class="flex min-w-0 flex-1 flex-col gap-0.5">
+									<div class="text-[15px] font-bold text-ink">{m.savedTitle()}</div>
+									<div class="text-[13px] leading-snug text-ink-muted">{m.savedSub()}</div>
+								</div>
+								<button
+									type="button"
+									onclick={() => {
+										submitted = false;
+									}}
+									class="shrink-0 cursor-pointer border-none bg-transparent p-2 text-[13px] font-semibold text-primary"
+								>
+									{m.editAnswer()}
+								</button>
 							</div>
-							<div class="flex min-w-0 flex-1 flex-col gap-0.5">
-								<div class="text-[15px] font-bold text-ink">{m.savedTitle()}</div>
-								<div class="text-[13px] leading-snug text-ink-muted">{m.savedSub()}</div>
-							</div>
-							<button
-								type="button"
-								onclick={() => {
-									submitted = false;
-								}}
-								class="shrink-0 cursor-pointer border-none bg-transparent p-2 text-[13px] font-semibold text-primary"
-							>
-								{m.editAnswer()}
-							</button>
+							{#if editUrl}
+								<div class="rounded-xl border border-border bg-card-alt px-3.5 py-3">
+									<div class="text-[13px] font-semibold text-ink">{m.editLinkTitle()}</div>
+									<p class="mt-1 text-[13px] leading-relaxed text-ink-muted">{m.editLinkHint()}</p>
+									<div class="mt-2 flex flex-wrap items-center gap-2.5">
+										<LinkChip text={editUrl.replace(/^https?:\/\//, '')} />
+										<Button
+											variant="ghost"
+											onclick={() => {
+												if (editUrl) copy(editUrl);
+											}}>{m.copyLink()}</Button
+										>
+									</div>
+								</div>
+							{/if}
 						</div>
 					{:else}
 						<div class="flex flex-col gap-1.5">
@@ -166,5 +228,5 @@
 		{/if}
 	</form>
 
-	<Toast open={toastOpen} text={m.savedTitle()} />
+	<Toast open={toastOpen} text={toastText} />
 {/if}

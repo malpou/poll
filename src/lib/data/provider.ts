@@ -6,8 +6,10 @@ import type {
 	InviteeContext,
 	Locale,
 	Participant,
+	PollMode,
 	Preference,
-	ResponseRow
+	ResponseRow,
+	ShareContext
 } from '$lib/types';
 import { mockProvider } from './mock';
 import { d1Provider } from './d1';
@@ -31,9 +33,22 @@ export interface DataProvider {
 	blankParticipant(): Participant;
 	inviteeUrl(origin: string, token: string): string;
 	organizerUrl(origin: string, token: string): string;
+	shareUrl(origin: string, token: string): string;
 	createEvent(draft: EventDraft): Promise<CreateResult>;
 	getEventByOrganizerToken(token: string): Promise<EventWithDetails | null>;
 	getInviteeContext(inviteeToken: string): Promise<InviteeContext | null>;
+	// Open-mode shared link: resolve the event + its dates by share_token. Null if
+	// unknown or the poll is not in open mode.
+	getShareContext(shareToken: string): Promise<ShareContext | null>;
+	// One open submission: create an invitee (label = name) and save its answers +
+	// note in one go. Returns the new invitee token (personal edit link / cookie).
+	submitOpenResponse(
+		eventId: string,
+		name: string,
+		answers: ResponseInput[],
+		note: string
+	): Promise<{ token: string }>;
+	setPollMode(eventId: string, mode: PollMode): Promise<void>;
 	saveResponses(inviteeId: string, answers: ResponseInput[]): Promise<void>;
 	saveNote(inviteeId: string, note: string): Promise<void>;
 	getResults(eventId: string): Promise<DateOptionResult[]>;

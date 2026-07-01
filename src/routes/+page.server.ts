@@ -5,7 +5,7 @@ import { m } from '$lib/paraglide/messages';
 import { baseLocale, extractLocaleFromHeader, isLocale } from '$lib/paraglide/runtime';
 import { setRequestLocale } from '../hooks.server';
 import { field, validateTimes } from '$lib/forms';
-import type { DateOption, Locale, Participant } from '$lib/types';
+import type { DateOption, Locale, Participant, PollMode } from '$lib/types';
 import type { Actions, PageServerLoad } from './$types';
 
 type Row = Partial<Record<string, string>>;
@@ -40,6 +40,7 @@ export const actions = {
 		const description = field(form, 'description');
 		const localeField = field(form, 'locale');
 		const locale: Locale = isLocale(localeField) ? localeField : baseLocale;
+		const pollMode: PollMode = field(form, 'pollMode') === 'open' ? 'open' : 'assigned';
 
 		// Drop rows the user added but never filled with a date.
 		const dates: DateOption[] = parseIndexed(form, 'dates')
@@ -51,16 +52,20 @@ export const actions = {
 			}))
 			.filter((d) => d.value !== '');
 
-		const participants: Participant[] = parseIndexed(form, 'participants')
-			.map((p) => ({
-				id: newToken(),
-				name: p.name ?? '',
-				// Hidden input carries the client-generated token; regenerate if absent.
-				token: p.token ?? newToken()
-			}))
-			.filter((p) => p.name !== '');
+		// Open mode has no named list - anyone submits via the shared link.
+		const participants: Participant[] =
+			pollMode === 'open'
+				? []
+				: parseIndexed(form, 'participants')
+						.map((p) => ({
+							id: newToken(),
+							name: p.name ?? '',
+							// Hidden input carries the client-generated token; regenerate if absent.
+							token: p.token ?? newToken()
+						}))
+						.filter((p) => p.name !== '');
 
-		const draft = { title, description, locale, dates, participants };
+		const draft = { title, description, locale, pollMode, dates, participants };
 
 		let error: string | null = null;
 		if (!title) error = m.errorNoTitle();

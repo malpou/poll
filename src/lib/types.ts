@@ -19,10 +19,13 @@ export interface Participant {
 	token: string;
 }
 
+export type PollMode = 'assigned' | 'open';
+
 export interface EventDraft {
 	title: string;
 	description: string;
 	locale: Locale;
+	pollMode: PollMode;
 	dates: DateOption[];
 	participants: Participant[];
 }
@@ -36,7 +39,9 @@ export interface EventRow {
 	title: string;
 	description: string | null;
 	locale: Locale;
+	pollMode: PollMode;
 	organizerToken: string;
+	shareToken: string;
 	status: 'open' | 'closed';
 	createdAt: string;
 }
@@ -77,6 +82,12 @@ export interface InviteeContext {
 	event: EventRow;
 	dateOptions: DateOptionRow[];
 	responses: ResponseRow[];
+}
+
+// Shared open-link page payload - no invitee yet (submitter names themselves).
+export interface ShareContext {
+	event: EventRow;
+	dateOptions: DateOptionRow[];
 }
 
 // Per-date aggregate for the results view. notAnswered = invitees − answered,
