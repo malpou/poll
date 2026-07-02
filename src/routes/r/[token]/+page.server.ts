@@ -2,7 +2,7 @@ import { fail } from '@sveltejs/kit';
 import { getProvider } from '$lib/data/provider';
 import { formatDateOption } from '$lib/date';
 import { orderForRespondent } from '$lib/participant-status';
-import { buildOutcome } from '$lib/results';
+import { outcomeFor } from '$lib/results';
 import { setRequestLocale } from '../../../hooks.server';
 import type { Preference } from '$lib/types';
 import type { ResponseInput } from '$lib/data/provider';
@@ -29,14 +29,9 @@ export const load: PageServerLoad = async ({ params, platform }) => {
 			? new Set(ctx.responses.map((r) => r.dateOptionId))
 			: new Set<string>();
 
-	// Decided poll → show the outcome (chosen dates + count distribution).
-	// Counts only, never names (specs/poll-closing). Null on a poll closed
-	// before decisions existed, which renders as a plain closed poll.
-	let outcome: ReturnType<typeof buildOutcome> = null;
-	if (ctx.event.status === 'closed') {
-		const results = await provider.getResults(ctx.event.id);
-		outcome = buildOutcome(ctx.dateOptions, new Map(results.map((r) => [r.dateOptionId, r])));
-	}
+	// Decided poll → chosen dates + count distribution (counts only, never
+	// names); null on a poll closed before decisions existed (specs/poll-closing).
+	const outcome = await outcomeFor(provider, ctx.event, ctx.dateOptions);
 
 	return {
 		invalid: false as const,

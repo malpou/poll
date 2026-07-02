@@ -60,6 +60,12 @@ function mapResponse(r: Record<string, unknown>): ResponseRow {
 }
 
 export function d1Provider(db: D1Database): DataProvider {
+	const setStatusClearing = (eventId: string, status: 'open' | 'cancelled') =>
+		db.batch([
+			db.prepare(`UPDATE events SET status = ? WHERE id = ?`).bind(status, eventId),
+			db.prepare(`UPDATE date_options SET selected = 0 WHERE event_id = ?`).bind(eventId)
+		]);
+
 	return {
 		...helpers,
 
@@ -350,19 +356,14 @@ export function d1Provider(db: D1Database): DataProvider {
 			]);
 		},
 
+		// Both clear every selection flag - closing again always asks for a fresh
+		// pick - and differ only in the status they land on.
 		async cancelEvent(eventId) {
-			await db.batch([
-				db.prepare(`UPDATE events SET status = 'cancelled' WHERE id = ?`).bind(eventId),
-				db.prepare(`UPDATE date_options SET selected = 0 WHERE event_id = ?`).bind(eventId)
-			]);
+			await setStatusClearing(eventId, 'cancelled');
 		},
 
 		async reopenEvent(eventId) {
-			// Clearing the flags means closing again always asks for a fresh pick.
-			await db.batch([
-				db.prepare(`UPDATE events SET status = 'open' WHERE id = ?`).bind(eventId),
-				db.prepare(`UPDATE date_options SET selected = 0 WHERE event_id = ?`).bind(eventId)
-			]);
+			await setStatusClearing(eventId, 'open');
 		},
 
 		async setEventLocale(eventId, locale) {

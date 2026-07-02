@@ -1,4 +1,5 @@
-import type { DateOptionResult } from '$lib/types';
+import type { DataProvider } from '$lib/data/provider';
+import type { DateOptionResult, DateOptionRow, EventRow } from '$lib/types';
 
 // Best-option ranking (specs/results/spec.md): rank by fewest Unavailable, then
 // most Preferred. Ties → every row matching the top (unavailable, preferred)
@@ -56,6 +57,19 @@ export function buildOutcome(
 			unavailablePct: pct(c.unavailable)
 		};
 	});
+}
+
+// The /r and /s loads both surface a decided poll's outcome the same way:
+// only when closed, pulling counts fresh. Kept here so both routes stay a
+// one-liner.
+export async function outcomeFor(
+	provider: Pick<DataProvider, 'getResults'>,
+	event: Pick<EventRow, 'id' | 'status'>,
+	dateOptions: Pick<DateOptionRow, 'id' | 'selected'>[]
+): Promise<OutcomeRow[] | null> {
+	if (event.status !== 'closed') return null;
+	const results = await provider.getResults(event.id);
+	return buildOutcome(dateOptions, new Map(results.map((r) => [r.dateOptionId, r])));
 }
 
 // Assert-based self-check, no test framework needed. Run directly with the runtime.

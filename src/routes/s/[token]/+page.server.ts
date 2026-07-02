@@ -1,7 +1,7 @@
 import { fail, redirect } from '@sveltejs/kit';
 import { getProvider } from '$lib/data/provider';
 import { formatDateOption } from '$lib/date';
-import { buildOutcome } from '$lib/results';
+import { outcomeFor } from '$lib/results';
 import { setRequestLocale } from '../../../hooks.server';
 import type { Preference } from '$lib/types';
 import type { ResponseInput } from '$lib/data/provider';
@@ -28,11 +28,7 @@ export const load: PageServerLoad = async ({ params, platform, cookies }) => {
 	setRequestLocale(ctx.event.locale);
 
 	// Same decided-poll outcome as /r: chosen dates + count distribution.
-	let outcome: ReturnType<typeof buildOutcome> = null;
-	if (ctx.event.status === 'closed') {
-		const results = await provider.getResults(ctx.event.id);
-		outcome = buildOutcome(ctx.dateOptions, new Map(results.map((r) => [r.dateOptionId, r])));
-	}
+	const outcome = await outcomeFor(provider, ctx.event, ctx.dateOptions);
 
 	return {
 		invalid: false as const,
