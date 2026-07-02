@@ -91,7 +91,7 @@
 	"confirmDeleteOption": "This date has answers. Delete it anyway?",
 	"confirmDeleteInvitee": "This participant has answered. Remove them anyway? Their link will stop working.",
 	"timeAt": "at ",
-	"newDateBadge": "New – needs your answer",
+	"newDateBadge": "New - needs your answer",
 	"newDatesBanner": "New dates have been added since you answered. Please update your answer.",
 	"partialAnswered": "Missing new dates",
 	"needsUpdateTitle": "Some participants haven't answered the new dates",

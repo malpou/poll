@@ -91,7 +91,7 @@
 	"confirmDeleteOption": "Cette date a des réponses. La supprimer quand même ?",
 	"confirmDeleteInvitee": "Ce participant a répondu. Le retirer quand même ? Son lien cessera de fonctionner.",
 	"timeAt": "à ",
-	"newDateBadge": "Nouvelle – votre réponse manque",
+	"newDateBadge": "Nouvelle - votre réponse manque",
 	"newDatesBanner": "De nouvelles dates ont été ajoutées depuis votre réponse. Mettez à jour votre réponse.",
 	"partialAnswered": "Dates manquantes",
 	"needsUpdateTitle": "Certains participants n'ont pas répondu aux nouvelles dates",

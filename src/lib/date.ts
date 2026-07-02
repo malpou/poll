@@ -46,7 +46,7 @@ function formatters(locale: Locale) {
 export interface FormattedDate {
 	weekday: string; // "lørdag"
 	dateLabel: string; // "12. september 2026"
-	timeRange: string; // "kl. 10:00–11:00", "kl. 10:00", or ""
+	timeRange: string; // "kl. 10:00-11:00", "kl. 10:00", or ""
 }
 
 // yyyy-mm-dd + hh:mm (Copenhagen wall-clock) -> UTC ISO instant. Blank date => null.
@@ -99,7 +99,7 @@ export function formatDateOption(
 	const startTime = fmt.time.format(start);
 	const at = m.timeAt({}, { locale }); // "kl. " / "at " / "à "
 	let timeRange = `${at}${startTime}`;
-	if (endsAt) timeRange = `${at}${startTime}–${fmt.time.format(new Date(endsAt))}`;
+	if (endsAt) timeRange = `${at}${startTime}-${fmt.time.format(new Date(endsAt))}`;
 	return {
 		weekday: fmt.weekday.format(start),
 		dateLabel: fmt.date.format(start),

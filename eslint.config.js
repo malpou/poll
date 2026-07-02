@@ -24,7 +24,7 @@ const noHardcodedText = {
 				if (!/[\p{L}\p{N}]/u.test(node.value)) return; // punctuation/symbols only
 				ctx.report({
 					node,
-					message: `Hardcoded text "${node.value.trim()}" — use a Paraglide message (m.*()).`
+					message: `Hardcoded text "${node.value.trim()}" - use a Paraglide message (m.*()).`
 				});
 			}
 		};
