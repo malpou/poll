@@ -14,6 +14,7 @@
 		unavailable: number;
 		preferredPct: number;
 		availablePct: number;
+		unavailablePct: number;
 		showPreferred?: boolean;
 		unsure?: number;
 		names?: {
@@ -30,6 +31,7 @@
 		unavailable,
 		preferredPct,
 		availablePct,
+		unavailablePct,
 		showPreferred = true,
 		unsure = undefined,
 		names = null
@@ -92,6 +94,10 @@
 				     takes the highlighter fill. -->
 				<div class="h-full bg-hl" style="width:{availablePct}%"></div>
 			{/if}
+			<!-- Unavailable renders as the ink hatch (same mark as the selector's
+			     "no" face) so it never reads as "hasn't answered" - only unsure and
+			     not-yet-answered stay plain track. -->
+			<div class="ink-hatch h-full" style="width:{unavailablePct}%"></div>
 		</div>
 	</div>
 

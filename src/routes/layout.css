@@ -88,6 +88,16 @@ body {
 	@apply bg-paper text-ink min-h-screen font-sans;
 }
 
+/* Pretty wrapping for headings and prose: better break points, no orphaned
+   single words; long unbroken words break rather than overflow the sheet. */
+h1,
+h2,
+h3,
+p {
+	text-wrap: pretty;
+	overflow-wrap: break-word;
+}
+
 /* Paper grain: inline feTurbulence noise over the whole page. */
 body::before {
 	content: '';

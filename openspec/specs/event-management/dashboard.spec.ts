@@ -254,8 +254,9 @@ test('language picker previews the dashboard live, cancel rolls back', async ({ 
 	await page.goto(`/e/${OTOK}`);
 	await page.getByRole('button', { name: m.edit() }).first().click();
 
-	// Switch to French: the whole dashboard re-renders in place, unsaved.
-	await page.locator('select[name="locale"]').selectOption('fr');
+	// Switch to French via the flag picker (radios labeled with each language's
+	// native name): the whole dashboard re-renders in place, unsaved.
+	await page.getByRole('radio', { name: 'Français' }).check();
 	await expect(page.getByText(m.datesSection({}, { locale: 'fr' }))).toBeVisible();
 	await expect(page.locator('html')).toHaveAttribute('lang', 'fr');
 

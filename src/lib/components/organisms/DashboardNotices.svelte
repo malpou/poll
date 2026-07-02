@@ -80,11 +80,13 @@
 	{#if partials.length > 0}
 		<Callout tone="dashed" title={m.needsUpdateTitle()} class="mb-6">
 			<p class="mt-1.5 text-caption leading-relaxed text-ink">{m.needsUpdateHint()}</p>
-			<div class="mt-2.5 flex flex-col gap-2">
+			<div class="mt-2.5 flex flex-col gap-2.5">
 				{#each partials as p (p.id)}
-					<div class="flex flex-wrap items-center gap-2.5">
-						<span class="min-w-20 text-body font-semibold text-ink">{p.label}</span>
-						<CopyLinkRow url={p.url} {oncopied} class="flex-1" />
+					<!-- Name above its link row: the row never fights the name for width
+					     on a narrow screen. -->
+					<div class="flex flex-col gap-1">
+						<span class="min-w-0 break-words text-body font-semibold text-ink">{p.label}</span>
+						<CopyLinkRow url={p.url} {oncopied} />
 					</div>
 				{/each}
 			</div>

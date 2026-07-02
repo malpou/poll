@@ -9,9 +9,10 @@
 	import TimezoneCombobox from '$lib/components/atoms/TimezoneCombobox.svelte';
 	import { X, Pencil, Save, Lock, LockOpen, Users, Languages, Clock } from '@lucide/svelte';
 	import { m } from '$lib/paraglide/messages';
-	import { locales, langLabel } from '$lib/logic/locales';
+	import { langLabel } from '$lib/logic/locales';
 	import { tzLabel } from '$lib/logic/date';
 	import AccentPicker from '$lib/components/atoms/AccentPicker.svelte';
+	import LanguagePicker from '$lib/components/atoms/LanguagePicker.svelte';
 	import { refreshThen } from '$lib/forms/enhance';
 	import { isRichText, toEditorHtml } from '$lib/forms/richtext';
 	import type { Accent, Locale, PollMode } from '$lib/types';
@@ -63,6 +64,9 @@
 	let draftAllowPreferred = $state(true);
 	let draftAllowUnsure = $state(false);
 	let draftAccent = $state<Accent>('yellow');
+	// Initial capture is fine - startEdit() re-seeds it before the form shows.
+	// svelte-ignore state_referenced_locally
+	let draftLocale = $state<Locale>(eventLocale);
 	let draftTimezone = $state('');
 
 	function startEdit() {
@@ -73,6 +77,7 @@
 		draftAllowPreferred = allowPreferred;
 		draftAllowUnsure = allowUnsure;
 		draftAccent = accent;
+		draftLocale = eventLocale;
 		draftTimezone = timezone;
 		editingDetails = true;
 	}
@@ -136,16 +141,7 @@
 				<AccentPicker bind:value={draftAccent} onpick={onpreviewaccent} />
 				<!-- Picking a language previews the whole dashboard immediately; saving
 				     persists it, cancelling rolls it back. Same live switch as /. -->
-				<SelectField
-					label={m.fieldLanguage()}
-					name="locale"
-					value={locale}
-					onchange={(v) => onpreviewlocale(v as Locale)}
-				>
-					{#each locales as l (l)}
-						<option value={l}>{langLabel(l, locale)}</option>
-					{/each}
-				</SelectField>
+				<LanguagePicker bind:value={draftLocale} onpick={onpreviewlocale} />
 				<!-- Saving re-renders every option's times in the new zone; no live
 				     preview since times are server-rendered. -->
 				<TimezoneCombobox name="timezone" bind:value={draftTimezone} {locale} />
@@ -191,14 +187,15 @@
 		{/if}
 
 		<!-- One controls row: edit on the left, the lock control (close/reopen)
-		     pushed right. Closing means deciding: the button enters a selection
-		     mode on the results cards; confirm/cancel/back live under the
-		     results section. -->
-		<div class="mt-3 flex flex-wrap items-center gap-2.5">
+		     pushed right; when the row wraps on a narrow screen each button keeps
+		     to the left edge instead of drifting. Closing means deciding: the
+		     button enters a selection mode on the results cards; confirm/cancel/
+		     back live under the results section. -->
+		<div class="mt-3 flex flex-wrap items-center justify-between gap-2.5">
 			{#if !editingDetails && !closed}
 				<Button variant="ghost" onclick={startEdit}><Pencil size={14} />{m.edit()}</Button>
 			{/if}
-			<span class="ml-auto">
+			<span>
 				{#if closed}
 					<form method="POST" action="?/reopen" use:enhance={refreshThen()}>
 						<Button variant="ghost" type="submit">

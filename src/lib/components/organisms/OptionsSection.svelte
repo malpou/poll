@@ -77,8 +77,11 @@
 							</div>
 						</form>
 					{:else}
-						<div class="flex items-center justify-between gap-2.5">
-							<div class="min-w-0 text-body text-ink">
+						<!-- The date keeps a readable column; when the buttons don't fit
+						     beside it they wrap onto their own right-aligned row instead
+						     of squeezing the text. -->
+						<div class="flex flex-wrap items-center gap-x-2.5 gap-y-1.5">
+							<div class="min-w-0 flex-1 basis-52 text-body text-ink">
 								<span class="font-bold capitalize">{opt.weekday}</span>
 								<span class="text-ink-soft">{opt.dateLabel}</span>
 								{#if opt.timeRange}
@@ -86,7 +89,7 @@
 								{/if}
 							</div>
 							{#if !closed}
-								<div class="flex shrink-0 items-center gap-2">
+								<div class="ml-auto flex shrink-0 items-center gap-2">
 									{#if options.length > 1}
 										{#each [{ dir: 'up', Icon: ChevronUp, label: m.moveUp(), off: i === 0 }, { dir: 'down', Icon: ChevronDown, label: m.moveDown(), off: i === options.length - 1 }] as mv (mv.dir)}
 											<form method="POST" action="?/moveOption" use:enhance={refreshThen()}>

@@ -100,6 +100,7 @@
 								unavailable={r.unavailable}
 								preferredPct={r.preferredPct}
 								availablePct={r.availablePct}
+								unavailablePct={r.unavailablePct}
 								showPreferred={allowPreferred}
 								unsure={allowUnsure ? r.unsure : undefined}
 								names={{

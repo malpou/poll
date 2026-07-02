@@ -12,9 +12,9 @@
 	import { enhance } from '$app/forms';
 	import { browser } from '$app/environment';
 	import { m } from '$lib/paraglide/messages';
-	import { locales, langLabel } from '$lib/logic/locales';
 	import { helpers } from '$lib/data/shared';
 	import AccentPicker from '$lib/components/atoms/AccentPicker.svelte';
+	import LanguagePicker from '$lib/components/atoms/LanguagePicker.svelte';
 	import type { Accent, DateOption, Locale, Participant, PollMode } from '$lib/types';
 
 	// The create action's fail() payload; null on first render / success.
@@ -76,32 +76,14 @@
 	class="mx-auto max-w-160 px-4 pb-18 pt-7"
 >
 	<div class="paper-sheet">
-		<!-- Language row: native names (stable across UI locale), active one gets
-	     the ink underline. Sits outside {#key} so switching keeps focus. -->
-		<fieldset class="mb-6 flex flex-wrap justify-end gap-3.5">
-			<legend class="sr-only"
-				>{#key locale}{m.fieldLanguage()}{/key}</legend
-			>
-			{#each locales as l (l)}
-				<label class="relative cursor-pointer">
-					<input
-						type="radio"
-						name="locale"
-						value={l}
-						checked={locale === l}
-						onchange={() => pickLocale(l)}
-						class="peer absolute inset-0 h-full w-full cursor-pointer opacity-0"
-					/>
-					<span
-						class="border-b-2 px-0.5 text-xs peer-focus-visible:outline-2 {locale === l
-							? 'border-ink font-bold text-ink'
-							: 'border-transparent text-ink-muted'}"
-					>
-						{langLabel(l, l)}
-					</span>
-				</label>
-			{/each}
-		</fieldset>
+		<!-- Language row: circular flag swatches (native names stay as the
+	     accessible labels). Sits outside {#key} so switching keeps focus. -->
+		<LanguagePicker
+			bind:value={locale}
+			onpick={pickLocale}
+			showLegend={false}
+			class="mb-6 items-end"
+		/>
 
 		<!-- Re-render every m.*() under the newly picked locale. Form state (title,
 	     dates, participants) lives in $state above the block, so it survives. -->

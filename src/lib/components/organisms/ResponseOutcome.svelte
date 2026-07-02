@@ -82,6 +82,7 @@
 							unavailable={o.unavailable}
 							preferredPct={o.preferredPct}
 							availablePct={o.availablePct}
+							unavailablePct={o.unavailablePct}
 						/>
 					</div>
 				</div>
