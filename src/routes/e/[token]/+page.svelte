@@ -1,5 +1,5 @@
 <script lang="ts">
-	import OrganizerDashboard from '$lib/components/organisms/OrganizerDashboard.svelte';
+	import DashboardPage from '$lib/components/templates/DashboardPage.svelte';
 	import { m } from '$lib/paraglide/messages';
 	import type { PageData } from './$types';
 
@@ -10,4 +10,4 @@
 	><title>{data.invalid ? m.linkNotFound() : data.title} · {m.appName()}</title></svelte:head
 >
 
-<OrganizerDashboard {data} />
+<DashboardPage {data} />

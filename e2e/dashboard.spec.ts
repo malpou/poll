@@ -431,3 +431,19 @@ test('an invitee note shows behind a comment toggle', async ({ page }) => {
 	await page.getByRole('button', { name: m.showNote() }).click();
 	await expect(page.getByText('Jeg kan ikke om morgenen')).toBeVisible();
 });
+
+test('language picker previews the dashboard live, cancel rolls back', async ({ page }) => {
+	seed();
+	await page.goto(`/e/${OTOK}`);
+	await page.getByRole('button', { name: m.edit() }).first().click();
+
+	// Switch to French: the whole dashboard re-renders in place, unsaved.
+	await page.locator('select[name="locale"]').selectOption('fr');
+	await expect(page.getByText(m.datesSection({}, { locale: 'fr' }))).toBeVisible();
+	await expect(page.locator('html')).toHaveAttribute('lang', 'fr');
+
+	// Cancel the edit: the preview rolls back to the stored locale.
+	await page.getByRole('button', { name: m.cancel({}, { locale: 'fr' }) }).click();
+	await expect(page.getByText(m.datesSection())).toBeVisible();
+	await expect(page.locator('html')).toHaveAttribute('lang', 'da');
+});

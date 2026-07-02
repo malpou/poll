@@ -96,6 +96,56 @@ export interface ShareContext {
 	dateOptions: DateOptionRow[];
 }
 
+// One date option as the response page renders it.
+export interface ResponseDateView {
+	id: string;
+	weekday: string;
+	dateLabel: string;
+	timeRange: string;
+	// Set by the /r load for returning respondents: dates added since they
+	// answered arrive first in the list and flagged. Absent on /s.
+	needsAnswer?: boolean;
+}
+
+// --- Dashboard view models (built by the /e load, rendered by organisms). ---
+
+export interface OptionView {
+	id: string;
+	value: string;
+	startTime: string;
+	endTime: string;
+	hasResponses: boolean;
+	weekday: string;
+	dateLabel: string;
+	timeRange: string;
+}
+
+export interface ResultView {
+	id: string;
+	chosen: boolean;
+	preferred: number;
+	available: number;
+	unavailable: number;
+	preferredPct: number;
+	availablePct: number;
+	unavailablePct: number;
+	preferredNames: string[];
+	availableNames: string[];
+	unavailableNames: string[];
+	isBest: boolean;
+	weekday: string;
+	dateLabel: string;
+	timeRange: string;
+}
+
+export interface InviteeView {
+	id: string;
+	label: string;
+	url: string;
+	status: 'complete' | 'partial' | 'none';
+	note: string | null;
+}
+
 // Per-date aggregate for the results view. notAnswered = invitees − answered,
 // so a missing responses row reads as "no answer", never "unavailable".
 export interface DateOptionResult {

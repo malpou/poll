@@ -2,9 +2,8 @@
 	import { fly } from 'svelte/transition';
 	import { cubicOut } from 'svelte/easing';
 	import DateRow from '$lib/components/molecules/DateRow.svelte';
-	import Button from '$lib/components/atoms/Button.svelte';
+	import AddDateForm from '$lib/components/molecules/AddDateForm.svelte';
 	import SectionHeading from '$lib/components/atoms/SectionHeading.svelte';
-	import { Plus } from '@lucide/svelte';
 	import { m } from '$lib/paraglide/messages';
 	import type { DateOption } from '$lib/types';
 
@@ -14,7 +13,7 @@
 		onremove
 	}: {
 		dates: DateOption[];
-		onadd: () => void;
+		onadd: (d: Omit<DateOption, 'id'>) => void;
 		onremove: (id: string) => void;
 	} = $props();
 </script>
@@ -35,5 +34,5 @@
 			</div>
 		{/each}
 	</div>
-	<Button variant="dashed" onclick={onadd}><Plus size={16} />{m.addDate()}</Button>
+	<AddDateForm {onadd} />
 </div>

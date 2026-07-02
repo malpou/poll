@@ -73,6 +73,9 @@ export default defineConfig(
 		rules: {
 			// `$bindable()` is a Svelte rune, not a useless prop default.
 			'@typescript-eslint/no-useless-default-assignment': 'off',
+			// {@render localSnippet(x)} is a void call in expression position by
+			// design; the rule can't tell it from a mistake.
+			'@typescript-eslint/no-confusing-void-expression': 'off',
 			// All user-facing copy must go through Paraglide (m.*()).
 			'local/no-hardcoded-text': 'error'
 		}

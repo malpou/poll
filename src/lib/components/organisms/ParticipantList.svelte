@@ -2,9 +2,8 @@
 	import { fly } from 'svelte/transition';
 	import { cubicOut } from 'svelte/easing';
 	import ParticipantRow from '$lib/components/molecules/ParticipantRow.svelte';
-	import Button from '$lib/components/atoms/Button.svelte';
+	import AddParticipantForm from '$lib/components/molecules/AddParticipantForm.svelte';
 	import SectionHeading from '$lib/components/atoms/SectionHeading.svelte';
-	import { Plus } from '@lucide/svelte';
 	import { m } from '$lib/paraglide/messages';
 	import type { Participant } from '$lib/types';
 
@@ -15,7 +14,7 @@
 		oncopied
 	}: {
 		participants: Participant[];
-		onadd: () => void;
+		onadd: (name: string) => void;
 		onremove: (id: string) => void;
 		oncopied: () => void;
 	} = $props();
@@ -38,5 +37,5 @@
 			</div>
 		{/each}
 	</div>
-	<Button variant="dashed" onclick={onadd}><Plus size={16} />{m.addParticipant()}</Button>
+	<AddParticipantForm {onadd} />
 </div>

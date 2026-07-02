@@ -95,5 +95,6 @@
 	"newDatesBanner": "New dates have been added since you answered. Please update your answer.",
 	"partialAnswered": "Missing new dates",
 	"needsUpdateTitle": "Some participants haven't answered the new dates",
-	"needsUpdateHint": "Send them their personal link again so they can answer the new dates."
+	"needsUpdateHint": "Send them their personal link again so they can answer the new dates.",
+	"cancel": "Cancel"
 }

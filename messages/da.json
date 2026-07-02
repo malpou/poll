@@ -95,5 +95,6 @@
 	"newDatesBanner": "Der er tilføjet nye datoer, siden du svarede. Opdater dit svar.",
 	"partialAnswered": "Mangler nye datoer",
 	"needsUpdateTitle": "Nogle deltagere mangler at svare på de nye datoer",
-	"needsUpdateHint": "Send dem deres personlige link igen, så de kan svare på de nye datoer."
+	"needsUpdateHint": "Send dem deres personlige link igen, så de kan svare på de nye datoer.",
+	"cancel": "Annuller"
 }

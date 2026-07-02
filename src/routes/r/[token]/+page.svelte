@@ -1,5 +1,5 @@
 <script lang="ts">
-	import ResponsePage from '$lib/components/organisms/ResponsePage.svelte';
+	import ResponsePage from '$lib/components/templates/ResponsePage.svelte';
 	import { m } from '$lib/paraglide/messages';
 	import type { PageData } from './$types';
 

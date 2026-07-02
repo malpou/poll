@@ -1,5 +1,5 @@
 <script lang="ts">
-	import CreateEventForm from '$lib/components/organisms/CreateEventForm.svelte';
+	import CreatePage from '$lib/components/templates/CreatePage.svelte';
 	import { m } from '$lib/paraglide/messages';
 	import type { ActionData, PageData } from './$types';
 
@@ -8,4 +8,4 @@
 
 <svelte:head><title>{m.createTitle()} · {m.appName()}</title></svelte:head>
 
-<CreateEventForm {form} suggestedLocale={data.suggestedLocale} />
+<CreatePage {form} suggestedLocale={data.suggestedLocale} />

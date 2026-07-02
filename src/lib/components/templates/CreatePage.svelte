@@ -19,7 +19,8 @@
 	let { form, suggestedLocale }: { form: { error?: string } | null; suggestedLocale: Locale } =
 		$props();
 
-	// Start empty - one blank row each so the form is usable without seed data.
+	// Start empty; dates and participants are added via the same fill-then-add
+	// cards the dashboard uses.
 	let title = $state('');
 	let description = $state('');
 	// Seed once from the browser-suggested locale; the picker owns it afterwards.
@@ -28,19 +29,19 @@
 	// 'assigned': organizer names everyone up front (one link each). 'open': one
 	// shared link, anyone submits their own name. Default keeps the current flow.
 	let pollMode = $state<PollMode>('assigned');
-	let dates = $state<DateOption[]>([helpers.blankDate()]);
-	let participants = $state<Participant[]>([helpers.blankParticipant()]);
+	let dates = $state<DateOption[]>([]);
+	let participants = $state<Participant[]>([]);
 
 	const toast = createToast();
 
-	function addDate() {
-		dates.push(helpers.blankDate());
+	function addDate(d: Omit<DateOption, 'id'>) {
+		dates.push({ ...helpers.blankDate(), ...d });
 	}
 	function removeDate(id: string) {
 		dates = dates.filter((d) => d.id !== id);
 	}
-	function addParticipant() {
-		participants.push(helpers.blankParticipant());
+	function addParticipant(name: string) {
+		participants.push({ ...helpers.blankParticipant(), name });
 	}
 	function removeParticipant(id: string) {
 		participants = participants.filter((p) => p.id !== id);
@@ -123,9 +124,7 @@
 					bind:participants
 					onadd={addParticipant}
 					onremove={removeParticipant}
-					oncopied={() => {
-						toast.show(m.linkCopied());
-					}}
+					oncopied={() => toast.show(m.linkCopied())}
 				/>
 			</div>
 		{/if}

@@ -128,9 +128,9 @@ describe('migration stack', () => {
 		// Every seeded child (both direct FKs) still resolves to its event.
 		const resolved = (t: string) =>
 			(
-				db
-					.prepare(`SELECT COUNT(*) AS n FROM ${t} c JOIN events e ON e.id = c.event_id`)
-					.get() as { n: number }
+				db.prepare(`SELECT COUNT(*) AS n FROM ${t} c JOIN events e ON e.id = c.event_id`).get() as {
+					n: number;
+				}
 			).n;
 		expect(resolved('date_options')).toBe(3);
 		expect(resolved('invitees')).toBe(2);
