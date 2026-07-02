@@ -47,6 +47,8 @@ in markup.
   `size={16}`; `14` inside compact/inline controls, `18` for primary
   actions. Icon-only buttons always carry an accessible label; destructive
   ones signal intent on hover (`hover:bg-bad-tint hover:text-bad`).
+  Meta/detail lists use a 14px icon as the bullet in place of a text label,
+  with the label kept as `sr-only` text.
 - Prominent date displays capitalize the weekday via CSS (`capitalize`);
   running text keeps the poll language's own casing (Danish lowercase).
 

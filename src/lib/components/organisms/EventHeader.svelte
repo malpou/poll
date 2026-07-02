@@ -6,7 +6,7 @@
 	import IconButton from '$lib/components/atoms/IconButton.svelte';
 	import SectionHeading from '$lib/components/atoms/SectionHeading.svelte';
 	import SelectField from '$lib/components/atoms/SelectField.svelte';
-	import { X, Pencil, Check, Lock, LockOpen } from '@lucide/svelte';
+	import { X, Pencil, Check, Lock, LockOpen, Users, Languages, Clock } from '@lucide/svelte';
 	import { m } from '$lib/paraglide/messages';
 	import { locales, langLabel } from '$lib/logic/locales';
 	import { refreshThen } from '$lib/forms/enhance';
@@ -130,47 +130,52 @@
 					</p>
 				{/if}
 			{/if}
-			<div class="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-caption text-ink-muted">
-				<span
-					>{m.fieldMode()}:
-					<span class="font-semibold text-ink">{modeLabel(pollMode)}</span></span
-				>
-				<span
-					>{m.fieldLanguage()}:
-					<span class="font-semibold text-ink">{localeLabel(eventLocale)}</span></span
-				>
-				<span
-					>{m.fieldTimezone()}:
-					<span class="font-semibold text-ink">{timezone}</span></span
-				>
-			</div>
-			{#if !closed}
-				<div class="mt-3">
-					<Button variant="ghost" onclick={startEdit}><Pencil size={14} />{m.edit()}</Button>
-				</div>
-			{/if}
+			<!-- Icons stand in for the field labels; sr-only text keeps them readable. -->
+			<ul class="mt-2 space-y-1 text-caption text-ink-muted">
+				<li class="flex items-center gap-1.5">
+					<Users size={14} aria-hidden="true" />
+					<span class="sr-only">{m.fieldMode()}:</span>
+					<span class="font-semibold text-ink">{modeLabel(pollMode)}</span>
+				</li>
+				<li class="flex items-center gap-1.5">
+					<Languages size={14} aria-hidden="true" />
+					<span class="sr-only">{m.fieldLanguage()}:</span>
+					<span class="font-semibold text-ink">{localeLabel(eventLocale)}</span>
+				</li>
+				<li class="flex items-center gap-1.5">
+					<Clock size={14} aria-hidden="true" />
+					<span class="sr-only">{m.fieldTimezone()}:</span>
+					<span class="font-semibold text-ink">{timezone}</span>
+				</li>
+			</ul>
 		{/if}
 
-		<!-- Poll controls on their own row, under the title/description. Closing
-		     means deciding: the button enters a selection mode on the results
-		     cards; confirm/cancel/back live under the results section. -->
-		<div class="mt-5 flex flex-wrap items-center gap-2.5">
-			{#if closed}
-				<form method="POST" action="?/reopen" use:enhance={refreshThen()}>
-					<Button variant="ghost" type="submit">
-						<LockOpen size={14} />{m.reopenPoll()}
-					</Button>
-				</form>
-			{:else if !selecting}
-				<Button
-					variant="ghost"
-					onclick={() => {
-						selecting = true;
-					}}
-				>
-					<Lock size={14} />{m.closePoll()}
-				</Button>
+		<!-- One controls row: edit on the left, the lock control (close/reopen)
+		     pushed right. Closing means deciding: the button enters a selection
+		     mode on the results cards; confirm/cancel/back live under the
+		     results section. -->
+		<div class="mt-3 flex flex-wrap items-center gap-2.5">
+			{#if !editingDetails && !closed}
+				<Button variant="ghost" onclick={startEdit}><Pencil size={14} />{m.edit()}</Button>
 			{/if}
+			<span class="ml-auto">
+				{#if closed}
+					<form method="POST" action="?/reopen" use:enhance={refreshThen()}>
+						<Button variant="ghost" type="submit">
+							<LockOpen size={14} />{m.reopenPoll()}
+						</Button>
+					</form>
+				{:else if !selecting}
+					<Button
+						variant="ghost"
+						onclick={() => {
+							selecting = true;
+						}}
+					>
+						<Lock size={14} />{m.closePoll()}
+					</Button>
+				{/if}
+			</span>
 		</div>
 	</div>
 {/key}
