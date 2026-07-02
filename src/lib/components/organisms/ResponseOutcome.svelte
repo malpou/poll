@@ -4,9 +4,9 @@
 	import Callout from '$lib/components/molecules/Callout.svelte';
 	import ResultBars from '$lib/components/molecules/ResultBars.svelte';
 	import SectionHeading from '$lib/components/atoms/SectionHeading.svelte';
-	import { CalendarCheck } from '@lucide/svelte';
+	import { CalendarCheck, CircleCheck } from '@lucide/svelte';
 	import { m } from '$lib/paraglide/messages';
-	import type { ResponseDateView } from '$lib/types';
+	import type { PollType, ResponseDateView } from '$lib/types';
 	import type { OutcomeRow } from '$lib/logic/results';
 
 	// What a participant sees once the poll is decided or cancelled: the
@@ -14,36 +14,54 @@
 	let {
 		cancelled,
 		dates,
-		outcomeById
+		outcomeById,
+		pollType = 'dates'
 	}: {
 		cancelled: boolean;
 		dates: ResponseDateView[];
 		outcomeById: Map<string, OutcomeRow>;
+		pollType?: PollType;
 	} = $props();
 
+	const question = $derived(pollType === 'question');
 	const chosenDates = $derived(dates.filter((d) => outcomeById.get(d.id)?.chosen));
+	const chosenHeading = $derived(
+		question
+			? chosenDates.length > 1
+				? m.chosenOptionsHeading()
+				: m.chosenOptionHeading()
+			: chosenDates.length > 1
+				? m.chosenDatesHeading()
+				: m.chosenDateHeading()
+	);
 </script>
 
 {#if cancelled}
-	<!-- No date, no distribution - just the organizer's call, spelled out. -->
+	<!-- No decision, no distribution - just the organizer's call, spelled out. -->
 	<Callout>
-		<p class="text-body leading-relaxed text-ink-muted">{m.cancelledMessage()}</p>
+		<p class="text-body leading-relaxed text-ink-muted">
+			{question ? m.cancelledMessageQuestion() : m.cancelledMessage()}
+		</p>
 	</Callout>
 {:else}
-	<!-- The outcome, front and center: the chosen date(s)... -->
+	<!-- The outcome, front and center: the chosen option(s)... -->
 	<div in:fly={flyIn()}>
-		<Callout
-			tone="ink"
-			title={chosenDates.length > 1 ? m.chosenDatesHeading() : m.chosenDateHeading()}
-		>
-			{#snippet icon()}<CalendarCheck size={16} class="shrink-0" />{/snippet}
+		<Callout tone="ink" title={chosenHeading}>
+			{#snippet icon()}{#if question}<CircleCheck size={16} class="shrink-0" />{:else}<CalendarCheck
+						size={16}
+						class="shrink-0"
+					/>{/if}{/snippet}
 			<div class="mt-1.5 flex flex-col gap-1">
 				{#each chosenDates as d (d.id)}
-					<div class="text-xl font-bold capitalize text-ink">
-						{d.weekday}
-						{d.dateLabel}{#if d.timeRange}
-							<span class="text-base font-semibold text-ink-muted">· {d.timeRange}</span>{/if}
-					</div>
+					{#if d.label}
+						<div class="text-xl font-bold text-ink">{d.label}</div>
+					{:else}
+						<div class="text-xl font-bold capitalize text-ink">
+							{d.weekday}
+							{d.dateLabel}{#if d.timeRange}
+								<span class="text-base font-semibold text-ink-muted">· {d.timeRange}</span>{/if}
+						</div>
+					{/if}
 				{/each}
 			</div>
 		</Callout>
@@ -60,18 +78,22 @@
 					class="rounded-card border-2 bg-card-alt p-4 {o.chosen ? 'border-ink' : 'border-border'}"
 				>
 					<div class="flex flex-wrap items-center gap-2.5">
-						<div>
-							<div class="text-body font-bold capitalize text-ink">{d.weekday}</div>
-							<div class="text-caption text-ink-muted">
-								{d.dateLabel}{#if d.timeRange}
-									· {d.timeRange}{/if}
+						{#if d.label}
+							<div class="text-body font-bold text-ink">{d.label}</div>
+						{:else}
+							<div>
+								<div class="text-body font-bold capitalize text-ink">{d.weekday}</div>
+								<div class="text-caption text-ink-muted">
+									{d.dateLabel}{#if d.timeRange}
+										· {d.timeRange}{/if}
+								</div>
 							</div>
-						</div>
+						{/if}
 						{#if o.chosen}
 							<span
 								class="whitespace-nowrap rounded-full bg-ink px-2.5 py-1 text-2xs font-bold uppercase tracking-wider text-card"
 							>
-								{m.chosenBadge()}
+								{question ? m.chosenBadgeQuestion() : m.chosenBadge()}
 							</span>
 						{/if}
 					</div>

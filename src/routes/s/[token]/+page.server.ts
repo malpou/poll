@@ -1,7 +1,7 @@
 import { fail, redirect } from '@sveltejs/kit';
 import { getProvider } from '$lib/data/provider';
 import { enabledPreferences } from '$lib/logic/choices';
-import { formatDateOption } from '$lib/logic/date';
+import { optionDisplay } from '$lib/logic/options';
 import { outcomeFor } from '$lib/logic/results';
 import { cachedLoad, invalidateCache } from '$lib/server/cache';
 import { setRequestLocale } from '../../../hooks.server';
@@ -39,10 +39,11 @@ export const load: PageServerLoad = async ({ params, platform, cookies, url }) =
 				description: ctx.event.description,
 				timezone: ctx.event.timezone,
 				accent: ctx.event.accent,
+				pollType: ctx.event.pollType,
 				choices: enabledPreferences(ctx.event),
 				dates: ctx.dateOptions.map((d) => ({
 					id: d.id,
-					...formatDateOption(d.startsAt, d.endsAt, ctx.event.locale, ctx.event.timezone)
+					...optionDisplay(d, ctx.event)
 				}))
 			}
 		};

@@ -15,7 +15,7 @@
 	import { getLocale } from '$lib/paraglide/runtime';
 	import { tzLabel } from '$lib/logic/date';
 	import { isRichText } from '$lib/forms/richtext';
-	import type { Accent, EventStatus, Preference, ResponseDateView } from '$lib/types';
+	import type { Accent, EventStatus, PollType, Preference, ResponseDateView } from '$lib/types';
 	import type { OutcomeRow } from '$lib/logic/results';
 
 	// Assigned (/r): name/answers/note come from the load. Open (/s): submitter
@@ -31,6 +31,7 @@
 		description: string | null;
 		timezone: string;
 		accent: Accent;
+		pollType: PollType;
 		// The event's enabled choices, in display order.
 		choices: Preference[];
 		dates: ResponseDateView[];
@@ -73,6 +74,7 @@
 	let editUrl = $state<string | null>(null);
 	const toast = createToast();
 
+	const question = $derived(!!view && view.pollType === 'question');
 	const nameOk = $derived(mode === 'assigned' || name.trim().length > 0);
 	const allAnswered = $derived(
 		!!view &&
@@ -145,7 +147,7 @@
 			</div>
 
 			{#if cancelled || decided}
-				<ResponseOutcome {cancelled} dates={view.dates} {outcomeById} />
+				<ResponseOutcome {cancelled} dates={view.dates} {outcomeById} pollType={view.pollType} />
 			{:else}
 				<div class="flex flex-col gap-5">
 					{#if mode === 'open'}
@@ -156,18 +158,24 @@
 							placeholder={m.name()}
 						/>
 					{/if}
-					<p class="text-lead font-semibold text-ink">{m.responseIntro()}</p>
+					<p class="text-lead font-semibold text-ink">
+						{question ? m.responseIntroQuestion() : m.responseIntro()}
+					</p>
 
 					<div class="flex flex-col gap-3.5">
-						<SectionHeading text={m.datesQuestion()} />
-						<!-- Only relevant when times exist; date-only polls have no zone to name. -->
+						<SectionHeading text={question ? m.optionsQuestion() : m.datesQuestion()} />
+						<!-- Only relevant when times exist; date-only and question polls have
+						     no zone to name. -->
 						{#if view.dates.some((d) => d.timeRange)}
 							<p class="text-caption text-ink-muted">
 								{m.timezoneNote({ timezone: tzLabel(view.timezone, getLocale()) })}
 							</p>
 						{/if}
 						{#if hasNewDates && !closed}
-							<NoticeBanner text={m.newDatesBanner()} tone="ink" />
+							<NoticeBanner
+								text={question ? m.newOptionsBanner() : m.newDatesBanner()}
+								tone="ink"
+							/>
 						{/if}
 						{#each view.dates as d, i (d.id)}
 							<DateOptionCard
@@ -175,11 +183,13 @@
 								weekday={d.weekday}
 								dateLabel={d.dateLabel}
 								timeRange={d.timeRange}
+								label={d.label}
 								index={i}
 								bind:value={answers[d.id]}
 								choices={view.choices}
 								readOnly={closed || submitted}
 								isNew={d.needsAnswer ?? false}
+								pollType={view.pollType}
 							/>
 						{/each}
 					</div>
@@ -201,6 +211,7 @@
 					bind:submitted
 					{allAnswered}
 					{editUrl}
+					pollType={view.pollType}
 					oncopied={() => {
 						toast.show(m.linkCopied());
 					}}

@@ -4,6 +4,7 @@
 	import Button from '$lib/components/atoms/Button.svelte';
 	import { ArrowRight, Check, Pencil } from '@lucide/svelte';
 	import { m } from '$lib/paraglide/messages';
+	import type { PollType } from '$lib/types';
 
 	// Bottom of the response form, inline on the sheet: send CTA before
 	// submitting, the answered notice card (+ personal edit link on open polls)
@@ -12,12 +13,14 @@
 		submitted = $bindable(),
 		allAnswered,
 		editUrl,
-		oncopied
+		oncopied,
+		pollType = 'dates'
 	}: {
 		submitted: boolean;
 		allAnswered: boolean;
 		editUrl: string | null;
 		oncopied: () => void;
+		pollType?: PollType;
 	} = $props();
 </script>
 
@@ -50,7 +53,9 @@
 	{:else}
 		<div class="flex flex-col gap-2.5">
 			{#if !allAnswered}
-				<div class="text-center text-caption text-ink-muted">{m.chooseEach()}</div>
+				<div class="text-center text-caption text-ink-muted">
+					{pollType === 'question' ? m.chooseEachQuestion() : m.chooseEach()}
+				</div>
 			{/if}
 			<button
 				type="submit"

@@ -17,6 +17,7 @@
 		Locale,
 		OptionView,
 		PollMode,
+		PollType,
 		ResultView
 	} from '$lib/types';
 
@@ -34,7 +35,8 @@
 		allowUnsure: boolean;
 		accent: Accent;
 		status: EventStatus;
-		chosenDates: { weekday: string; dateLabel: string; timeRange: string }[];
+		pollType: PollType;
+		chosenDates: { weekday: string; dateLabel: string; timeRange: string; label: string }[];
 		respondedLabel: string;
 		results: ResultView[];
 		options: OptionView[];
@@ -98,6 +100,7 @@
 				eventLocale={view.locale}
 				locale={uiLocale}
 				timezone={view.timezone}
+				pollType={view.pollType}
 				{closed}
 				bind:selecting
 				onpreviewlocale={previewLocale}
@@ -110,6 +113,7 @@
 				shareUrl={view.shareUrl}
 				organizerUrl={view.organizerUrl}
 				chosenDates={view.chosenDates}
+				pollType={view.pollType}
 				{partials}
 				locale={uiLocale}
 				oncopied={copied}
@@ -122,12 +126,13 @@
 				respondedLabel={view.respondedLabel}
 				allowPreferred={view.allowPreferred}
 				allowUnsure={view.allowUnsure}
+				pollType={view.pollType}
 				{closed}
 				bind:selecting
 				locale={uiLocale}
 			/>
 
-			<OptionsSection options={view.options} {closed} locale={uiLocale} />
+			<OptionsSection options={view.options} pollType={view.pollType} {closed} locale={uiLocale} />
 
 			<div class="my-8 border-t-2 border-dashed border-border-strong"></div>
 
@@ -136,6 +141,7 @@
 				pollMode={view.pollMode}
 				{closed}
 				locale={uiLocale}
+				pollType={view.pollType}
 				oncopied={copied}
 			/>
 		</div>

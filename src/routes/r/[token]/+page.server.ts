@@ -1,7 +1,7 @@
 import { fail } from '@sveltejs/kit';
 import { getProvider } from '$lib/data/provider';
 import { enabledPreferences } from '$lib/logic/choices';
-import { formatDateOption } from '$lib/logic/date';
+import { optionDisplay } from '$lib/logic/options';
 import { orderForRespondent } from '$lib/logic/participant-status';
 import { outcomeFor } from '$lib/logic/results';
 import { cachedLoad, invalidateCache } from '$lib/server/cache';
@@ -41,11 +41,12 @@ export const load: PageServerLoad = async ({ params, platform, url }) => {
 			description: ctx.event.description,
 			timezone: ctx.event.timezone,
 			accent: ctx.event.accent,
+			pollType: ctx.event.pollType,
 			choices: enabledPreferences(ctx.event),
 			dates: orderForRespondent(ctx.dateOptions, answeredIds).map((d) => ({
 				id: d.id,
 				needsAnswer: d.needsAnswer,
-				...formatDateOption(d.startsAt, d.endsAt, ctx.event.locale, ctx.event.timezone)
+				...optionDisplay(d, ctx.event)
 			})),
 			answers,
 			note: ctx.invitee.note ?? ''

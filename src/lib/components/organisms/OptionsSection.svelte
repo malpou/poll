@@ -10,17 +10,21 @@
 	import { X, ArrowUpNarrowWide, ChevronUp, ChevronDown, Pencil, Save, Plus } from '@lucide/svelte';
 	import { m } from '$lib/paraglide/messages';
 	import { refreshThen, confirmingRefresh } from '$lib/forms/enhance';
-	import type { DateOption, Locale, OptionView } from '$lib/types';
+	import type { DateOption, Locale, OptionView, PollType } from '$lib/types';
 
 	let {
 		options,
 		closed,
-		locale
+		locale,
+		pollType = 'dates'
 	}: {
 		options: OptionView[];
 		closed: boolean;
 		locale: Locale;
+		pollType?: PollType;
 	} = $props();
+
+	const question = $derived(pollType === 'question');
 
 	// Which option is in inline-edit mode (id) - null when none.
 	let editing = $state<string | null>(null);
@@ -28,13 +32,15 @@
 
 	// Days + slots picked in the add-dates calendar, cleared on a successful add.
 	let adding = $state<DateOption[]>([]);
+	// Question polls add one text option at a time instead.
+	let addingText = $state('');
 </script>
 
 {#key locale}
 	<section class="mb-10">
 		<div class="mb-3.5 flex items-center justify-between gap-2.5">
-			<SectionHeading text={m.datesSection()} />
-			{#if !closed && options.length > 1}
+			<SectionHeading text={question ? m.optionsSection() : m.datesSection()} />
+			{#if !closed && !question && options.length > 1}
 				<form method="POST" action="?/sortOptions" use:enhance={refreshThen()}>
 					<Button variant="ghost" type="submit"
 						><ArrowUpNarrowWide size={14} />{m.sortByDate()}</Button
@@ -54,7 +60,11 @@
 						>
 							<input type="hidden" name="optionId" value={opt.id} />
 							<div class="flex items-center gap-2.5">
-								<TextField type="date" name="value" value={opt.value} />
+								{#if question}
+									<TextField name="label" value={opt.label} />
+								{:else}
+									<TextField type="date" name="value" value={opt.value} />
+								{/if}
 								<Button variant="ghost" type="submit" iconOnly label={m.save()}
 									><Save size={16} /></Button
 								>
@@ -65,16 +75,18 @@
 									}}><X size={16} /></IconButton
 								>
 							</div>
-							<div class="flex items-center gap-3.5">
-								<div class="flex flex-1 items-center gap-2">
-									<span class="shrink-0 text-xs font-semibold text-ink-muted">{m.from()}</span>
-									<TextField type="time" compact name="startTime" value={opt.startTime} />
+							{#if !question}
+								<div class="flex items-center gap-3.5">
+									<div class="flex flex-1 items-center gap-2">
+										<span class="shrink-0 text-xs font-semibold text-ink-muted">{m.from()}</span>
+										<TextField type="time" compact name="startTime" value={opt.startTime} />
+									</div>
+									<div class="flex flex-1 items-center gap-2">
+										<span class="shrink-0 text-xs font-semibold text-ink-muted">{m.to()}</span>
+										<TextField type="time" compact name="endTime" value={opt.endTime} />
+									</div>
 								</div>
-								<div class="flex flex-1 items-center gap-2">
-									<span class="shrink-0 text-xs font-semibold text-ink-muted">{m.to()}</span>
-									<TextField type="time" compact name="endTime" value={opt.endTime} />
-								</div>
-							</div>
+							{/if}
 						</form>
 					{:else}
 						<!-- The date keeps a readable column; when the buttons don't fit
@@ -82,10 +94,14 @@
 						     of squeezing the text. -->
 						<div class="flex flex-wrap items-center gap-x-2.5 gap-y-1.5">
 							<div class="min-w-0 flex-1 basis-52 text-body text-ink">
-								<span class="font-bold capitalize">{opt.weekday}</span>
-								<span class="text-ink-soft">{opt.dateLabel}</span>
-								{#if opt.timeRange}
-									<span class="text-caption text-ink-muted">· {opt.timeRange}</span>
+								{#if opt.label}
+									<span class="font-bold">{opt.label}</span>
+								{:else}
+									<span class="font-bold capitalize">{opt.weekday}</span>
+									<span class="text-ink-soft">{opt.dateLabel}</span>
+									{#if opt.timeRange}
+										<span class="text-caption text-ink-muted">· {opt.timeRange}</span>
+									{/if}
 								{/if}
 							</div>
 							{#if !closed}
@@ -116,7 +132,10 @@
 									<form
 										method="POST"
 										action="?/removeOption"
-										use:enhance={confirmingRefresh(m.confirmDeleteOption(), opt.hasResponses)}
+										use:enhance={confirmingRefresh(
+											question ? m.confirmDeleteOptionQuestion() : m.confirmDeleteOption(),
+											opt.hasResponses
+										)}
 									>
 										<input type="hidden" name="optionId" value={opt.id} />
 										<IconButton label={m.remove()} type="submit"><X size={16} /></IconButton>
@@ -130,17 +149,33 @@
 		</div>
 
 		{#if !closed}
-			<form
-				method="POST"
-				action="?/addOption"
-				use:enhance={refreshThen(() => (adding = []))}
-				class="mt-2.5 flex flex-col gap-2.5"
-			>
-				<CalendarDatePicker bind:dates={adding} {locale} />
-				<Button variant="dashed" type="submit" disabled={adding.length === 0}>
-					<Plus size={14} />{m.addDate()}
-				</Button>
-			</form>
+			{#if question}
+				<form
+					method="POST"
+					action="?/addOption"
+					use:enhance={refreshThen(() => (addingText = ''))}
+					class="mt-2.5 rounded-card border-2 border-dashed border-border-strong bg-card-alt p-3"
+				>
+					<div class="flex items-center gap-2.5">
+						<TextField placeholder={m.optionPlaceholder()} name="label" bind:value={addingText} />
+						<Button variant="ghost" type="submit" disabled={!addingText.trim()}>
+							<Plus size={14} />{m.addOption()}
+						</Button>
+					</div>
+				</form>
+			{:else}
+				<form
+					method="POST"
+					action="?/addOption"
+					use:enhance={refreshThen(() => (adding = []))}
+					class="mt-2.5 flex flex-col gap-2.5"
+				>
+					<CalendarDatePicker bind:dates={adding} {locale} />
+					<Button variant="dashed" type="submit" disabled={adding.length === 0}>
+						<Plus size={14} />{m.addDate()}
+					</Button>
+				</form>
+			{/if}
 		{/if}
 	</section>
 {/key}

@@ -9,7 +9,7 @@
 	import { Lock, Star } from '@lucide/svelte';
 	import { m } from '$lib/paraglide/messages';
 	import { refreshThen, confirmingRefresh } from '$lib/forms/enhance';
-	import type { Locale, ResultView } from '$lib/types';
+	import type { Locale, PollType, ResultView } from '$lib/types';
 
 	let {
 		results,
@@ -18,7 +18,8 @@
 		allowUnsure,
 		closed,
 		selecting = $bindable(),
-		locale
+		locale,
+		pollType = 'dates'
 	}: {
 		results: ResultView[];
 		respondedLabel: string;
@@ -27,7 +28,10 @@
 		closed: boolean;
 		selecting: boolean;
 		locale: Locale;
+		pollType?: PollType;
 	} = $props();
+
+	const question = $derived(pollType === 'question');
 
 	// Closing flow: each result card gets a checkbox; confirming posts the ids.
 	let picked = $state<Record<string, boolean>>({});
@@ -46,7 +50,9 @@
 			<!-- One "who answered" summary for the whole poll, not per card. -->
 			<div class="mb-3.5 text-caption font-semibold text-ink-muted">{respondedLabel}</div>
 			{#if selecting}
-				<div class="mb-3.5 text-caption font-semibold text-primary">{m.closeSelectHint()}</div>
+				<div class="mb-3.5 text-caption font-semibold text-primary">
+					{question ? m.closeSelectHintQuestion() : m.closeSelectHint()}
+				</div>
 			{/if}
 			<div class="flex flex-col gap-3">
 				{#each results as r, i (r.id)}
@@ -62,25 +68,29 @@
 					>
 						<div class="flex flex-wrap items-baseline gap-x-2.5 gap-y-1">
 							{#if selecting}
-								<!-- The closing pick: one checkbox per date, posted on confirm. -->
+								<!-- The closing pick: one checkbox per option, posted on confirm. -->
 								<input
 									type="checkbox"
-									aria-label={m.selectDateLabel()}
+									aria-label={question ? m.selectOptionLabel() : m.selectDateLabel()}
 									checked={picked[r.id] ?? false}
 									onchange={() => (picked[r.id] = !picked[r.id])}
 									class="h-5 w-5 shrink-0 translate-y-1 cursor-pointer accent-ink"
 								/>
 							{/if}
-							<span class="text-lead font-bold capitalize text-ink">{r.weekday}</span>
-							<span class="text-body text-ink-soft">{r.dateLabel}</span>
-							{#if r.timeRange}
-								<span class="text-caption text-ink-muted">{r.timeRange}</span>
+							{#if r.label}
+								<span class="text-lead font-bold text-ink">{r.label}</span>
+							{:else}
+								<span class="text-lead font-bold capitalize text-ink">{r.weekday}</span>
+								<span class="text-body text-ink-soft">{r.dateLabel}</span>
+								{#if r.timeRange}
+									<span class="text-caption text-ink-muted">{r.timeRange}</span>
+								{/if}
 							{/if}
 							{#if r.chosen}
 								<span
 									class="ml-auto whitespace-nowrap rounded-full bg-ink px-2.5 py-1 text-2xs font-bold uppercase tracking-wider text-card"
 								>
-									{m.chosenBadge()}
+									{question ? m.chosenBadgeQuestion() : m.chosenBadge()}
 								</span>
 							{:else if r.isBest && !closed}
 								<!-- The recommendation only matters while the call is still open. -->
@@ -88,7 +98,7 @@
 									class="ml-auto inline-flex -rotate-1 items-center gap-1 whitespace-nowrap rounded-full bg-hl px-2.5 py-1 text-2xs font-bold uppercase tracking-wider text-ink"
 								>
 									<Star size={11} fill="currentColor" aria-hidden="true" />
-									{m.bestDate()}
+									{question ? m.bestOption() : m.bestDate()}
 								</span>
 							{/if}
 						</div>
@@ -129,7 +139,11 @@
 					<form
 						method="POST"
 						action="?/cancel"
-						use:enhance={confirmingRefresh(m.confirmCancelPoll(), true, leaveSelection)}
+						use:enhance={confirmingRefresh(
+							question ? m.confirmCancelPollQuestion() : m.confirmCancelPoll(),
+							true,
+							leaveSelection
+						)}
 					>
 						<Button variant="ghost" type="submit">{m.cancelPoll()}</Button>
 					</form>

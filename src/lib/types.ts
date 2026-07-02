@@ -21,6 +21,11 @@ export interface Participant {
 
 export type PollMode = 'assigned' | 'open';
 
+// dates = candidate-date options; question = free-form text options. Chosen at
+// creation, immutable after; validated at the form boundary (no SQL CHECK).
+export const POLL_TYPES = ['dates', 'question'] as const;
+export type PollType = (typeof POLL_TYPES)[number];
+
 // The poll's highlighter accent; validated at the form boundary (no SQL CHECK).
 export const ACCENTS = ['yellow', 'pink', 'green', 'blue', 'purple'] as const;
 export type Accent = (typeof ACCENTS)[number];
@@ -35,7 +40,9 @@ export interface EventDraft {
 	allowPreferred: boolean;
 	allowUnsure: boolean;
 	accent: Accent;
-	dates: DateOption[];
+	pollType: PollType;
+	dates: DateOption[]; // dates polls only
+	textOptions: string[]; // question polls only - trimmed option labels
 	participants: Participant[];
 }
 
@@ -60,6 +67,7 @@ export interface EventRow {
 	allowPreferred: boolean;
 	allowUnsure: boolean;
 	accent: Accent;
+	pollType: PollType;
 	createdAt: string;
 }
 
@@ -68,6 +76,8 @@ export interface DateOptionRow {
 	eventId: string;
 	startsAt: string | null;
 	endsAt: string | null;
+	// Question polls: the option's text (starts_at/ends_at null). Dates polls: null.
+	label: string | null;
 	sortOrder: number;
 	// True on the option(s) the organizer picked when closing; false while open.
 	selected: boolean;
@@ -109,12 +119,14 @@ export interface ShareContext {
 	dateOptions: DateOptionRow[];
 }
 
-// One date option as the response page renders it.
+// One option as the response page renders it. On question polls `label` is the
+// option's text and the three date fields are ''; on dates polls the reverse.
 export interface ResponseDateView {
 	id: string;
 	weekday: string;
 	dateLabel: string;
 	timeRange: string;
+	label: string;
 	// Set by the /r load for returning respondents: dates added since they
 	// answered arrive first in the list and flagged. Absent on /s.
 	needsAnswer?: boolean;
@@ -131,6 +143,7 @@ export interface OptionView {
 	weekday: string;
 	dateLabel: string;
 	timeRange: string;
+	label: string;
 }
 
 export interface ResultView {
@@ -152,6 +165,7 @@ export interface ResultView {
 	weekday: string;
 	dateLabel: string;
 	timeRange: string;
+	label: string;
 }
 
 export interface InviteeView {

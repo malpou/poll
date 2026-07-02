@@ -6,6 +6,7 @@
 	import { ArrowRight } from '@lucide/svelte';
 	import SectionHeading from '$lib/components/atoms/SectionHeading.svelte';
 	import CalendarDatePicker from '$lib/components/molecules/CalendarDatePicker.svelte';
+	import TextOptionList from '$lib/components/molecules/TextOptionList.svelte';
 	import ParticipantList from '$lib/components/organisms/ParticipantList.svelte';
 	import Toast from '$lib/components/atoms/Toast.svelte';
 	import { createToast } from '$lib/components/atoms/create-toast.svelte';
@@ -15,7 +16,7 @@
 	import { helpers } from '$lib/data/shared';
 	import AccentPicker from '$lib/components/atoms/AccentPicker.svelte';
 	import LanguagePicker from '$lib/components/atoms/LanguagePicker.svelte';
-	import type { Accent, DateOption, Locale, Participant, PollMode } from '$lib/types';
+	import type { Accent, DateOption, Locale, Participant, PollMode, PollType } from '$lib/types';
 
 	// The create action's fail() payload; null on first render / success.
 	// suggestedLocale seeds the picker from the visitor's Accept-Language.
@@ -37,7 +38,12 @@
 	let allowUnsure = $state(false);
 	// The poll's highlighter; data-accent on the form previews it live.
 	let accent = $state<Accent>('yellow');
+	// Immutable after creation: dates polls pick candidate dates, question polls
+	// carry free-form text options. Both lists survive a type switch pre-submit;
+	// only the picked type's rows are mounted, so only those post.
+	let pollType = $state<PollType>('dates');
 	let dates = $state<DateOption[]>([]);
+	let textOptions = $state<{ id: string; text: string }[]>([]);
 	let participants = $state<Participant[]>([]);
 
 	// Timezone every option's times are read in. Defaults to the visitor's own
@@ -95,8 +101,38 @@
 				<span class="hl-swipe">{m.createTitle()}</span>
 			</h1>
 			<p class="mb-8 max-w-prose text-body leading-relaxed text-ink-muted">
-				{m.createIntro()}
+				{pollType === 'question' ? m.createIntroQuestion() : m.createIntro()}
 			</p>
+
+			<!-- The type decides what the rest of the form asks for, so it leads. -->
+			<fieldset class="mb-9 flex flex-col gap-2.5">
+				<legend class="mb-3 text-2xs font-bold uppercase tracking-widest text-ink-muted">
+					{m.fieldPollType()}
+				</legend>
+				{#each [{ value: 'dates', label: m.pollTypeDates() }, { value: 'question', label: m.pollTypeQuestion() }] as opt (opt.value)}
+					{@const active = pollType === opt.value}
+					<label
+						class="relative flex cursor-pointer items-center gap-3 rounded-control border-2 p-3.5 text-body text-ink transition hover:border-ink {active
+							? 'border-ink bg-hl-tint'
+							: 'border-border-strong bg-card-alt'}"
+					>
+						<input
+							type="radio"
+							name="pollType"
+							value={opt.value}
+							bind:group={pollType}
+							class="peer absolute inset-0 h-full w-full cursor-pointer opacity-0"
+						/>
+						<span class="grid h-4 w-4 shrink-0 place-items-center rounded-full border-2 border-ink">
+							<span class="h-2 w-2 rounded-full {active ? 'bg-ink' : ''}"></span>
+						</span>
+						{opt.label}
+					</label>
+				{/each}
+				<p class="text-caption leading-relaxed text-ink-muted">
+					{pollType === 'question' ? m.pollTypeQuestionHint() : m.pollTypeDatesHint()}
+				</p>
+			</fieldset>
 
 			<div class="mb-6">
 				<TextField
@@ -111,15 +147,23 @@
 				<RichTextEditor label={m.fieldDescription()} name="description" bind:value={description} />
 			</div>
 
-			<div class="mb-10">
-				<SectionHeading text={m.datesSection()} class="mb-1" />
-				<p class="mb-3.5 text-caption text-ink-muted">{m.datesHint()}</p>
-				<CalendarDatePicker bind:dates {locale} />
-			</div>
+			{#if pollType === 'question'}
+				<div class="mb-10">
+					<SectionHeading text={m.optionsSection()} class="mb-1" />
+					<p class="mb-3.5 text-caption text-ink-muted">{m.optionsHint()}</p>
+					<TextOptionList bind:options={textOptions} />
+				</div>
+			{:else}
+				<div class="mb-10">
+					<SectionHeading text={m.datesSection()} class="mb-1" />
+					<p class="mb-3.5 text-caption text-ink-muted">{m.datesHint()}</p>
+					<CalendarDatePicker bind:dates {locale} />
+				</div>
 
-			<div class="mb-9">
-				<TimezoneCombobox name="timezone" bind:value={timezone} {locale} />
-			</div>
+				<div class="mb-9">
+					<TimezoneCombobox name="timezone" bind:value={timezone} {locale} />
+				</div>
+			{/if}
 
 			<fieldset class="mb-9 flex flex-col gap-2.5">
 				<legend class="mb-3 text-2xs font-bold uppercase tracking-widest text-ink-muted">

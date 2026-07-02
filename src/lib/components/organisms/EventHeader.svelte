@@ -15,7 +15,7 @@
 	import LanguagePicker from '$lib/components/atoms/LanguagePicker.svelte';
 	import { refreshThen } from '$lib/forms/enhance';
 	import { isRichText, toEditorHtml } from '$lib/forms/richtext';
-	import type { Accent, Locale, PollMode } from '$lib/types';
+	import type { Accent, Locale, PollMode, PollType } from '$lib/types';
 
 	let {
 		title,
@@ -27,6 +27,7 @@
 		eventLocale,
 		locale,
 		timezone,
+		pollType = 'dates',
 		closed,
 		selecting = $bindable(),
 		onpreviewlocale,
@@ -43,6 +44,8 @@
 		eventLocale: Locale;
 		locale: Locale;
 		timezone: string;
+		// The type itself is immutable - never an input, only a render branch.
+		pollType?: PollType;
 		closed: boolean;
 		selecting: boolean;
 		onpreviewlocale: (l: Locale) => void;
@@ -142,9 +145,12 @@
 				<!-- Picking a language previews the whole dashboard immediately; saving
 				     persists it, cancelling rolls it back. Same live switch as /. -->
 				<LanguagePicker bind:value={draftLocale} onpick={onpreviewlocale} />
-				<!-- Saving re-renders every option's times in the new zone; no live
-				     preview since times are server-rendered. -->
-				<TimezoneCombobox name="timezone" bind:value={draftTimezone} {locale} />
+				{#if pollType !== 'question'}
+					<!-- Saving re-renders every option's times in the new zone; no live
+					     preview since times are server-rendered. Question polls have no
+					     times, so no zone to set. -->
+					<TimezoneCombobox name="timezone" bind:value={draftTimezone} {locale} />
+				{/if}
 				<div class="flex items-center gap-2.5">
 					<Button variant="ghost" type="submit" iconOnly label={m.save()}><Save size={16} /></Button
 					>
@@ -178,11 +184,13 @@
 					<span class="sr-only">{m.fieldLanguage()}:</span>
 					<span class="font-semibold text-ink">{localeLabel(eventLocale)}</span>
 				</li>
-				<li class="flex items-center gap-1.5">
-					<Clock size={14} aria-hidden="true" />
-					<span class="sr-only">{m.fieldTimezone()}:</span>
-					<span class="font-semibold text-ink">{tzLabel(timezone, locale)}</span>
-				</li>
+				{#if pollType !== 'question'}
+					<li class="flex items-center gap-1.5">
+						<Clock size={14} aria-hidden="true" />
+						<span class="sr-only">{m.fieldTimezone()}:</span>
+						<span class="font-semibold text-ink">{tzLabel(timezone, locale)}</span>
+					</li>
+				{/if}
 			</ul>
 		{/if}
 

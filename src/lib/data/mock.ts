@@ -48,6 +48,10 @@ export const mockProvider: DataProvider = {
 
 	async updateDateOption() {},
 
+	async addTextOption() {},
+
+	async updateTextOption() {},
+
 	async removeDateOption() {},
 
 	async reorderDateOptions() {},

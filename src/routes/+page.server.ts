@@ -6,7 +6,7 @@ import { baseLocale, extractLocaleFromHeader, isLocale } from '$lib/paraglide/ru
 import { setRequestLocale } from '../hooks.server';
 import { field, parseIndexed, validateTimes } from '$lib/forms/forms';
 import { richTextIsEmpty, sanitizeRichText } from '$lib/forms/richtext';
-import type { Accent, DateOption, Locale, Participant, PollMode } from '$lib/types';
+import type { Accent, DateOption, Locale, Participant, PollMode, PollType } from '$lib/types';
 import { ACCENTS } from '$lib/types';
 import type { Actions, PageServerLoad } from './$types';
 
@@ -35,6 +35,8 @@ export const actions = {
 			? tzField
 			: 'Europe/Copenhagen';
 		const pollMode: PollMode = field(form, 'pollMode') === 'open' ? 'open' : 'assigned';
+		// Same discipline as pollMode: anything but the known other value is the default.
+		const pollType: PollType = field(form, 'pollType') === 'question' ? 'question' : 'dates';
 		// Hidden inputs carry explicit '1'/'0'; absence falls back to the defaults.
 		const allowPreferred = field(form, 'allowPreferred') !== '0';
 		const allowUnsure = field(form, 'allowUnsure') === '1';
@@ -45,14 +47,25 @@ export const actions = {
 			: 'yellow';
 
 		// Drop rows the user added but never filled with a date.
-		const dates: DateOption[] = parseIndexed(form, 'dates')
-			.map((d) => ({
-				id: newToken(),
-				value: d.value ?? '',
-				startTime: d.startTime ?? '',
-				endTime: d.endTime ?? ''
-			}))
-			.filter((d) => d.value !== '');
+		const dates: DateOption[] =
+			pollType === 'question'
+				? []
+				: parseIndexed(form, 'dates')
+						.map((d) => ({
+							id: newToken(),
+							value: d.value ?? '',
+							startTime: d.startTime ?? '',
+							endTime: d.endTime ?? ''
+						}))
+						.filter((d) => d.value !== '');
+
+		// Question options: trimmed by field(); blank rows don't count (or post).
+		const textOptions: string[] =
+			pollType === 'question'
+				? parseIndexed(form, 'options')
+						.map((o) => o.text ?? '')
+						.filter((t) => t !== '')
+				: [];
 
 		// Open mode has no named list - anyone submits via the shared link.
 		const participants: Participant[] =
@@ -76,13 +89,17 @@ export const actions = {
 			allowPreferred,
 			allowUnsure,
 			accent,
+			pollType,
 			dates,
+			textOptions,
 			participants
 		};
 
 		let error: string | null = null;
 		if (!title) error = m.errorNoTitle();
-		else if (dates.length === 0) error = m.errorNoDates();
+		else if (pollType === 'question') {
+			if (textOptions.length < 2) error = m.errorTooFewOptions();
+		} else if (dates.length === 0) error = m.errorNoDates();
 		else {
 			for (const d of dates) {
 				error = validateTimes(d.startTime, d.endTime);

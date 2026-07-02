@@ -1,6 +1,7 @@
 import { fail } from '@sveltejs/kit';
 import { getProvider } from '$lib/data/provider';
-import { formatDateOption, utcIsoToZonedParts } from '$lib/logic/date';
+import { utcIsoToZonedParts } from '$lib/logic/date';
+import { optionDisplay } from '$lib/logic/options';
 import { field, parseIndexed, validateTimes } from '$lib/forms/forms';
 import { richTextIsEmpty, sanitizeRichText } from '$lib/forms/richtext';
 import { inviteeStatus, responseCountByInvitee } from '$lib/logic/participant-status';
@@ -85,7 +86,7 @@ async function computeDashboard(platform: App.Platform | undefined, token: strin
 				availableNames: names.available,
 				unavailableNames: names.unavailable,
 				unsureNames: names.unsure,
-				...formatDateOption(d.startsAt, d.endsAt, event.locale, event.timezone)
+				...optionDisplay(d, event)
 			};
 		})
 	);
@@ -109,10 +110,9 @@ async function computeDashboard(platform: App.Platform | undefined, token: strin
 		allowUnsure: event.allowUnsure,
 		accent: event.accent,
 		status: event.status,
-		// The decided dates for the closed banner - empty unless closed with a pick.
-		chosenDates: event.dateOptions
-			.filter((d) => d.selected)
-			.map((d) => formatDateOption(d.startsAt, d.endsAt, event.locale, event.timezone)),
+		pollType: event.pollType,
+		// The decided options for the closed banner - empty unless closed with a pick.
+		chosenDates: event.dateOptions.filter((d) => d.selected).map((d) => optionDisplay(d, event)),
 		results: resultsView,
 		// One summary of who has answered, shown under the results heading. Open mode
 		// has no fixed roster, so it drops the "of Y" denominator.
@@ -129,7 +129,7 @@ async function computeDashboard(platform: App.Platform | undefined, token: strin
 				startTime: start.time,
 				endTime: d.endsAt ? utcIsoToZonedParts(d.endsAt, event.timezone).time : '',
 				hasResponses: optionHasResponses.get(d.id) ?? false,
-				...formatDateOption(d.startsAt, d.endsAt, event.locale, event.timezone)
+				...optionDisplay(d, event)
 			};
 		}),
 		invitees: event.invitees.map((inv) => ({
@@ -245,6 +245,14 @@ export const actions = {
 		if (!event) return fail(404);
 		if (notOpen(event)) return fail(409);
 		const form = await request.formData();
+		// Question polls add one text option at a time; empty text is rejected.
+		if (event.pollType === 'question') {
+			const label = field(form, 'label');
+			if (!label) return fail(400, { error: 'label' });
+			await provider.addTextOption(event.id, label);
+			await purgeEvent(platform, url.origin, params.token, event);
+			return { ok: true };
+		}
 		// The calendar posts indexed rows, one per (day, slot) - same wire shape
 		// as the create page. All-or-nothing: any invalid row rejects the batch.
 		const rows: DateOptionInput[] = parseIndexed(form, 'dates')
@@ -270,8 +278,16 @@ export const actions = {
 		if (notOpen(event)) return fail(409);
 		const form = await request.formData();
 		const optionId = field(form, 'optionId');
-		const date = dateInput(form);
 		if (!optionId || !event.dateOptions.some((d) => d.id === optionId)) return fail(404);
+		// Question polls edit the option's text; whitespace-only keeps the old text.
+		if (event.pollType === 'question') {
+			const label = field(form, 'label');
+			if (!label) return fail(400, { error: 'label' });
+			await provider.updateTextOption(optionId, label);
+			await purgeEvent(platform, url.origin, params.token, event);
+			return { ok: true };
+		}
+		const date = dateInput(form);
 		if (!date.value) return fail(400, { error: 'value' });
 		const timeError = validateTimes(date.startTime, date.endTime);
 		if (timeError) return fail(400, { error: timeError });
@@ -379,7 +395,12 @@ export const actions = {
 		];
 		const valid = new Set(event.dateOptions.map((d) => d.id));
 		if (ids.length === 0 || !ids.every((id) => valid.has(id)))
-			return fail(400, { error: m.errorNoSelection({}, { locale: event.locale }) });
+			return fail(400, {
+				error:
+					event.pollType === 'question'
+						? m.errorNoSelectionQuestion({}, { locale: event.locale })
+						: m.errorNoSelection({}, { locale: event.locale })
+			});
 		await provider.closeEvent(event.id, ids);
 		await purgeEvent(platform, url.origin, params.token, event);
 		return { ok: true };

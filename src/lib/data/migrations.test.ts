@@ -150,6 +150,19 @@ describe('migration stack', () => {
 		expect(fresh.accent).toBe('yellow');
 	});
 
+	it('0008 defaults poll_type to dates on legacy and new rows', () => {
+		const legacy = db.prepare(`SELECT poll_type FROM events WHERE id = 'e1'`).get() as {
+			poll_type: string;
+		};
+		expect(legacy.poll_type).toBe('dates');
+		db.exec(`INSERT INTO events (id, title, organizer_token, status, created_at)
+		         VALUES ('eQ', 'T', 'otok-q', 'open', '2026-07-01T00:00:00Z')`);
+		const fresh = db.prepare(`SELECT poll_type FROM events WHERE id = 'eQ'`).get() as {
+			poll_type: string;
+		};
+		expect(fresh.poll_type).toBe('dates');
+	});
+
 	it('the rebuild drops no rows from events or any child table', () => {
 		const count = (t: string) =>
 			(db.prepare(`SELECT COUNT(*) AS n FROM ${t}`).get() as { n: number }).n;

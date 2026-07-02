@@ -31,7 +31,7 @@ for this write volume.
 
 ## Data model (D1)
 
-- `events(id, title, description, locale, timezone, poll_mode, allow_preferred, allow_unsure, accent, organizer_token, share_token, status, created_at)`
+- `events(id, title, description, locale, timezone, poll_mode, allow_preferred, allow_unsure, accent, poll_type, organizer_token, share_token, status, created_at)`
   - status ∈ {open, closed, cancelled}. `closed` means the organizer picked the
     final date(s); `cancelled` means they closed without picking (abandoned).
     Reopening returns to `open` and clears any chosen dates
@@ -49,7 +49,14 @@ for this write volume.
     (preferred → available, unsure → unavailable); re-enabling never restores
   - accent ∈ {yellow, pink, green, blue}, default yellow - the poll's
     highlighter color, validated at the form boundary (no SQL CHECK)
+  - poll_type ∈ {dates, question}, default dates, validated at the form
+    boundary (no SQL CHECK). Immutable after creation. `question`: the poll
+    asks a free-form question (title/description) over 2+ text options; no
+    timezone surfaced, no calendar, no sort-by-date
 - `date_options(id, event_id, starts_at, ends_at, label, sort_order, selected)`
+  - one row per option regardless of poll type. Dates polls: `starts_at`/
+    `ends_at` set, `label` null. Question polls: `label` holds the option's
+    text, `starts_at`/`ends_at` null
   - `starts_at` and `ends_at` are both optional (nullable); `ends_at` requires `starts_at`
   - `selected` ∈ {0, 1} - flagged on the option(s) the organizer picked when
     closing; always 0 while the poll is open or cancelled
@@ -65,8 +72,9 @@ for this write volume.
 
 ## Routes
 
-- `/` create a new event (title, description, language, timezone, mode, dates;
-  participants in assigned mode)
+- `/` create a new event (title, description, language, poll type, mode;
+  dates and timezone or 2+ text options per type; participants in assigned
+  mode)
 - `/e/{organizer_token}` organizer dashboard: options, people/results, mode +
   language, shared link (open mode)
 - `/r/{invitee_token}` recipient response page (assigned invitee, or an open

@@ -66,6 +66,9 @@ export interface DataProvider {
 	 *  timezone = the event's IANA zone the date's wall-clock times are read in. */
 	addDateOption(eventId: string, date: DateOptionInput, timezone: string): Promise<void>;
 	updateDateOption(optionId: string, date: DateOptionInput, timezone: string): Promise<void>;
+	/** Question-poll text options: label set, starts_at/ends_at stay null. */
+	addTextOption(eventId: string, label: string): Promise<void>;
+	updateTextOption(optionId: string, label: string): Promise<void>;
 	removeDateOption(optionId: string): Promise<void>;
 	/** Rewrite sort_order so the event's options follow orderedIds' array order. */
 	reorderDateOptions(eventId: string, orderedIds: string[]): Promise<void>;

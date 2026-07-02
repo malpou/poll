@@ -10,12 +10,14 @@ manage the event through a secret organizer link.
 ### Requirement: Event creation
 
 The system SHALL allow anyone to create an event with a title, a language, a
-timezone, a poll mode, and one or more candidate date options, and SHALL return
-a secret organizer link for it. The timezone picker SHALL default to the
-visitor's own timezone, and SHALL label each timezone with its identifier plus
-a zone name localized to the form's current language. The timezone picker
-SHALL be a combo box: an editable text field whose suggestion list narrows to
-the timezones matching the typed text, and only a real timezone can end up
+poll mode, and a poll type — dates (the default) or question (see
+specs/question-options) — and SHALL return a secret organizer link for it. A
+dates-type event SHALL additionally require a timezone and one or more
+candidate date options. The timezone picker SHALL default to the visitor's
+own timezone, and SHALL label each timezone with its identifier plus a zone
+name localized to the form's current language. The timezone picker SHALL be a
+combo box: an editable text field whose suggestion list narrows to the
+timezones matching the typed text, and only a real timezone can end up
 selected — text matching no timezone reverts to the previously selected zone.
 
 #### Scenario: Create an event with options
@@ -325,14 +327,15 @@ submit.
 
 ### Requirement: Event timezone
 
-The system SHALL render every date option's times in the event's timezone,
-chosen by the organizer at creation and changeable afterwards alongside the
-title and description. Wherever the event's timezone is named — on the
-dashboard and in the timezone picker when editing — the label SHALL include a
-zone name localized to the current language alongside the identifier. The
-edit picker SHALL be the same combo box as at creation: typing filters the
-timezone list, and text matching no timezone reverts to the event's current
-zone.
+On a dates-type poll, the system SHALL render every date option's times in
+the event's timezone, chosen by the organizer at creation and changeable
+afterwards alongside the title and description. Wherever the event's timezone
+is named — on the dashboard and in the timezone picker when editing — the
+label SHALL include a zone name localized to the current language alongside
+the identifier. The edit picker SHALL be the same combo box as at creation:
+typing filters the timezone list, and text matching no timezone reverts to
+the event's current zone. A question-type poll SHALL surface no timezone
+setting (see specs/question-options).
 
 #### Scenario: Change the timezone
 

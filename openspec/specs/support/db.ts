@@ -60,6 +60,7 @@ export interface EventSeed {
 	allowPreferred?: boolean; // omit → column default on
 	allowUnsure?: boolean; // omit → column default off
 	accent?: 'yellow' | 'pink' | 'green' | 'blue' | 'purple'; // omit → column default 'yellow'
+	pollType?: 'dates' | 'question'; // omit → column default 'dates'
 	createdAt?: string;
 }
 export interface DateOptionSeed {
@@ -88,8 +89,8 @@ export interface ResponseSeed {
 
 export function seedEvent(e: EventSeed) {
 	d1(
-		`INSERT INTO events (id, title, description, organizer_token, status, locale, timezone, poll_mode, allow_preferred, allow_unsure, accent, share_token, created_at) VALUES
-		   (${lit(e.id)}, ${lit(e.title)}, ${lit(e.description)}, ${lit(e.organizerToken)}, ${lit(e.status)}, ${lit(e.locale ?? 'en')}, ${lit(e.timezone ?? 'Europe/Copenhagen')}, ${lit(e.pollMode ?? 'assigned')}, ${e.allowPreferred === false ? 0 : 1}, ${e.allowUnsure ? 1 : 0}, ${lit(e.accent ?? 'yellow')}, ${lit(e.shareToken ?? null)}, ${lit(e.createdAt ?? NOW)});`
+		`INSERT INTO events (id, title, description, organizer_token, status, locale, timezone, poll_mode, allow_preferred, allow_unsure, accent, poll_type, share_token, created_at) VALUES
+		   (${lit(e.id)}, ${lit(e.title)}, ${lit(e.description)}, ${lit(e.organizerToken)}, ${lit(e.status)}, ${lit(e.locale ?? 'en')}, ${lit(e.timezone ?? 'Europe/Copenhagen')}, ${lit(e.pollMode ?? 'assigned')}, ${e.allowPreferred === false ? 0 : 1}, ${e.allowUnsure ? 1 : 0}, ${lit(e.accent ?? 'yellow')}, ${lit(e.pollType ?? 'dates')}, ${lit(e.shareToken ?? null)}, ${lit(e.createdAt ?? NOW)});`
 	);
 }
 
@@ -191,6 +192,19 @@ export function eventChoices(eventId: string): { allowPreferred: boolean; allowU
 // The poll's highlighter accent (yellow|pink|green|blue).
 export function eventAccent(eventId: string): string {
 	return d1(`SELECT accent FROM events WHERE id = ${lit(eventId)}`).results[0].accent as string;
+}
+
+// dates | question - immutable after creation.
+export function eventPollType(eventId: string): string {
+	return d1(`SELECT poll_type FROM events WHERE id = ${lit(eventId)}`).results[0]
+		.poll_type as string;
+}
+
+// Question options' texts, in display order (null labels come back as null).
+export function optionLabels(eventId: string): (string | null)[] {
+	return d1(
+		`SELECT label FROM date_options WHERE event_id = ${lit(eventId)} ORDER BY sort_order`
+	).results.map((r) => (r.label as string | null) ?? null);
 }
 
 export function eventTimezone(eventId: string): string {

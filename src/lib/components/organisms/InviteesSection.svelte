@@ -11,19 +11,21 @@
 	import { X, MessageSquare, Pencil, Save } from '@lucide/svelte';
 	import { m } from '$lib/paraglide/messages';
 	import { refreshThen, confirmingRefresh } from '$lib/forms/enhance';
-	import type { InviteeView, Locale, PollMode } from '$lib/types';
+	import type { InviteeView, Locale, PollMode, PollType } from '$lib/types';
 
 	let {
 		invitees,
 		pollMode,
 		closed,
 		locale,
+		pollType = 'dates',
 		oncopied
 	}: {
 		invitees: InviteeView[];
 		pollMode: PollMode;
 		closed: boolean;
 		locale: Locale;
+		pollType?: PollType;
 		oncopied: () => void;
 	} = $props();
 
@@ -37,7 +39,12 @@
 			? { cls: 'bg-good-tint text-good', text: m.answered() }
 			: {
 					cls: 'bg-hl-tint text-ink',
-					text: s === 'partial' ? m.partialAnswered() : m.pending()
+					text:
+						s === 'partial'
+							? pollType === 'question'
+								? m.partialAnsweredQuestion()
+								: m.partialAnswered()
+							: m.pending()
 				};
 
 	// Expanded invitee notes.

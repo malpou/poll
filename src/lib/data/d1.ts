@@ -28,6 +28,7 @@ function mapEvent(r: Record<string, unknown>): EventRow {
 		allowPreferred: r.allow_preferred === 1,
 		allowUnsure: r.allow_unsure === 1,
 		accent: r.accent as EventRow['accent'],
+		pollType: r.poll_type as EventRow['pollType'],
 		createdAt: r.created_at as string
 	};
 }
@@ -38,6 +39,7 @@ function mapDateOption(r: Record<string, unknown>): DateOptionRow {
 		eventId: r.event_id as string,
 		startsAt: (r.starts_at as string | null) ?? null,
 		endsAt: (r.ends_at as string | null) ?? null,
+		label: (r.label as string | null) ?? null,
 		sortOrder: r.sort_order as number,
 		selected: r.selected === 1
 	};
@@ -82,8 +84,8 @@ export function d1Provider(db: D1Database): DataProvider {
 			const statements: D1PreparedStatement[] = [
 				db
 					.prepare(
-						`INSERT INTO events (id, title, description, locale, timezone, poll_mode, allow_preferred, allow_unsure, accent, organizer_token, share_token, status, created_at)
-						 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'open', ?)`
+						`INSERT INTO events (id, title, description, locale, timezone, poll_mode, allow_preferred, allow_unsure, accent, poll_type, organizer_token, share_token, status, created_at)
+						 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'open', ?)`
 					)
 					.bind(
 						eventId,
@@ -95,28 +97,42 @@ export function d1Provider(db: D1Database): DataProvider {
 						draft.allowPreferred ? 1 : 0,
 						draft.allowUnsure ? 1 : 0,
 						draft.accent,
+						draft.pollType,
 						organizerToken,
 						shareToken,
 						now
 					)
 			];
 
-			draft.dates.forEach((d, i) => {
-				statements.push(
-					db
-						.prepare(
-							`INSERT INTO date_options (id, event_id, starts_at, ends_at, sort_order)
-							 VALUES (?, ?, ?, ?, ?)`
-						)
-						.bind(
-							id('date'),
-							eventId,
-							zonedToUtcIso(d.value, d.startTime, draft.timezone),
-							zonedToUtcIso(d.value, d.endTime, draft.timezone),
-							i
-						)
-				);
-			});
+			if (draft.pollType === 'question') {
+				draft.textOptions.forEach((label, i) => {
+					statements.push(
+						db
+							.prepare(
+								`INSERT INTO date_options (id, event_id, label, sort_order)
+								 VALUES (?, ?, ?, ?)`
+							)
+							.bind(id('opt'), eventId, label, i)
+					);
+				});
+			} else {
+				draft.dates.forEach((d, i) => {
+					statements.push(
+						db
+							.prepare(
+								`INSERT INTO date_options (id, event_id, starts_at, ends_at, sort_order)
+								 VALUES (?, ?, ?, ?, ?)`
+							)
+							.bind(
+								id('date'),
+								eventId,
+								zonedToUtcIso(d.value, d.startTime, draft.timezone),
+								zonedToUtcIso(d.value, d.endTime, draft.timezone),
+								i
+							)
+					);
+				});
+			}
 
 			for (const p of draft.participants) {
 				statements.push(
@@ -332,6 +348,25 @@ export function d1Provider(db: D1Database): DataProvider {
 					zonedToUtcIso(date.value, date.endTime, timezone),
 					optionId
 				)
+				.run();
+		},
+
+		async addTextOption(eventId, label) {
+			// Append after the current last option for this event.
+			const max = await db
+				.prepare(`SELECT MAX(sort_order) AS m FROM date_options WHERE event_id = ?`)
+				.bind(eventId)
+				.first<{ m: number | null }>();
+			await db
+				.prepare(`INSERT INTO date_options (id, event_id, label, sort_order) VALUES (?, ?, ?, ?)`)
+				.bind(id('opt'), eventId, label, (max?.m ?? -1) + 1)
+				.run();
+		},
+
+		async updateTextOption(optionId, label) {
+			await db
+				.prepare(`UPDATE date_options SET label = ? WHERE id = ?`)
+				.bind(label, optionId)
 				.run();
 		},
 

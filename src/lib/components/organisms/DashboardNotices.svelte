@@ -4,7 +4,7 @@
 	import NoticeBanner from '$lib/components/atoms/NoticeBanner.svelte';
 	import { TriangleAlert, Lock } from '@lucide/svelte';
 	import { m } from '$lib/paraglide/messages';
-	import type { EventStatus, InviteeView, Locale, PollMode } from '$lib/types';
+	import type { EventStatus, InviteeView, Locale, PollMode, PollType } from '$lib/types';
 
 	// Everything between the header and the results: share link, save-your-link
 	// warning, closed/cancelled status, and the chase-up list for partial answers.
@@ -14,6 +14,7 @@
 		shareUrl,
 		organizerUrl,
 		chosenDates,
+		pollType = 'dates',
 		partials,
 		locale,
 		oncopied
@@ -22,11 +23,14 @@
 		status: EventStatus;
 		shareUrl: string;
 		organizerUrl: string;
-		chosenDates: { weekday: string; dateLabel: string; timeRange: string }[];
+		chosenDates: { weekday: string; dateLabel: string; timeRange: string; label: string }[];
+		pollType?: PollType;
 		partials: InviteeView[];
 		locale: Locale;
 		oncopied: () => void;
 	} = $props();
+
+	const question = $derived(pollType === 'question');
 </script>
 
 {#key locale}
@@ -51,20 +55,30 @@
 		<NoticeBanner text={m.cancelledBanner()} class="mb-6" />
 	{:else if status === 'closed'}
 		{#if chosenDates.length > 0}
-			<!-- The decision, front and center: closed + the chosen date(s). -->
+			<!-- The decision, front and center: closed + the chosen option(s). -->
 			<Callout
 				tone="ink"
-				title={chosenDates.length > 1 ? m.chosenDatesHeading() : m.chosenDateHeading()}
+				title={question
+					? chosenDates.length > 1
+						? m.chosenOptionsHeading()
+						: m.chosenOptionHeading()
+					: chosenDates.length > 1
+						? m.chosenDatesHeading()
+						: m.chosenDateHeading()}
 				class="mb-6"
 			>
 				{#snippet icon()}<Lock size={16} class="shrink-0" />{/snippet}
 				<div class="mt-1.5 flex flex-col gap-0.5">
-					{#each chosenDates as d (d.dateLabel + d.timeRange)}
-						<div class="text-body font-bold capitalize text-ink">
-							{d.weekday}
-							{d.dateLabel}{#if d.timeRange}
-								<span class="font-semibold text-ink-muted">· {d.timeRange}</span>{/if}
-						</div>
+					{#each chosenDates as d (d.label + d.dateLabel + d.timeRange)}
+						{#if d.label}
+							<div class="text-body font-bold text-ink">{d.label}</div>
+						{:else}
+							<div class="text-body font-bold capitalize text-ink">
+								{d.weekday}
+								{d.dateLabel}{#if d.timeRange}
+									<span class="font-semibold text-ink-muted">· {d.timeRange}</span>{/if}
+							</div>
+						{/if}
 					{/each}
 				</div>
 			</Callout>
@@ -78,8 +92,14 @@
 	     with their personal links ready to resend. Covers open mode too - this is
 	     the only place open-mode /r links surface for the organizer. -->
 	{#if partials.length > 0}
-		<Callout tone="dashed" title={m.needsUpdateTitle()} class="mb-6">
-			<p class="mt-1.5 text-caption leading-relaxed text-ink">{m.needsUpdateHint()}</p>
+		<Callout
+			tone="dashed"
+			title={question ? m.needsUpdateTitleQuestion() : m.needsUpdateTitle()}
+			class="mb-6"
+		>
+			<p class="mt-1.5 text-caption leading-relaxed text-ink">
+				{question ? m.needsUpdateHintQuestion() : m.needsUpdateHint()}
+			</p>
 			<div class="mt-2.5 flex flex-col gap-2.5">
 				{#each partials as p (p.id)}
 					<!-- Name above its link row: the row never fights the name for width

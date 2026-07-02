@@ -2,17 +2,20 @@
 	import { prefersReducedMotion, GLIDE } from '$lib/motion';
 	import { m } from '$lib/paraglide/messages';
 	import { Check, CircleQuestionMark, Star, X } from '@lucide/svelte';
-	import type { Preference } from '$lib/types';
+	import type { PollType, Preference } from '$lib/types';
 
 	let {
 		value = $bindable(),
 		choices = ['preferred', 'available', 'unavailable'],
-		readOnly = false
+		readOnly = false,
+		pollType = 'dates'
 	}: {
 		value: Preference | undefined;
 		// The event's enabled choices, in display order (see $lib/logic/choices).
 		choices?: Preference[];
 		readOnly?: boolean;
+		// Question polls label the fixed pair in works-for-me/doesn't-work terms.
+		pollType?: PollType;
 	} = $props();
 
 	// Signature interaction: one ink-bordered track, the indicator glides between
@@ -20,12 +23,23 @@
 	// DESIGN.md: highlighter for preferred, gray wash for available, diagonal
 	// ink hatch for unavailable, pencil dots for unsure - all four distinct.
 	// Each segment stacks icon over label.
-	const META: Record<Preference, { label: () => string; face: string; icon: typeof Star }> = {
+	const question = $derived(pollType === 'question');
+	const META = $derived<
+		Record<Preference, { label: () => string; face: string; icon: typeof Star }>
+	>({
 		preferred: { label: m.prefPreferred, face: 'bg-hl', icon: Star },
-		available: { label: m.prefAvailable, face: 'bg-wash', icon: Check },
-		unavailable: { label: m.prefUnavailable, face: 'ink-hatch', icon: X },
+		available: {
+			label: question ? m.prefAvailableQuestion : m.prefAvailable,
+			face: 'bg-wash',
+			icon: Check
+		},
+		unavailable: {
+			label: question ? m.prefUnavailableQuestion : m.prefUnavailable,
+			face: 'ink-hatch',
+			icon: X
+		},
 		unsure: { label: m.prefUnsure, face: 'ink-dots', icon: CircleQuestionMark }
-	};
+	});
 	const options = $derived(
 		choices.map((pref) => ({
 			pref,
