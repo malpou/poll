@@ -39,9 +39,10 @@ export const load: PageServerLoad = async ({ params, platform, cookies, url }) =
 				outcome,
 				title: ctx.event.title,
 				description: ctx.event.description,
+				timezone: ctx.event.timezone,
 				dates: ctx.dateOptions.map((d) => ({
 					id: d.id,
-					...formatDateOption(d.startsAt, d.endsAt, ctx.event.locale)
+					...formatDateOption(d.startsAt, d.endsAt, ctx.event.locale, ctx.event.timezone)
 				}))
 			}
 		};

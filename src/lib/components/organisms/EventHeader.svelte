@@ -8,6 +8,7 @@
 	import SelectField from '$lib/components/atoms/SelectField.svelte';
 	import { X, Pencil, Check, Lock, LockOpen } from '@lucide/svelte';
 	import { m } from '$lib/paraglide/messages';
+	import { locales, langLabel } from '$lib/logic/locales';
 	import { refreshThen } from '$lib/forms/enhance';
 	import { isRichText, toEditorHtml } from '$lib/forms/richtext';
 	import type { Locale, PollMode } from '$lib/types';
@@ -18,6 +19,7 @@
 		pollMode,
 		eventLocale,
 		locale,
+		timezone,
 		closed,
 		selecting = $bindable(),
 		onpreviewlocale
@@ -29,15 +31,18 @@
 		// language (drives the {#key} re-render below).
 		eventLocale: Locale;
 		locale: Locale;
+		timezone: string;
 		closed: boolean;
 		selecting: boolean;
 		onpreviewlocale: (l: Locale) => void;
 	} = $props();
 
+	const zones = Intl.supportedValuesOf('timeZone');
+
 	/**
 	 * Plain-text labels for the non-edit header. Keyed by the poll's stored values.
 	 */
-	const localeLabel = (l: Locale) => ({ da: m.langDa(), en: m.langEn(), fr: m.langFr() })[l];
+	const localeLabel = (l: Locale) => langLabel(l, locale);
 	const modeLabel = (mo: PollMode) => (mo === 'open' ? m.modeOpen() : m.modeAssigned());
 
 	// Title/description inline-edit toggle. Drafts live here (not on the DOM) so
@@ -92,9 +97,16 @@
 					value={locale}
 					onchange={(v) => onpreviewlocale(v as Locale)}
 				>
-					<option value="da">{m.langDa()}</option>
-					<option value="en">{m.langEn()}</option>
-					<option value="fr">{m.langFr()}</option>
+					{#each locales as l (l)}
+						<option value={l}>{langLabel(l, locale)}</option>
+					{/each}
+				</SelectField>
+				<!-- Saving re-renders every option's times in the new zone; no live
+				     preview since times are server-rendered. -->
+				<SelectField label={m.fieldTimezone()} name="timezone" value={timezone}>
+					{#each zones as tz (tz)}
+						<option value={tz}>{tz}</option>
+					{/each}
 				</SelectField>
 				<div class="flex items-center gap-2.5">
 					<Button variant="ghost" type="submit" iconOnly label={m.save()}
@@ -126,6 +138,10 @@
 				<span
 					>{m.fieldLanguage()}:
 					<span class="font-semibold text-ink">{localeLabel(eventLocale)}</span></span
+				>
+				<span
+					>{m.fieldTimezone()}:
+					<span class="font-semibold text-ink">{timezone}</span></span
 				>
 			</div>
 			{#if !closed}

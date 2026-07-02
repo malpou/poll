@@ -9,15 +9,16 @@ manage the event through a secret organizer link.
 
 ### Requirement: Event creation
 
-The system SHALL allow anyone to create an event with a title, a language, a poll
-mode, and one or more candidate date options, and SHALL return a secret organizer
-link for it.
+The system SHALL allow anyone to create an event with a title, a language, a
+timezone, a poll mode, and one or more candidate date options, and SHALL return
+a secret organizer link for it. The timezone picker SHALL default to the
+visitor's own timezone.
 
 #### Scenario: Create an event with options
 
 - GIVEN a visitor on the create page
-- WHEN they submit a title, a language, a poll mode (assigned or open), and at
-  least one date option
+- WHEN they submit a title, a language, a timezone, a poll mode (assigned or
+  open), and at least one date option
 - THEN the system creates the event with status "open"
 - AND generates an unguessable organizer token and a share token
 - AND in assigned mode records the participants they added
@@ -150,6 +151,7 @@ time MAY only be set when a start time is present, and MUST NOT be before it.
 
 - WHEN the organizer adds an option with a date but no start time
 - THEN the option is saved with no start or end time
+- AND the option renders everywhere with no time of day
 
 #### Scenario: Start time without end time
 
@@ -185,3 +187,15 @@ submit.
 - GIVEN an event in one language
 - WHEN the organizer picks another language
 - THEN the dashboard and every response page render in the new language
+
+### Requirement: Event timezone
+
+The system SHALL render every date option's times in the event's timezone,
+chosen by the organizer at creation and changeable afterwards alongside the
+title and description.
+
+#### Scenario: Change the timezone
+
+- GIVEN an event whose options have start times
+- WHEN the organizer picks another timezone
+- THEN the dashboard and every response page show the times converted to it

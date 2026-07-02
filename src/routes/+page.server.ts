@@ -14,7 +14,7 @@ type Row = Partial<Record<string, string>>;
 /**
  * Loads the create page, which is the organizer's own, pre-submit: renders it in
  * the browser's preferred locale and pre-selects that in the language picker.
- * Falls back to baseLocale (da) when Accept-Language matches none of da/en/fr.
+ * Falls back to baseLocale (en) when Accept-Language matches no supported locale.
  */
 export const load: PageServerLoad = ({ request }) => {
 	const suggestedLocale: Locale = extractLocaleFromHeader(request) ?? baseLocale;
@@ -46,6 +46,11 @@ export const actions = {
 		const description = richTextIsEmpty(rawDescription) ? '' : rawDescription;
 		const localeField = field(form, 'locale');
 		const locale: Locale = isLocale(localeField) ? localeField : baseLocale;
+		// Trust boundary: only a real IANA zone reaches the DB (no SQL CHECK possible).
+		const tzField = field(form, 'timezone');
+		const timezone = Intl.supportedValuesOf('timeZone').includes(tzField)
+			? tzField
+			: 'Europe/Copenhagen';
 		const pollMode: PollMode = field(form, 'pollMode') === 'open' ? 'open' : 'assigned';
 
 		// Drop rows the user added but never filled with a date.
@@ -71,7 +76,7 @@ export const actions = {
 						}))
 						.filter((p) => p.name !== '');
 
-		const draft = { title, description, locale, pollMode, dates, participants };
+		const draft = { title, description, locale, timezone, pollMode, dates, participants };
 
 		let error: string | null = null;
 		if (!title) error = m.errorNoTitle();

@@ -119,6 +119,25 @@ browser language.
 - WHEN they open a response link
 - THEN the page copy and date labels render in French
 
+### Requirement: Times shown in the event's timezone
+
+The system SHALL show date option times in the event's timezone and SHALL tell
+respondents which timezone that is whenever any option has a time.
+
+#### Scenario: Respondent in another timezone
+
+- GIVEN an event in the America/New_York timezone with an option starting at
+  08:00 UTC
+- WHEN a respondent opens their link
+- THEN the option's time renders as 04:00
+- AND the page names the event's timezone
+
+#### Scenario: No times, no timezone note
+
+- GIVEN an event whose options are date-only
+- WHEN a respondent opens their link
+- THEN no timezone note is shown
+
 ### Requirement: Optional note
 
 The system SHALL let an invitee attach an optional free-text note to their

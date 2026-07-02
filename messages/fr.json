@@ -10,6 +10,7 @@
 	"rteBulletList": "Liste à puces",
 	"rteOrderedList": "Liste numérotée",
 	"fieldLanguage": "Langue",
+	"fieldTimezone": "Fuseau horaire",
 	"fieldMode": "Qui peut répondre",
 	"modeAssigned": "Personnes nommées (un lien chacune)",
 	"modeOpen": "Toute personne ayant le lien",
@@ -20,9 +21,6 @@
 	"shareLinkHint": "Toute personne ayant ce lien peut ajouter son nom et sa réponse.",
 	"editLinkTitle": "Votre lien de modification",
 	"editLinkHint": "Enregistrez-le pour modifier votre réponse plus tard.",
-	"langDa": "Danois",
-	"langEn": "Anglais",
-	"langFr": "Français",
 	"datesSection": "Dates possibles",
 	"datesHint": "Ajoutez au moins une date. Les horaires sont facultatifs.",
 	"addDate": "Ajouter une date",
@@ -100,5 +98,6 @@
 	"partialAnswered": "Dates manquantes",
 	"needsUpdateTitle": "Certains participants n'ont pas répondu aux nouvelles dates",
 	"needsUpdateHint": "Renvoyez-leur leur lien personnel pour qu'ils répondent aux nouvelles dates.",
-	"cancel": "Annuler"
+	"cancel": "Annuler",
+	"timezoneNote": "Toutes les heures sont en {timezone}"
 }

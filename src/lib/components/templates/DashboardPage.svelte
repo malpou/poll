@@ -9,6 +9,7 @@
 	import OptionsSection from '$lib/components/organisms/OptionsSection.svelte';
 	import InviteesSection from '$lib/components/organisms/InviteesSection.svelte';
 	import { m } from '$lib/paraglide/messages';
+	import { baseLocale } from '$lib/paraglide/runtime';
 	import type {
 		EventStatus,
 		InviteeView,
@@ -26,6 +27,7 @@
 		title: string;
 		description: string | null;
 		locale: Locale;
+		timezone: string;
 		pollMode: PollMode;
 		status: EventStatus;
 		chosenDates: { weekday: string; dateLabel: string; timeRange: string }[];
@@ -53,7 +55,7 @@
 	// which every organism keys its markup on. Saving persists it; cancelling
 	// calls back with the stored locale to roll back.
 	// svelte-ignore state_referenced_locally
-	let uiLocale = $state<Locale>(view?.locale ?? 'da');
+	let uiLocale = $state<Locale>(view?.locale ?? baseLocale);
 	function previewLocale(next: Locale) {
 		if (browser) document.documentElement.lang = next;
 		uiLocale = next;
@@ -79,6 +81,7 @@
 			pollMode={view.pollMode}
 			eventLocale={view.locale}
 			locale={uiLocale}
+			timezone={view.timezone}
 			{closed}
 			bind:selecting
 			onpreviewlocale={previewLocale}

@@ -20,6 +20,7 @@ function mapEvent(r: Record<string, unknown>): EventRow {
 		title: r.title as string,
 		description: (r.description as string | null) ?? null,
 		locale: r.locale as EventRow['locale'],
+		timezone: r.timezone as string,
 		pollMode: r.poll_mode as EventRow['pollMode'],
 		organizerToken: r.organizer_token as string,
 		shareToken: r.share_token as string,
@@ -78,14 +79,15 @@ export function d1Provider(db: D1Database): DataProvider {
 			const statements: D1PreparedStatement[] = [
 				db
 					.prepare(
-						`INSERT INTO events (id, title, description, locale, poll_mode, organizer_token, share_token, status, created_at)
-						 VALUES (?, ?, ?, ?, ?, ?, ?, 'open', ?)`
+						`INSERT INTO events (id, title, description, locale, timezone, poll_mode, organizer_token, share_token, status, created_at)
+						 VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'open', ?)`
 					)
 					.bind(
 						eventId,
 						draft.title,
 						draft.description || null,
 						draft.locale,
+						draft.timezone,
 						draft.pollMode,
 						organizerToken,
 						shareToken,
@@ -103,8 +105,8 @@ export function d1Provider(db: D1Database): DataProvider {
 						.bind(
 							id('date'),
 							eventId,
-							zonedToUtcIso(d.value, d.startTime),
-							zonedToUtcIso(d.value, d.endTime),
+							zonedToUtcIso(d.value, d.startTime, draft.timezone),
+							zonedToUtcIso(d.value, d.endTime, draft.timezone),
 							i
 						)
 				);
@@ -268,7 +270,7 @@ export function d1Provider(db: D1Database): DataProvider {
 			return rows.results.map(mapResponse);
 		},
 
-		async addDateOption(eventId, date) {
+		async addDateOption(eventId, date, timezone) {
 			// Append after the current last option for this event.
 			const max = await db
 				.prepare(`SELECT MAX(sort_order) AS m FROM date_options WHERE event_id = ?`)
@@ -282,19 +284,19 @@ export function d1Provider(db: D1Database): DataProvider {
 				.bind(
 					id('date'),
 					eventId,
-					zonedToUtcIso(date.value, date.startTime),
-					zonedToUtcIso(date.value, date.endTime),
+					zonedToUtcIso(date.value, date.startTime, timezone),
+					zonedToUtcIso(date.value, date.endTime, timezone),
 					(max?.m ?? -1) + 1
 				)
 				.run();
 		},
 
-		async updateDateOption(optionId, date) {
+		async updateDateOption(optionId, date, timezone) {
 			await db
 				.prepare(`UPDATE date_options SET starts_at = ?, ends_at = ? WHERE id = ?`)
 				.bind(
-					zonedToUtcIso(date.value, date.startTime),
-					zonedToUtcIso(date.value, date.endTime),
+					zonedToUtcIso(date.value, date.startTime, timezone),
+					zonedToUtcIso(date.value, date.endTime, timezone),
 					optionId
 				)
 				.run();
@@ -368,6 +370,10 @@ export function d1Provider(db: D1Database): DataProvider {
 
 		async setEventLocale(eventId, locale) {
 			await db.prepare(`UPDATE events SET locale = ? WHERE id = ?`).bind(locale, eventId).run();
+		},
+
+		async setEventTimezone(eventId, timezone) {
+			await db.prepare(`UPDATE events SET timezone = ? WHERE id = ?`).bind(timezone, eventId).run();
 		},
 
 		async updateEventDetails(eventId, title, description) {

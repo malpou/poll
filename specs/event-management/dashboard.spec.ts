@@ -241,5 +241,5 @@ test('language picker previews the dashboard live, cancel rolls back', async ({ 
 	// Cancel the edit: the preview rolls back to the stored locale.
 	await page.getByRole('button', { name: m.cancel({}, { locale: 'fr' }) }).click();
 	await expect(page.getByText(m.datesSection())).toBeVisible();
-	await expect(page.locator('html')).toHaveAttribute('lang', 'da');
+	await expect(page.locator('html')).toHaveAttribute('lang', 'en');
 });

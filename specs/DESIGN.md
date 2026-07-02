@@ -75,6 +75,6 @@ the results bars animating `width` on mount (~450ms ease-out).
 
 ## Not in this file
 
-- Copy and translations: `messages/{da,en,fr}.json` (Paraglide `m.*()`).
+- Copy and translations: `messages/{da,de,en,es,fr}.json` (Paraglide `m.*()`).
 - Behavior: `specs/<area>/spec.md`.
 - Product, data model, routes, conventions: `specs/PROJECT.md`.

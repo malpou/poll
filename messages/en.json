@@ -10,6 +10,7 @@
 	"rteBulletList": "Bulleted list",
 	"rteOrderedList": "Numbered list",
 	"fieldLanguage": "Language",
+	"fieldTimezone": "Timezone",
 	"fieldMode": "Who can respond",
 	"modeAssigned": "Named people (one link each)",
 	"modeOpen": "Anyone with the link",
@@ -20,9 +21,6 @@
 	"shareLinkHint": "Anyone with this link can add their name and answer.",
 	"editLinkTitle": "Your edit link",
 	"editLinkHint": "Save this to change your answer later.",
-	"langDa": "Danish",
-	"langEn": "English",
-	"langFr": "French",
 	"datesSection": "Possible dates",
 	"datesHint": "Add at least one date. Times are optional.",
 	"addDate": "Add date",
@@ -100,5 +98,6 @@
 	"partialAnswered": "Missing new dates",
 	"needsUpdateTitle": "Some participants haven't answered the new dates",
 	"needsUpdateHint": "Send them their personal link again so they can answer the new dates.",
-	"cancel": "Cancel"
+	"cancel": "Cancel",
+	"timezoneNote": "All times are in {timezone}"
 }

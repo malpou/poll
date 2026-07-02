@@ -11,6 +11,7 @@
 	import { enhance } from '$app/forms';
 	import { browser } from '$app/environment';
 	import { m } from '$lib/paraglide/messages';
+	import { locales, langLabel } from '$lib/logic/locales';
 	import { helpers } from '$lib/data/shared';
 	import type { DateOption, Locale, Participant, PollMode } from '$lib/types';
 
@@ -31,6 +32,12 @@
 	let pollMode = $state<PollMode>('assigned');
 	let dates = $state<DateOption[]>([]);
 	let participants = $state<Participant[]>([]);
+
+	// Timezone every option's times are read in. Defaults to the visitor's own
+	// zone; SSR computes the server's, hydration replaces it with the browser's.
+	const zones = Intl.supportedValuesOf('timeZone');
+	const guess = new Intl.DateTimeFormat().resolvedOptions().timeZone;
+	const tzDefault = zones.includes(guess) ? guess : 'Europe/Copenhagen';
 
 	const toast = createToast();
 
@@ -75,9 +82,9 @@
 			}}
 			class="h-11.5 w-full rounded-control border border-border bg-card px-3.5 text-body text-ink outline-none focus:border-primary"
 		>
-			<option value="da">{m.langDa()}</option>
-			<option value="en">{m.langEn()}</option>
-			<option value="fr">{m.langFr()}</option>
+			{#each locales as l (l)}
+				<option value={l}>{langLabel(l, locale)}</option>
+			{/each}
 		</select>
 	</label>
 
@@ -101,6 +108,14 @@
 
 		<div class="mb-10">
 			<DateList bind:dates onadd={addDate} onremove={removeDate} />
+		</div>
+
+		<div class="mb-9">
+			<SelectField label={m.fieldTimezone()} name="timezone" value={tzDefault}>
+				{#each zones as tz (tz)}
+					<option value={tz}>{tz}</option>
+				{/each}
+			</SelectField>
 		</div>
 
 		<div class="mb-9 flex flex-col gap-2">

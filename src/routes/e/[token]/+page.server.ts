@@ -80,7 +80,7 @@ async function computeDashboard(platform: App.Platform | undefined, token: strin
 				preferredNames: names.preferred,
 				availableNames: names.available,
 				unavailableNames: names.unavailable,
-				...formatDateOption(d.startsAt, d.endsAt, event.locale)
+				...formatDateOption(d.startsAt, d.endsAt, event.locale, event.timezone)
 			};
 		})
 	);
@@ -98,12 +98,13 @@ async function computeDashboard(platform: App.Platform | undefined, token: strin
 		title: event.title,
 		description: event.description,
 		locale: event.locale,
+		timezone: event.timezone,
 		pollMode: event.pollMode,
 		status: event.status,
 		// The decided dates for the closed banner - empty unless closed with a pick.
 		chosenDates: event.dateOptions
 			.filter((d) => d.selected)
-			.map((d) => formatDateOption(d.startsAt, d.endsAt, event.locale)),
+			.map((d) => formatDateOption(d.startsAt, d.endsAt, event.locale, event.timezone)),
 		results: resultsView,
 		// One summary of who has answered, shown under the results heading. Open mode
 		// has no fixed roster, so it drops the "of Y" denominator.
@@ -112,15 +113,15 @@ async function computeDashboard(platform: App.Platform | undefined, token: strin
 				? m.answeredLabelOpen({ total: responseCounts.size }, { locale: event.locale })
 				: m.answeredLabel({ total: responseCounts.size, totalInvitees }, { locale: event.locale }),
 		options: event.dateOptions.map((d) => {
-			// Copenhagen wall-clock parts for the edit form's native inputs.
-			const start = utcIsoToZonedParts(d.startsAt);
+			// Event-timezone wall-clock parts for the edit form's native inputs.
+			const start = utcIsoToZonedParts(d.startsAt, event.timezone);
 			return {
 				id: d.id,
 				value: start.value,
 				startTime: start.time,
-				endTime: d.endsAt ? utcIsoToZonedParts(d.endsAt).time : '',
+				endTime: d.endsAt ? utcIsoToZonedParts(d.endsAt, event.timezone).time : '',
 				hasResponses: optionHasResponses.get(d.id) ?? false,
-				...formatDateOption(d.startsAt, d.endsAt, event.locale)
+				...formatDateOption(d.startsAt, d.endsAt, event.locale, event.timezone)
 			};
 		}),
 		invitees: event.invitees.map((inv) => ({
@@ -206,6 +207,10 @@ export const actions = {
 		if (isLocale(locale) && locale !== event.locale)
 			await provider.setEventLocale(event.id, locale);
 
+		const timezone = field(form, 'timezone');
+		if (Intl.supportedValuesOf('timeZone').includes(timezone) && timezone !== event.timezone)
+			await provider.setEventTimezone(event.id, timezone);
+
 		const mode = field(form, 'pollMode');
 		if ((mode === 'assigned' || mode === 'open') && mode !== event.pollMode) {
 			await provider.setPollMode(event.id, mode);
@@ -223,7 +228,7 @@ export const actions = {
 		if (!date.value) return fail(400, { error: 'value' });
 		const timeError = validateTimes(date.startTime, date.endTime);
 		if (timeError) return fail(400, { error: timeError });
-		await provider.addDateOption(event.id, date);
+		await provider.addDateOption(event.id, date, event.timezone);
 		await purgeEvent(platform, url.origin, params.token, event);
 		return { ok: true };
 	},
@@ -239,7 +244,7 @@ export const actions = {
 		if (!date.value) return fail(400, { error: 'value' });
 		const timeError = validateTimes(date.startTime, date.endTime);
 		if (timeError) return fail(400, { error: timeError });
-		await provider.updateDateOption(optionId, date);
+		await provider.updateDateOption(optionId, date, event.timezone);
 		await purgeEvent(platform, url.origin, params.token, event);
 		return { ok: true };
 	},

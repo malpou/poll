@@ -21,8 +21,8 @@ const EV_OPEN = 'e2e-ev-open';
 const EV_CLOSED = 'e2e-ev-closed';
 const INV_OPEN = 'e2e-inv-open';
 const INV_CLOSED = 'e2e-inv-closed';
-const D1 = 'e2e-d1'; // lørdag 12. sep 2026, 10.00–11.00 (local)
-const D2 = 'e2e-d2'; // søndag 20. sep 2026
+const D1 = 'e2e-d1'; // Saturday 12 Sep 2026, 10:00-11:00 (local)
+const D2 = 'e2e-d2'; // Sunday 20 Sep 2026
 const TITLE = 'Rundvisning i DR Byen (e2e)';
 
 function seed() {
@@ -75,8 +75,8 @@ test('valid token shows title, greeting, and every date option', async ({ page }
 	await page.goto(`/r/${OPEN_TOKEN}`);
 	await expect(page.getByRole('heading', { name: TITLE })).toBeVisible();
 	await expect(page.getByText(m.greeting({ name: 'Anna' }))).toBeVisible();
-	await expect(page.getByTestId(`date-card-${D1}`)).toContainText('lørdag');
-	await expect(page.getByTestId(`date-card-${D2}`)).toContainText('søndag');
+	await expect(page.getByTestId(`date-card-${D1}`)).toContainText('Saturday');
+	await expect(page.getByTestId(`date-card-${D2}`)).toContainText('Sunday');
 });
 
 test('legacy plain-text description keeps its line breaks', async ({ page }) => {

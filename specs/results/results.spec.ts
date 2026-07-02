@@ -65,8 +65,8 @@ test('per-option counts and a clear winner is highlighted', async ({ page }) => 
 	]);
 	await page.goto(`/e/${R_OTOK}`);
 
-	// Winner rb (søndag 20 Sep) is the fully-answered option and carries the badge.
-	const winner = cardByWeekday(page, 'søndag');
+	// Winner rb (Sunday 20 Sep) is the fully-answered option and carries the badge.
+	const winner = cardByWeekday(page, 'Sunday');
 	await expect(winner.getByText(m.bestDate())).toBeVisible();
 
 	// Exactly one best-date badge → clear winner, not a tie.

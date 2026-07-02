@@ -2,8 +2,9 @@ import { test, expect, type Page } from '@playwright/test';
 import { m } from '../../src/lib/paraglide/messages';
 
 // The create page renders in the browser's preferred locale (Accept-Language).
-// Pin a Danish browser so the m.*() assertions (baseLocale = da) match the page.
-test.use({ locale: 'da-DK' });
+// Pin an English browser so bare m.*() assertions (baseLocale = en) match the
+// page. The browser timezone is pinned too, for the tz-picker default test.
+test.use({ locale: 'en-US', timezoneId: 'America/New_York' });
 
 // The form starts with no rows; dates are added through the same fill-then-add
 // card the dashboard uses (unnamed inputs so they never post with the form).
@@ -58,23 +59,38 @@ test('end time before start time is rejected server-side', async ({ page }) => {
 
 test('language picker switches the whole form live, no reload', async ({ page }) => {
 	await page.goto('/');
-	// da-DK browser (see test.use above) → Danish create page.
-	await expect(
-		page.getByRole('heading', { name: m.createTitle({}, { locale: 'da' }) })
-	).toBeVisible();
-
-	// Switch to French: heading, button, and <html lang> all update in place.
-	await page.locator('select#locale').selectOption('fr');
-	await expect(
-		page.getByRole('heading', { name: m.createTitle({}, { locale: 'fr' }) })
-	).toBeVisible();
-	await expect(page.getByRole('button', { name: m.create({}, { locale: 'fr' }) })).toBeVisible();
-	await expect(page.locator('html')).toHaveAttribute('lang', 'fr');
-
-	// And back to English, still no navigation (URL stays "/").
-	await page.locator('select#locale').selectOption('en');
+	// en-US browser (see test.use above) → English create page.
 	await expect(
 		page.getByRole('heading', { name: m.createTitle({}, { locale: 'en' }) })
 	).toBeVisible();
+
+	// Switch to Spanish: heading, button, and <html lang> all update in place.
+	await page.locator('select#locale').selectOption('es');
+	await expect(
+		page.getByRole('heading', { name: m.createTitle({}, { locale: 'es' }) })
+	).toBeVisible();
+	await expect(page.getByRole('button', { name: m.create({}, { locale: 'es' }) })).toBeVisible();
+	await expect(page.locator('html')).toHaveAttribute('lang', 'es');
+
+	// And on to German, still no navigation (URL stays "/").
+	await page.locator('select#locale').selectOption('de');
+	await expect(
+		page.getByRole('heading', { name: m.createTitle({}, { locale: 'de' }) })
+	).toBeVisible();
 	await expect(page).toHaveURL(/\/$/);
+});
+
+test('timezone picker defaults to the visitor timezone and persists on create', async ({
+	page
+}) => {
+	await page.goto('/');
+	// The picker pre-selects the browser's own zone (pinned above).
+	await expect(page.locator('select[name="timezone"]')).toHaveValue('America/New_York');
+
+	await page.getByLabel(m.fieldTitle()).fill('NYC brunch');
+	await addDate(page, '2026-09-12');
+	await page.getByRole('button', { name: m.create() }).click();
+	await expect(page).toHaveURL(/\/e\/[A-Za-z0-9]+$/);
+	// The dashboard header shows the persisted zone.
+	await expect(page.getByText('America/New_York')).toBeVisible();
 });

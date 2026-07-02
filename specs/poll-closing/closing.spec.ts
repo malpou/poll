@@ -34,7 +34,7 @@ test.beforeEach(seed);
 
 // The selection checkbox on the result card for one date, located via the
 // card's weekday text (12 Sep 2026 is a Saturday, 20 Sep a Sunday).
-function checkboxFor(page: Page, weekday: 'lørdag' | 'søndag') {
+function checkboxFor(page: Page, weekday: 'Saturday' | 'Sunday') {
 	return page
 		.locator('div.rounded-xl', { has: page.getByRole('checkbox', { name: m.selectDateLabel() }) })
 		.filter({ hasText: weekday })
@@ -61,23 +61,23 @@ test('confirm is disabled until a date is picked; backing out changes nothing', 
 
 test('closing with one date records it and shows the outcome banner', async ({ page }) => {
 	await enterSelectionMode(page);
-	await checkboxFor(page, 'søndag').check();
+	await checkboxFor(page, 'Sunday').check();
 	await page.getByRole('button', { name: m.confirmClose() }).click();
 
 	await expect(page.getByText(m.chosenDateHeading())).toBeVisible();
-	await expect(page.getByText(m.chosenBadge())).toHaveCount(1);
+	await expect(page.getByText(m.chosenBadge(), { exact: true })).toHaveCount(1);
 	await expect.poll(() => eventStatus(EV)).toBe('closed');
 	expect(selectedOptionIds(EV)).toEqual([DB]);
 });
 
 test('closing with several dates flags and badges them all', async ({ page }) => {
 	await enterSelectionMode(page);
-	await checkboxFor(page, 'lørdag').check();
-	await checkboxFor(page, 'søndag').check();
+	await checkboxFor(page, 'Saturday').check();
+	await checkboxFor(page, 'Sunday').check();
 	await page.getByRole('button', { name: m.confirmClose() }).click();
 
 	await expect(page.getByText(m.chosenDatesHeading())).toBeVisible();
-	await expect(page.getByText(m.chosenBadge())).toHaveCount(2);
+	await expect(page.getByText(m.chosenBadge(), { exact: true })).toHaveCount(2);
 	await expect.poll(() => selectedOptionIds(EV)).toEqual([DA, DB]);
 });
 
@@ -90,7 +90,7 @@ test('a decided poll shows the outcome and distribution on the invitee link', as
 	await expect(page.getByText(m.chosenDateHeading())).toBeVisible();
 	await expect(page.getByText(m.distributionHeading())).toBeVisible();
 	await expect(page.getByText(m.prefPreferred()).first()).toBeVisible();
-	await expect(page.getByText(m.chosenBadge())).toHaveCount(1);
+	await expect(page.getByText(m.chosenBadge(), { exact: true })).toHaveCount(1);
 	await expect(page.getByRole('button', { name: m.sendAnswer() })).toHaveCount(0);
 	await expect(page.getByText('Anna')).toHaveCount(0);
 });
@@ -158,7 +158,7 @@ test('cancelling closes without a decision; dismissing the warning keeps it open
 
 test('close stops response edits; reopen restores them', async ({ page }) => {
 	await enterSelectionMode(page);
-	await checkboxFor(page, 'søndag').check();
+	await checkboxFor(page, 'Sunday').check();
 	await page.getByRole('button', { name: m.confirmClose() }).click();
 	await expect(page.getByText(m.chosenDateHeading())).toBeVisible();
 	await expect.poll(() => selectedOptionIds(EV)).toEqual([DB]);

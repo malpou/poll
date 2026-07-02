@@ -25,6 +25,7 @@ export interface EventDraft {
 	title: string;
 	description: string;
 	locale: Locale;
+	timezone: string; // IANA id; validated at the form boundary
 	pollMode: PollMode;
 	dates: DateOption[];
 	participants: Participant[];
@@ -43,6 +44,7 @@ export interface EventRow {
 	title: string;
 	description: string | null;
 	locale: Locale;
+	timezone: string;
 	pollMode: PollMode;
 	organizerToken: string;
 	shareToken: string;

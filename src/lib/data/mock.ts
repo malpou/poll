@@ -66,5 +66,7 @@ export const mockProvider: DataProvider = {
 
 	async setEventLocale() {},
 
+	async setEventTimezone() {},
+
 	async updateEventDetails() {}
 };

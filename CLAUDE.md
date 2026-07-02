@@ -31,7 +31,7 @@ Svelte 5 + Tailwind 4 on Cloudflare Workers + D1. Package manager: bun.
 
 ## Facts
 
-- UI strings are NEVER hardcoded — `messages/{da,en,fr}.json` via Paraglide;
+- UI strings are NEVER hardcoded — `messages/{da,de,en,es,fr}.json` via Paraglide;
   tests assert `m.*()` values, not literals.
 - E2E runs single-worker against one shared local-D1 SQLite file. Seed
   in-process via `specs/support/db.ts` (delete-then-insert, idempotent);

@@ -91,6 +91,29 @@ describe('migration stack', () => {
 		expect(() => db.exec(`UPDATE date_options SET selected = 2 WHERE id = 'd1'`)).toThrow(/CHECK/);
 	});
 
+	it('0005 backfills timezone and defaults new rows to en / Europe/Copenhagen', () => {
+		// Pre-0005 rows get the old implicit zone; their locale is untouched.
+		const legacy = db.prepare(`SELECT locale, timezone FROM events WHERE id = 'e1'`).get() as {
+			locale: string;
+			timezone: string;
+		};
+		expect(legacy).toEqual({ locale: 'da', timezone: 'Europe/Copenhagen' });
+		// New rows land on the new defaults.
+		db.exec(`INSERT INTO events (id, title, organizer_token, status, created_at)
+		         VALUES ('eN', 'T', 'otok-n', 'open', '2026-07-01T00:00:00Z')`);
+		const fresh = db.prepare(`SELECT locale, timezone FROM events WHERE id = 'eN'`).get() as {
+			locale: string;
+			timezone: string;
+		};
+		expect(fresh).toEqual({ locale: 'en', timezone: 'Europe/Copenhagen' });
+	});
+
+	it('locale accepts es/de and rejects unknown values', () => {
+		db.exec(`UPDATE events SET locale = 'es' WHERE id = 'e1'`);
+		db.exec(`UPDATE events SET locale = 'de' WHERE id = 'e1'`);
+		expect(() => db.exec(`UPDATE events SET locale = 'xx' WHERE id = 'e1'`)).toThrow(/CHECK/);
+	});
+
 	it('the rebuild drops no rows from events or any child table', () => {
 		const count = (t: string) =>
 			(db.prepare(`SELECT COUNT(*) AS n FROM ${t}`).get() as { n: number }).n;

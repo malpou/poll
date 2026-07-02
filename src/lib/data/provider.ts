@@ -59,9 +59,10 @@ export interface DataProvider {
 	getResults(eventId: string): Promise<DateOptionResult[]>;
 	/** Every response for the event, so the dashboard can list who chose what. */
 	getEventResponses(eventId: string): Promise<ResponseRow[]>;
-	/** Organizer dashboard mutations. IDs/tokens are generated server-side. */
-	addDateOption(eventId: string, date: DateOptionInput): Promise<void>;
-	updateDateOption(optionId: string, date: DateOptionInput): Promise<void>;
+	/** Organizer dashboard mutations. IDs/tokens are generated server-side.
+	 *  timezone = the event's IANA zone the date's wall-clock times are read in. */
+	addDateOption(eventId: string, date: DateOptionInput, timezone: string): Promise<void>;
+	updateDateOption(optionId: string, date: DateOptionInput, timezone: string): Promise<void>;
 	removeDateOption(optionId: string): Promise<void>;
 	/** Rewrite sort_order so the event's options follow orderedIds' array order. */
 	reorderDateOptions(eventId: string, orderedIds: string[]): Promise<void>;
@@ -78,6 +79,7 @@ export interface DataProvider {
 	cancelEvent(eventId: string): Promise<void>;
 	reopenEvent(eventId: string): Promise<void>;
 	setEventLocale(eventId: string, locale: Locale): Promise<void>;
+	setEventTimezone(eventId: string, timezone: string): Promise<void>;
 	updateEventDetails(eventId: string, title: string, description: string | null): Promise<void>;
 }
 

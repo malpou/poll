@@ -10,6 +10,7 @@
 	"rteBulletList": "Punktliste",
 	"rteOrderedList": "Nummereret liste",
 	"fieldLanguage": "Sprog",
+	"fieldTimezone": "Tidszone",
 	"fieldMode": "Hvem kan svare",
 	"modeAssigned": "Navngivne personer (ét link hver)",
 	"modeOpen": "Alle med linket",
@@ -20,9 +21,6 @@
 	"shareLinkHint": "Alle med dette link kan tilføje deres navn og svar.",
 	"editLinkTitle": "Dit redigeringslink",
 	"editLinkHint": "Gem det for at ændre dit svar senere.",
-	"langDa": "Dansk",
-	"langEn": "Engelsk",
-	"langFr": "Fransk",
 	"datesSection": "Mulige datoer",
 	"datesHint": "Tilføj mindst én dato. Tidspunkter er valgfri.",
 	"addDate": "Tilføj dato",
@@ -100,5 +98,6 @@
 	"partialAnswered": "Mangler nye datoer",
 	"needsUpdateTitle": "Nogle deltagere mangler at svare på de nye datoer",
 	"needsUpdateHint": "Send dem deres personlige link igen, så de kan svare på de nye datoer.",
-	"cancel": "Annuller"
+	"cancel": "Annuller",
+	"timezoneNote": "Alle tidspunkter er i {timezone}"
 }

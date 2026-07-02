@@ -31,11 +31,13 @@ for this write volume.
 
 ## Data model (D1)
 
-- `events(id, title, description, locale, poll_mode, organizer_token, share_token, status, created_at)`
+- `events(id, title, description, locale, timezone, poll_mode, organizer_token, share_token, status, created_at)`
   - status ∈ {open, closed, cancelled}. `closed` means the organizer picked the
     final date(s); `cancelled` means they closed without picking (abandoned).
     Reopening returns to `open` and clears any chosen dates
-  - locale ∈ {da, en, fr} - the language the whole poll renders in
+  - locale ∈ {da, de, en, es, fr} - the language the whole poll renders in
+  - timezone - IANA id (e.g. Europe/Copenhagen, the default) every date
+    option's times render in; picked by the organizer, changeable later
   - poll_mode ∈ {assigned, open}, default assigned. `assigned`: organizer adds
     named invitees, each with a personal `/r` link. `open`: one shared `/s` link
     anyone can submit through, naming themselves
@@ -56,8 +58,8 @@ for this write volume.
 
 ## Routes
 
-- `/` create a new event (title, description, language, mode, dates; participants
-  in assigned mode)
+- `/` create a new event (title, description, language, timezone, mode, dates;
+  participants in assigned mode)
 - `/e/{organizer_token}` organizer dashboard: options, people/results, mode +
   language, shared link (open mode)
 - `/r/{invitee_token}` recipient response page (assigned invitee, or an open
@@ -68,12 +70,15 @@ for this write volume.
 ## Conventions
 
 - Mutations use SvelteKit form actions; token is validated in every load/action.
-- Language: polls render in Danish, English, or French, chosen per poll (the
-  `locale` column) at creation and changeable on the dashboard. User-facing
-  strings live in `messages/{da,en,fr}.json`, compiled to typed `m.*()` via
+- Language: polls render in Danish, German, English, Spanish, or French,
+  chosen per poll (the `locale` column) at creation and changeable on the
+  dashboard. Base locale is English. User-facing strings live in
+  `messages/{da,de,en,es,fr}.json`, compiled to typed `m.*()` via
   Paraglide. Weekdays/months render in the poll's language with that
-  language's conventional casing (Danish lowercase; en/fr keep Intl's default).
-- Timezone: store `starts_at`/`ends_at` as UTC ISO; render in Europe/Copenhagen.
+  language's conventional casing (Danish lowercase; others keep Intl's
+  default).
+- Timezone: store `starts_at`/`ends_at` as UTC ISO; render in the event's
+  timezone (IANA id, organizer-picked, default Europe/Copenhagen).
 - Motion: user-facing UI follows the animations.dev principles (ease-out enter/exit,
   ease-in-out for on-screen movement, spring for the state selector, staggered list
   entrance, transform/opacity only) and honors `prefers-reduced-motion`. See

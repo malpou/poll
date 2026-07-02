@@ -53,7 +53,8 @@ export interface EventSeed {
 	description?: string | null;
 	organizerToken: string;
 	status: 'open' | 'closed' | 'cancelled';
-	locale?: Locale; // omit → column default 'da'
+	locale?: Locale; // omit → seeded as 'en' (matches bare m.*() = baseLocale in specs)
+	timezone?: string; // omit → 'Europe/Copenhagen'
 	pollMode?: 'assigned' | 'open'; // omit → column default 'assigned'
 	shareToken?: string; // open-mode shared link token
 	createdAt?: string;
@@ -84,8 +85,8 @@ export interface ResponseSeed {
 
 export function seedEvent(e: EventSeed) {
 	d1(
-		`INSERT INTO events (id, title, description, organizer_token, status, locale, poll_mode, share_token, created_at) VALUES
-		   (${lit(e.id)}, ${lit(e.title)}, ${lit(e.description)}, ${lit(e.organizerToken)}, ${lit(e.status)}, ${lit(e.locale ?? 'da')}, ${lit(e.pollMode ?? 'assigned')}, ${lit(e.shareToken ?? null)}, ${lit(e.createdAt ?? NOW)});`
+		`INSERT INTO events (id, title, description, organizer_token, status, locale, timezone, poll_mode, share_token, created_at) VALUES
+		   (${lit(e.id)}, ${lit(e.title)}, ${lit(e.description)}, ${lit(e.organizerToken)}, ${lit(e.status)}, ${lit(e.locale ?? 'en')}, ${lit(e.timezone ?? 'Europe/Copenhagen')}, ${lit(e.pollMode ?? 'assigned')}, ${lit(e.shareToken ?? null)}, ${lit(e.createdAt ?? NOW)});`
 	);
 }
 
@@ -175,6 +176,10 @@ export function countResponsesForOption(optionId: string): number {
 
 export function eventStatus(eventId: string): string {
 	return d1(`SELECT status FROM events WHERE id = ${lit(eventId)}`).results[0].status as string;
+}
+
+export function eventTimezone(eventId: string): string {
+	return d1(`SELECT timezone FROM events WHERE id = ${lit(eventId)}`).results[0].timezone as string;
 }
 
 // The options recorded as the closing decision - empty while open/cancelled.

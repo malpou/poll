@@ -41,10 +41,11 @@ export const load: PageServerLoad = async ({ params, platform, url }) => {
 			name: ctx.invitee.label,
 			title: ctx.event.title,
 			description: ctx.event.description,
+			timezone: ctx.event.timezone,
 			dates: orderForRespondent(ctx.dateOptions, answeredIds).map((d) => ({
 				id: d.id,
 				needsAnswer: d.needsAnswer,
-				...formatDateOption(d.startsAt, d.endsAt, ctx.event.locale)
+				...formatDateOption(d.startsAt, d.endsAt, ctx.event.locale, ctx.event.timezone)
 			})),
 			answers,
 			note: ctx.invitee.note ?? ''

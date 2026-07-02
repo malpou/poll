@@ -27,6 +27,7 @@
 		name?: string;
 		title: string;
 		description: string | null;
+		timezone: string;
 		dates: ResponseDateView[];
 		answers?: Record<string, Preference>;
 		note?: string;
@@ -147,6 +148,10 @@
 
 				<div class="flex flex-col gap-3.5">
 					<SectionHeading text={m.datesQuestion()} />
+					<!-- Only relevant when times exist; date-only polls have no zone to name. -->
+					{#if view.dates.some((d) => d.timeRange)}
+						<p class="text-caption text-ink-muted">{m.timezoneNote({ timezone: view.timezone })}</p>
+					{/if}
 					{#if hasNewDates && !closed}
 						<NoticeBanner text={m.newDatesBanner()} tone="primary" />
 					{/if}
