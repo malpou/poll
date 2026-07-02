@@ -3,6 +3,7 @@
 	import { cubicOut } from 'svelte/easing';
 	import DateRow from '$lib/components/molecules/DateRow.svelte';
 	import Button from '$lib/components/atoms/Button.svelte';
+	import SectionHeading from '$lib/components/atoms/SectionHeading.svelte';
 	import { Plus } from '@lucide/svelte';
 	import { m } from '$lib/paraglide/messages';
 	import type { DateOption } from '$lib/types';
@@ -19,9 +20,7 @@
 </script>
 
 <div>
-	<div class="mb-1 text-[13px] font-bold uppercase tracking-[0.06em] text-ink-muted">
-		{m.datesSection()}
-	</div>
+	<SectionHeading text={m.datesSection()} class="mb-1" />
 	<p class="mb-3.5 text-[13px] text-ink-muted">{m.datesHint()}</p>
 	<div class="flex flex-col gap-2.5">
 		{#each dates as date, i (date.id)}

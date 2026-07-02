@@ -2,10 +2,12 @@
 	import TextField from '$lib/components/atoms/TextField.svelte';
 	import TextArea from '$lib/components/atoms/TextArea.svelte';
 	import Button from '$lib/components/atoms/Button.svelte';
+	import SelectField from '$lib/components/atoms/SelectField.svelte';
 	import { Check } from '@lucide/svelte';
 	import DateList from '$lib/components/organisms/DateList.svelte';
 	import ParticipantList from '$lib/components/organisms/ParticipantList.svelte';
 	import Toast from '$lib/components/atoms/Toast.svelte';
+	import { createToast } from '$lib/components/atoms/create-toast.svelte';
 	import { enhance } from '$app/forms';
 	import { browser } from '$app/environment';
 	import { m } from '$lib/paraglide/messages';
@@ -29,8 +31,7 @@
 	let dates = $state<DateOption[]>([helpers.blankDate()]);
 	let participants = $state<Participant[]>([helpers.blankParticipant()]);
 
-	let toastOpen = $state(false);
-	let toastTimer: ReturnType<typeof setTimeout> | undefined;
+	const toast = createToast();
 
 	function addDate() {
 		dates.push(helpers.blankDate());
@@ -43,13 +44,6 @@
 	}
 	function removeParticipant(id: string) {
 		participants = participants.filter((p) => p.id !== id);
-	}
-
-	function copy(url: string) {
-		void navigator.clipboard.writeText(url).catch(() => undefined);
-		clearTimeout(toastTimer);
-		toastOpen = true;
-		toastTimer = setTimeout(() => (toastOpen = false), 3000);
 	}
 
 	// Live language switch: m.*() reads getLocale(), which on the client returns
@@ -106,20 +100,18 @@
 			<DateList bind:dates onadd={addDate} onremove={removeDate} />
 		</div>
 
-		<!-- Poll mode. Hidden input carries the value; the select drives it. -->
-		<input type="hidden" name="pollMode" value={pollMode} />
 		<div class="mb-9 flex flex-col gap-2">
-			<span class="text-sm font-semibold text-ink">{m.fieldMode()}</span>
-			<select
+			<SelectField
+				label={m.fieldMode()}
+				name="pollMode"
 				value={pollMode}
-				onchange={(e) => {
-					pollMode = e.currentTarget.value as PollMode;
+				onchange={(v) => {
+					pollMode = v as PollMode;
 				}}
-				class="h-[46px] w-full rounded-[10px] border border-border bg-card px-3.5 text-[15px] text-ink outline-none focus:border-primary"
 			>
 				<option value="assigned">{m.modeAssigned()}</option>
 				<option value="open">{m.modeOpen()}</option>
-			</select>
+			</SelectField>
 			<p class="text-[13px] leading-relaxed text-ink-muted">
 				{pollMode === 'open' ? m.modeOpenHint() : m.modeAssignedHint()}
 			</p>
@@ -131,7 +123,9 @@
 					bind:participants
 					onadd={addParticipant}
 					onremove={removeParticipant}
-					oncopy={copy}
+					oncopied={() => {
+						toast.show(m.linkCopied());
+					}}
 				/>
 			</div>
 		{/if}
@@ -145,4 +139,4 @@
 	{/key}
 </form>
 
-{#key locale}<Toast open={toastOpen} text={m.linkCopied()} />{/key}
+<Toast open={toast.open} text={toast.text} />

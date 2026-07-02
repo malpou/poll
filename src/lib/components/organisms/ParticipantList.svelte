@@ -3,6 +3,7 @@
 	import { cubicOut } from 'svelte/easing';
 	import ParticipantRow from '$lib/components/molecules/ParticipantRow.svelte';
 	import Button from '$lib/components/atoms/Button.svelte';
+	import SectionHeading from '$lib/components/atoms/SectionHeading.svelte';
 	import { Plus } from '@lucide/svelte';
 	import { m } from '$lib/paraglide/messages';
 	import type { Participant } from '$lib/types';
@@ -11,19 +12,17 @@
 		participants = $bindable(),
 		onadd,
 		onremove,
-		oncopy
+		oncopied
 	}: {
 		participants: Participant[];
 		onadd: () => void;
 		onremove: (id: string) => void;
-		oncopy: (url: string) => void;
+		oncopied: () => void;
 	} = $props();
 </script>
 
 <div>
-	<div class="mb-1 text-[13px] font-bold uppercase tracking-[0.06em] text-ink-muted">
-		{m.participantsSection()}
-	</div>
+	<SectionHeading text={m.participantsSection()} class="mb-1" />
 	<p class="mb-3.5 text-[13px] text-ink-muted">{m.participantsHint()}</p>
 	<div class="flex flex-col gap-2.5">
 		{#each participants as p, i (p.id)}
@@ -34,7 +33,7 @@
 					onremove={() => {
 						onremove(p.id);
 					}}
-					{oncopy}
+					{oncopied}
 				/>
 			</div>
 		{/each}

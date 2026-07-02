@@ -6,9 +6,13 @@
 	import TextArea from '$lib/components/atoms/TextArea.svelte';
 	import Button from '$lib/components/atoms/Button.svelte';
 	import IconButton from '$lib/components/atoms/IconButton.svelte';
-	import LinkChip from '$lib/components/atoms/LinkChip.svelte';
+	import SectionHeading from '$lib/components/atoms/SectionHeading.svelte';
+	import SelectField from '$lib/components/atoms/SelectField.svelte';
 	import Toast from '$lib/components/atoms/Toast.svelte';
+	import { createToast } from '$lib/components/atoms/create-toast.svelte';
 	import ResultBars from '$lib/components/molecules/ResultBars.svelte';
+	import CopyLinkRow from '$lib/components/molecules/CopyLinkRow.svelte';
+	import LinkNotFound from '$lib/components/molecules/LinkNotFound.svelte';
 	import {
 		X,
 		TriangleAlert,
@@ -16,7 +20,6 @@
 		ChevronUp,
 		ChevronDown,
 		MessageSquare,
-		Copy,
 		Pencil,
 		Check,
 		Plus,
@@ -120,15 +123,10 @@
 	let expandedResults = $state<Record<string, boolean>>({});
 	let expandedNotes = $state<Record<string, boolean>>({});
 
-	let toastOpen = $state(false);
-	let toastTimer: ReturnType<typeof setTimeout> | undefined;
-
-	function copy(url: string) {
-		void navigator.clipboard.writeText(url).catch(() => undefined);
-		clearTimeout(toastTimer);
-		toastOpen = true;
-		toastTimer = setTimeout(() => (toastOpen = false), 3000);
-	}
+	const toast = createToast();
+	const copied = () => {
+		toast.show(m.linkCopied());
+	};
 
 	type AfterSubmit = (a: {
 		result: { type: string };
@@ -166,17 +164,11 @@
 </script>
 
 {#if !view}
-	<div class="flex min-h-screen flex-col items-center justify-center gap-4 px-6 py-10 text-center">
-		<div class="h-[52px] w-[52px] rotate-45 rounded-[14px] border border-border bg-card-alt"></div>
-		<h1 class="mt-3 text-2xl font-extrabold tracking-[-0.01em] text-ink">{m.linkNotFound()}</h1>
-		<p class="max-w-[300px] text-[15px] leading-relaxed text-ink-muted">{m.linkNotFoundSub()}</p>
-	</div>
+	<LinkNotFound />
 {:else}
 	<div class="mx-auto max-w-[640px] px-6 pb-24 pt-10">
 		<div class="mb-8">
-			<div class="text-[13px] font-bold uppercase tracking-[0.06em] text-ink-muted">
-				{m.dashboardTitle()}
-			</div>
+			<SectionHeading text={m.dashboardTitle()} />
 
 			<!-- Title + description own their block; the edit button sits below, not
 			     beside the (wrapping) title, so nothing collides. -->
@@ -194,29 +186,15 @@
 						value={view.description ?? ''}
 					/>
 					<!-- Language + mode edited alongside title/description; saved together. -->
-					<label class="flex flex-col gap-2">
-						<span class="text-sm font-semibold text-ink">{m.fieldMode()}</span>
-						<select
-							name="pollMode"
-							value={view.pollMode}
-							class="h-[46px] w-full rounded-[10px] border border-border bg-card px-3.5 text-[15px] text-ink outline-none focus:border-primary"
-						>
-							<option value="assigned">{m.modeAssigned()}</option>
-							<option value="open">{m.modeOpen()}</option>
-						</select>
-					</label>
-					<label class="flex flex-col gap-2">
-						<span class="text-sm font-semibold text-ink">{m.fieldLanguage()}</span>
-						<select
-							name="locale"
-							value={view.locale}
-							class="h-[46px] w-full rounded-[10px] border border-border bg-card px-3.5 text-[15px] text-ink outline-none focus:border-primary"
-						>
-							<option value="da">{m.langDa()}</option>
-							<option value="en">{m.langEn()}</option>
-							<option value="fr">{m.langFr()}</option>
-						</select>
-					</label>
+					<SelectField label={m.fieldMode()} name="pollMode" value={view.pollMode}>
+						<option value="assigned">{m.modeAssigned()}</option>
+						<option value="open">{m.modeOpen()}</option>
+					</SelectField>
+					<SelectField label={m.fieldLanguage()} name="locale" value={view.locale}>
+						<option value="da">{m.langDa()}</option>
+						<option value="en">{m.langEn()}</option>
+						<option value="fr">{m.langFr()}</option>
+					</SelectField>
 					<div class="flex items-center gap-2.5">
 						<Button variant="ghost" type="submit" iconOnly label={m.save()}
 							><Check size={16} /></Button
@@ -287,17 +265,7 @@
 			<div class="mb-4 rounded-xl border border-primary bg-primary-tint px-4 py-3.5">
 				<div class="text-sm font-bold text-primary">{m.shareLinkTitle()}</div>
 				<p class="mt-1.5 text-[13px] leading-relaxed text-ink">{m.shareLinkHint()}</p>
-				<div class="mt-2.5 flex flex-wrap items-center gap-2.5">
-					<LinkChip text={view.shareUrl.replace(/^https?:\/\//, '')} />
-					<Button
-						variant="ghost"
-						iconOnly
-						label={m.copyLink()}
-						onclick={() => {
-							copy(view.shareUrl);
-						}}><Copy size={16} /></Button
-					>
-				</div>
+				<CopyLinkRow url={view.shareUrl} oncopied={copied} class="mt-2.5" />
 			</div>
 		{/if}
 
@@ -309,17 +277,7 @@
 				{m.organizerLinkTitle()}
 			</div>
 			<p class="mt-1.5 text-[13px] leading-relaxed text-ink">{m.organizerLinkWarning()}</p>
-			<div class="mt-2.5 flex flex-wrap items-center gap-2.5">
-				<LinkChip text={view.organizerUrl.replace(/^https?:\/\//, '')} />
-				<Button
-					variant="ghost"
-					iconOnly
-					label={m.copyLink()}
-					onclick={() => {
-						copy(view.organizerUrl);
-					}}><Copy size={16} /></Button
-				>
-			</div>
+			<CopyLinkRow url={view.organizerUrl} oncopied={copied} class="mt-2.5" />
 		</div>
 
 		{#if view.status === 'cancelled'}
@@ -369,15 +327,7 @@
 					{#each partials as p (p.id)}
 						<div class="flex flex-wrap items-center gap-2.5">
 							<span class="min-w-[80px] text-[15px] font-semibold text-ink">{p.label}</span>
-							<LinkChip text={p.url.replace(/^https?:\/\//, '')} />
-							<Button
-								variant="ghost"
-								iconOnly
-								label={m.copyLink()}
-								onclick={() => {
-									copy(p.url);
-								}}><Copy size={16} /></Button
-							>
+							<CopyLinkRow url={p.url} oncopied={copied} class="flex-1" />
 						</div>
 					{/each}
 				</div>
@@ -387,9 +337,7 @@
 		<!-- Results -->
 		{#if view.results.length > 0}
 			<section class="mb-10">
-				<div class="mb-1 text-[13px] font-bold uppercase tracking-[0.06em] text-ink-muted">
-					{m.resultsSection()}
-				</div>
+				<SectionHeading text={m.resultsSection()} class="mb-1" />
 				<!-- One "who answered" summary for the whole poll, not per card. -->
 				<div class="mb-3.5 text-[13px] font-semibold text-ink-muted">{view.respondedLabel}</div>
 				{#if selecting}
@@ -507,9 +455,7 @@
 		<!-- Options -->
 		<section class="mb-10">
 			<div class="mb-3.5 flex items-center justify-between gap-2.5">
-				<div class="text-[13px] font-bold uppercase tracking-[0.06em] text-ink-muted">
-					{m.datesSection()}
-				</div>
+				<SectionHeading text={m.datesSection()} />
 				{#if !closed && view.options.length > 1}
 					<form method="POST" action="?/sortOptions" use:enhance={refresh}>
 						<Button variant="ghost" type="submit"
@@ -632,9 +578,7 @@
 
 		<!-- Invitees / shared link -->
 		<section>
-			<div class="mb-3.5 text-[13px] font-bold uppercase tracking-[0.06em] text-ink-muted">
-				{m.participantsSection()}
-			</div>
+			<SectionHeading text={m.participantsSection()} class="mb-3.5" />
 
 			{#if view.pollMode === 'open'}
 				<!-- Open mode: the shared link lives at the top. Here we just list the
@@ -727,17 +671,7 @@
 									{inv.note}
 								</div>
 							{/if}
-							<div class="mt-2.5 flex flex-wrap items-center gap-2.5">
-								<LinkChip text={inv.url.replace(/^https?:\/\//, '')} />
-								<Button
-									variant="ghost"
-									iconOnly
-									label={m.copyLink()}
-									onclick={() => {
-										copy(inv.url);
-									}}><Copy size={16} /></Button
-								>
-							</div>
+							<CopyLinkRow url={inv.url} oncopied={copied} class="mt-2.5" />
 						</div>
 					{/each}
 				</div>
@@ -757,5 +691,5 @@
 		</section>
 	</div>
 
-	<Toast open={toastOpen} text={m.linkCopied()} />
+	<Toast open={toast.open} text={toast.text} />
 {/if}

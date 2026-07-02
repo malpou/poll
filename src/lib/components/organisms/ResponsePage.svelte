@@ -5,12 +5,14 @@
 	import { enhance } from '$app/forms';
 	import DateOptionCard from '$lib/components/molecules/DateOptionCard.svelte';
 	import ResultBars from '$lib/components/molecules/ResultBars.svelte';
+	import CopyLinkRow from '$lib/components/molecules/CopyLinkRow.svelte';
+	import LinkNotFound from '$lib/components/molecules/LinkNotFound.svelte';
 	import TextField from '$lib/components/atoms/TextField.svelte';
 	import TextArea from '$lib/components/atoms/TextArea.svelte';
-	import LinkChip from '$lib/components/atoms/LinkChip.svelte';
-	import Button from '$lib/components/atoms/Button.svelte';
+	import SectionHeading from '$lib/components/atoms/SectionHeading.svelte';
 	import Toast from '$lib/components/atoms/Toast.svelte';
-	import { Check, Copy, Send, CalendarCheck } from '@lucide/svelte';
+	import { createToast } from '$lib/components/atoms/create-toast.svelte';
+	import { Check, Send, CalendarCheck } from '@lucide/svelte';
 	import { m } from '$lib/paraglide/messages';
 	import type { EventStatus, Preference } from '$lib/types';
 	import type { OutcomeRow } from '$lib/results';
@@ -74,16 +76,7 @@
 	let submitted = $state(hasAnswered && !hasNewDates);
 	// Personal edit link handed back after an open submission (from the action).
 	let editUrl = $state<string | null>(null);
-	let toastOpen = $state(false);
-	let toastText = $state('');
-	let toastTimer: ReturnType<typeof setTimeout> | undefined;
-
-	function toast(text: string) {
-		toastText = text;
-		clearTimeout(toastTimer);
-		toastOpen = true;
-		toastTimer = setTimeout(() => (toastOpen = false), 3000);
-	}
+	const toast = createToast();
 
 	const nameOk = $derived(mode === 'assigned' || name.trim().length > 0);
 	const allAnswered = $derived(
@@ -93,24 +86,15 @@
 			view.dates.every((d) => answers[d.id] !== undefined)
 	);
 
-	function copy(url: string) {
-		void navigator.clipboard.writeText(url).catch(() => undefined);
-		toast(m.linkCopied());
-	}
-
 	function onSubmitted(url: string | null) {
 		submitted = true;
 		editUrl = url;
-		toast(m.savedTitle());
+		toast.show(m.savedTitle());
 	}
 </script>
 
 {#if !view}
-	<div class="flex min-h-screen flex-col items-center justify-center gap-4 px-6 py-10 text-center">
-		<div class="h-[52px] w-[52px] rotate-45 rounded-[14px] border border-border bg-card-alt"></div>
-		<h1 class="mt-3 text-2xl font-extrabold tracking-[-0.01em] text-ink">{m.linkNotFound()}</h1>
-		<p class="max-w-[300px] text-[15px] leading-relaxed text-ink-muted">{m.linkNotFoundSub()}</p>
-	</div>
+	<LinkNotFound />
 {:else}
 	<form
 		method="POST"
@@ -193,9 +177,7 @@
 
 			<!-- ...then how everyone answered, counts only - names stay with the organizer. -->
 			<div class="mt-8 flex flex-col gap-3.5">
-				<div class="text-[13px] font-bold uppercase tracking-[0.06em] text-ink-muted">
-					{m.distributionHeading()}
-				</div>
+				<SectionHeading text={m.distributionHeading()} />
 				{#each view.dates as d, i (d.id)}
 					{@const o = outcomeById.get(d.id)}
 					{#if o}
@@ -241,9 +223,7 @@
 				<p class="text-[17px] font-semibold text-ink">{m.responseIntro()}</p>
 
 				<div class="flex flex-col gap-3.5">
-					<div class="text-[13px] font-bold uppercase tracking-[0.06em] text-ink-muted">
-						{m.datesQuestion()}
-					</div>
+					<SectionHeading text={m.datesQuestion()} />
 					{#if hasNewDates && !closed}
 						<div
 							class="flex items-center gap-2.5 rounded-xl border border-primary bg-primary-tint px-4 py-3 text-sm font-semibold text-primary"
@@ -309,17 +289,13 @@
 								<div class="rounded-xl border border-border bg-card-alt px-3.5 py-3">
 									<div class="text-[13px] font-semibold text-ink">{m.editLinkTitle()}</div>
 									<p class="mt-1 text-[13px] leading-relaxed text-ink-muted">{m.editLinkHint()}</p>
-									<div class="mt-2 flex flex-wrap items-center gap-2.5">
-										<LinkChip text={editUrl.replace(/^https?:\/\//, '')} />
-										<Button
-											variant="ghost"
-											iconOnly
-											label={m.copyLink()}
-											onclick={() => {
-												if (editUrl) copy(editUrl);
-											}}><Copy size={16} /></Button
-										>
-									</div>
+									<CopyLinkRow
+										url={editUrl}
+										oncopied={() => {
+											toast.show(m.linkCopied());
+										}}
+										class="mt-2"
+									/>
 								</div>
 							{/if}
 						</div>
@@ -345,5 +321,5 @@
 		{/if}
 	</form>
 
-	<Toast open={toastOpen} text={toastText} />
+	<Toast open={toast.open} text={toast.text} />
 {/if}
