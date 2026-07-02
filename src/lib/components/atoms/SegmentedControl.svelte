@@ -1,8 +1,7 @@
 <script lang="ts">
-	import { prefersReducedMotion } from '$lib/motion';
-	import { Spring } from 'svelte/motion';
+	import { prefersReducedMotion, GLIDE } from '$lib/motion';
 	import { m } from '$lib/paraglide/messages';
-	import { CircleQuestionMark } from '@lucide/svelte';
+	import { Check, CircleQuestionMark, Star, X } from '@lucide/svelte';
 	import type { Preference } from '$lib/types';
 
 	let {
@@ -16,36 +15,29 @@
 		readOnly?: boolean;
 	} = $props();
 
-	// Signature interaction: the thumb springs between the segments. Position is
-	// the segment index; we drive translateX as a % of container width so no
-	// measuring is needed. da-DK reduced-motion → instant. Unsure is the neutral
-	// state: muted ink thumb + question-mark icon (DESIGN.md).
-	const META: Record<Preference, { label: () => string; color: string }> = {
-		preferred: { label: m.prefPreferred, color: 'var(--color-amber)' },
-		available: { label: m.prefAvailable, color: 'var(--color-good)' },
-		unavailable: { label: m.prefUnavailable, color: 'var(--color-bad)' },
-		unsure: { label: m.prefUnsure, color: 'var(--color-ink-muted)' }
+	// Signature interaction: one ink-bordered track, the indicator glides between
+	// segments (~350ms soft overshoot; reduced motion → instant). Faces per
+	// DESIGN.md: highlighter for preferred, gray wash for available, diagonal
+	// ink hatch for unavailable, pencil dots for unsure - all four distinct.
+	// Each segment stacks icon over label.
+	const META: Record<Preference, { label: () => string; face: string; icon: typeof Star }> = {
+		preferred: { label: m.prefPreferred, face: 'bg-hl', icon: Star },
+		available: { label: m.prefAvailable, face: 'bg-wash', icon: Check },
+		unavailable: { label: m.prefUnavailable, face: 'ink-hatch', icon: X },
+		unsure: { label: m.prefUnsure, face: 'ink-dots', icon: CircleQuestionMark }
 	};
 	const options = $derived(
-		choices.map((pref) => ({ pref, label: META[pref].label(), color: META[pref].color }))
+		choices.map((pref) => ({
+			pref,
+			...META[pref],
+			// Without a Preferred choice, Available is the positive answer and
+			// takes the highlighter face instead of the gray wash.
+			face: pref === 'available' && !choices.includes('preferred') ? 'bg-hl' : META[pref].face
+		}))
 	);
 
 	const reduced = prefersReducedMotion();
-
 	const activeIndex = $derived(options.findIndex((o) => o.pref === value));
-	// Seed the spring once from the initial value; the $effect below tracks it.
-	// svelte-ignore state_referenced_locally
-	const initialIndex = choices.findIndex((p) => p === value);
-	const pos = new Spring(initialIndex < 0 ? 0 : initialIndex, {
-		stiffness: 0.42,
-		damping: 0.75
-	});
-
-	$effect(() => {
-		const i = activeIndex < 0 ? 0 : activeIndex;
-		if (reduced) void pos.set(i, { instant: true });
-		else pos.target = i;
-	});
 
 	function select(pref: Preference) {
 		if (readOnly) return;
@@ -53,34 +45,38 @@
 	}
 </script>
 
-<div class="relative flex h-11 w-full rounded-xl bg-card-alt p-0.75">
+<div class="relative flex h-14 w-full overflow-hidden rounded-control border-2 border-ink">
 	{#if activeIndex >= 0}
 		<div
-			class="pointer-events-none absolute bottom-0.75 top-0.75 rounded-control transition-colors duration-150"
-			style="left:3px; width:calc((100% - 6px) / {options.length}); transform:translateX(calc({pos.current} * 100%)); background:{options[
-				activeIndex
-			].color};"
+			class="pointer-events-none absolute bottom-0.75 top-0.75 rounded-lg {options[activeIndex]
+				.face}"
+			style="left:3px; width:calc((100% - 6px) / {options.length}); transform:translateX({activeIndex *
+				100}%); transition:{reduced ? 'none' : GLIDE};"
 		></div>
 	{/if}
 	{#each options as opt (opt.pref)}
+		{@const active = value === opt.pref}
 		<button
 			type="button"
 			disabled={readOnly}
 			onclick={() => {
 				select(opt.pref);
 			}}
-			aria-pressed={value === opt.pref}
-			class="relative z-10 flex flex-1 items-center justify-center gap-1 rounded-control border-none bg-transparent px-1 py-2.75 text-sm font-semibold transition-colors duration-150 {value ===
-			opt.pref
-				? 'text-white'
+			aria-pressed={active}
+			class="relative z-10 flex flex-1 flex-col items-center justify-center gap-0.75 border-none bg-transparent px-1 text-2xs transition-colors duration-150 {active
+				? 'font-bold text-ink'
 				: 'text-ink-muted'} {readOnly ? 'cursor-not-allowed' : 'cursor-pointer'}"
 		>
-			{#if opt.pref === 'unsure'}<CircleQuestionMark
-					size={14}
-					class="shrink-0"
-					aria-hidden="true"
-				/>{/if}
-			{opt.label}
+			<!-- The preferred star fills when picked (DESIGN.md). -->
+			<opt.icon
+				size={14}
+				class="shrink-0"
+				fill={opt.pref === 'preferred' && active ? 'currentColor' : 'none'}
+				aria-hidden="true"
+			/>
+			<span class={active && opt.pref === 'unavailable' ? 'line-through' : ''}>
+				{opt.label()}
+			</span>
 		</button>
 	{/each}
 </div>

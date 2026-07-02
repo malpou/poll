@@ -1,7 +1,7 @@
 import { fail } from '@sveltejs/kit';
 import { getProvider } from '$lib/data/provider';
 import { formatDateOption, utcIsoToZonedParts } from '$lib/logic/date';
-import { field, validateTimes } from '$lib/forms/forms';
+import { field, parseIndexed, validateTimes } from '$lib/forms/forms';
 import { richTextIsEmpty, sanitizeRichText } from '$lib/forms/richtext';
 import { inviteeStatus, responseCountByInvitee } from '$lib/logic/participant-status';
 import { markBest } from '$lib/logic/results';
@@ -10,7 +10,8 @@ import { setRequestLocale } from '../../../hooks.server';
 import { m } from '$lib/paraglide/messages';
 import { isLocale } from '$lib/paraglide/runtime';
 import type { DateOptionInput } from '$lib/data/provider';
-import type { EventWithDetails, Preference } from '$lib/types';
+import type { Accent, EventWithDetails, Preference } from '$lib/types';
+import { ACCENTS } from '$lib/types';
 import type { Actions, PageServerLoad } from './$types';
 
 /**
@@ -106,6 +107,7 @@ async function computeDashboard(platform: App.Platform | undefined, token: strin
 		pollMode: event.pollMode,
 		allowPreferred: event.allowPreferred,
 		allowUnsure: event.allowUnsure,
+		accent: event.accent,
 		status: event.status,
 		// The decided dates for the closed banner - empty unless closed with a pick.
 		chosenDates: event.dateOptions
@@ -213,6 +215,11 @@ export const actions = {
 		if (isLocale(locale) && locale !== event.locale)
 			await provider.setEventLocale(event.id, locale);
 
+		// Invalid accent values are rejected; the event keeps its previous accent.
+		const accent = field(form, 'accent');
+		if ((ACCENTS as readonly string[]).includes(accent) && accent !== event.accent)
+			await provider.setEventAccent(event.id, accent as Accent);
+
 		const timezone = field(form, 'timezone');
 		if (Intl.supportedValuesOf('timeZone').includes(timezone) && timezone !== event.timezone)
 			await provider.setEventTimezone(event.id, timezone);
@@ -222,8 +229,8 @@ export const actions = {
 			await provider.setPollMode(event.id, mode);
 		}
 
-		// Choice toggles ride the same form. Disabling never rewrites recorded
-		// answers - they keep counting; the choice just stops being offered.
+		// Choice toggles ride the same form. Disabling folds recorded answers into
+		// the fixed pair (Preferred→Available, unsure→Unavailable) in the provider.
 		const allowPreferred = field(form, 'allowPreferred') !== '0';
 		const allowUnsure = field(form, 'allowUnsure') === '1';
 		if (allowPreferred !== event.allowPreferred || allowUnsure !== event.allowUnsure)
@@ -238,11 +245,21 @@ export const actions = {
 		if (!event) return fail(404);
 		if (notOpen(event)) return fail(409);
 		const form = await request.formData();
-		const date = dateInput(form);
-		if (!date.value) return fail(400, { error: 'value' });
-		const timeError = validateTimes(date.startTime, date.endTime);
-		if (timeError) return fail(400, { error: timeError });
-		await provider.addDateOption(event.id, date, event.timezone);
+		// The calendar posts indexed rows, one per (day, slot) - same wire shape
+		// as the create page. All-or-nothing: any invalid row rejects the batch.
+		const rows: DateOptionInput[] = parseIndexed(form, 'dates')
+			.map((d) => ({
+				value: d.value ?? '',
+				startTime: d.startTime ?? '',
+				endTime: d.endTime ?? ''
+			}))
+			.filter((d) => d.value !== '');
+		if (rows.length === 0) return fail(400, { error: 'value' });
+		for (const date of rows) {
+			const timeError = validateTimes(date.startTime, date.endTime);
+			if (timeError) return fail(400, { error: timeError });
+		}
+		for (const date of rows) await provider.addDateOption(event.id, date, event.timezone);
 		await purgeEvent(platform, url.origin, params.token, event);
 		return { ok: true };
 	},

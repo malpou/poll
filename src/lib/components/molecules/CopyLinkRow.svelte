@@ -23,5 +23,8 @@
 
 <div class="flex flex-wrap items-center gap-2.5 {cls}">
 	<LinkChip text={url.replace(/^https?:\/\//, '')} />
-	<Button variant="ghost" iconOnly label={m.copyLink()} onclick={copy}><Copy size={16} /></Button>
+	<!-- Visible short label per DESIGN.md; aria-label keeps the full name. -->
+	<Button variant="ghost" label={m.copyLink()} onclick={copy}>
+		<Copy size={13} />{m.copy()}
+	</Button>
 </div>

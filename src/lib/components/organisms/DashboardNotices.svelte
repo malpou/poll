@@ -33,7 +33,7 @@
 	{#if pollMode === 'open'}
 		<!-- The link to hand out. Kept at the top and visually primary so it's clearly
 		     the one to share - the organizer /e link below is private. -->
-		<Callout tone="primary" title={m.shareLinkTitle()} class="mb-4">
+		<Callout tone="ink" title={m.shareLinkTitle()} class="mb-4">
 			<p class="mt-1.5 text-caption leading-relaxed text-ink">{m.shareLinkHint()}</p>
 			<CopyLinkRow url={shareUrl} {oncopied} class="mt-2.5" />
 		</Callout>
@@ -41,7 +41,7 @@
 
 	<!-- Save-your-link warning: the /e URL is the only way back to the results and
 	     is private - never the link to share (open mode has its own above). -->
-	<Callout tone="amber" title={m.organizerLinkTitle()} class="mb-6">
+	<Callout tone="hl" title={m.organizerLinkTitle()} class="mb-6">
 		{#snippet icon()}<TriangleAlert size={16} class="shrink-0" />{/snippet}
 		<p class="mt-1.5 text-caption leading-relaxed text-ink">{m.organizerLinkWarning()}</p>
 		<CopyLinkRow url={organizerUrl} {oncopied} class="mt-2.5" />
@@ -53,7 +53,7 @@
 		{#if chosenDates.length > 0}
 			<!-- The decision, front and center: closed + the chosen date(s). -->
 			<Callout
-				tone="primary"
+				tone="ink"
 				title={chosenDates.length > 1 ? m.chosenDatesHeading() : m.chosenDateHeading()}
 				class="mb-6"
 			>
@@ -78,7 +78,7 @@
 	     with their personal links ready to resend. Covers open mode too - this is
 	     the only place open-mode /r links surface for the organizer. -->
 	{#if partials.length > 0}
-		<Callout tone="primary" title={m.needsUpdateTitle()} class="mb-6">
+		<Callout tone="dashed" title={m.needsUpdateTitle()} class="mb-6">
 			<p class="mt-1.5 text-caption leading-relaxed text-ink">{m.needsUpdateHint()}</p>
 			<div class="mt-2.5 flex flex-col gap-2">
 				{#each partials as p (p.id)}

@@ -79,6 +79,8 @@ test('removing an invitee deletes their responses and their link stops working',
 test('rename an invitee persists', async ({ page }) => {
 	seed();
 	await page.goto(`/e/${OTOK}`);
+	// Names are read-only until the row's pencil opens the rename form.
+	await inviteesSection(page).getByRole('button', { name: m.edit() }).click();
 	const row = page.locator('form[action="?/renameInvitee"]');
 	await row.locator('input[name="label"]').fill('Anna B.');
 	await row.getByRole('button', { name: m.save() }).click();
@@ -135,10 +137,10 @@ test('copy the shared link puts the full absolute /s URL on the clipboard', asyn
 	await context.grantPermissions(['clipboard-read', 'clipboard-write']);
 	seedOpen();
 	await page.goto(`/e/${O_OTOK}`);
-	// The shared-link callout at the top (primary tone), distinct from the amber
-	// organizer-link banner which has its own copy button.
+	// The shared-link callout at the top (ink tone), distinct from the
+	// highlighter organizer-link banner which has its own copy button.
 	const banner = page
-		.locator('div.border-primary')
+		.locator('div[data-tone="ink"]')
 		.filter({ has: page.getByText(m.shareLinkTitle()) });
 	await banner.getByRole('button', { name: m.copyLink() }).click();
 	const copied = await page.evaluate(() => navigator.clipboard.readText());

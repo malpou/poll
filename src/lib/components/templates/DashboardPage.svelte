@@ -11,6 +11,7 @@
 	import { m } from '$lib/paraglide/messages';
 	import { baseLocale } from '$lib/paraglide/runtime';
 	import type {
+		Accent,
 		EventStatus,
 		InviteeView,
 		Locale,
@@ -31,6 +32,7 @@
 		pollMode: PollMode;
 		allowPreferred: boolean;
 		allowUnsure: boolean;
+		accent: Accent;
 		status: EventStatus;
 		chosenDates: { weekday: string; dateLabel: string; timeRange: string }[];
 		respondedLabel: string;
@@ -63,6 +65,14 @@
 		uiLocale = next;
 	}
 
+	// Live accent preview, same trick: the picker updates the page's data-accent
+	// immediately; saving persists it, cancelling rolls it back.
+	// svelte-ignore state_referenced_locally
+	let uiAccent = $state<Accent>(view?.accent ?? 'yellow');
+	function previewAccent(next: Accent) {
+		uiAccent = next;
+	}
+
 	// Selection mode for closing the poll spans the header (entry button) and
 	// the results section (checkboxes + confirm), so it lives here.
 	let selecting = $state(false);
@@ -76,51 +86,59 @@
 {#if !view}
 	<LinkNotFound />
 {:else}
-	<div class="mx-auto max-w-160 px-6 pb-24 pt-10">
-		<EventHeader
-			title={view.title}
-			description={view.description}
-			pollMode={view.pollMode}
-			allowPreferred={view.allowPreferred}
-			allowUnsure={view.allowUnsure}
-			eventLocale={view.locale}
-			locale={uiLocale}
-			timezone={view.timezone}
-			{closed}
-			bind:selecting
-			onpreviewlocale={previewLocale}
-		/>
+	<div data-accent={uiAccent} class="mx-auto max-w-160 px-4 pb-18 pt-7">
+		<div class="paper-sheet">
+			<EventHeader
+				title={view.title}
+				description={view.description}
+				pollMode={view.pollMode}
+				allowPreferred={view.allowPreferred}
+				allowUnsure={view.allowUnsure}
+				accent={view.accent}
+				eventLocale={view.locale}
+				locale={uiLocale}
+				timezone={view.timezone}
+				{closed}
+				bind:selecting
+				onpreviewlocale={previewLocale}
+				onpreviewaccent={previewAccent}
+			/>
 
-		<DashboardNotices
-			pollMode={view.pollMode}
-			status={view.status}
-			shareUrl={view.shareUrl}
-			organizerUrl={view.organizerUrl}
-			chosenDates={view.chosenDates}
-			{partials}
-			locale={uiLocale}
-			oncopied={copied}
-		/>
+			<DashboardNotices
+				pollMode={view.pollMode}
+				status={view.status}
+				shareUrl={view.shareUrl}
+				organizerUrl={view.organizerUrl}
+				chosenDates={view.chosenDates}
+				{partials}
+				locale={uiLocale}
+				oncopied={copied}
+			/>
 
-		<ResultsSection
-			results={view.results}
-			respondedLabel={view.respondedLabel}
-			allowPreferred={view.allowPreferred}
-			allowUnsure={view.allowUnsure}
-			{closed}
-			bind:selecting
-			locale={uiLocale}
-		/>
+			<div class="my-8 border-t-2 border-dashed border-border-strong"></div>
 
-		<OptionsSection options={view.options} {closed} locale={uiLocale} />
+			<ResultsSection
+				results={view.results}
+				respondedLabel={view.respondedLabel}
+				allowPreferred={view.allowPreferred}
+				allowUnsure={view.allowUnsure}
+				{closed}
+				bind:selecting
+				locale={uiLocale}
+			/>
 
-		<InviteesSection
-			invitees={view.invitees}
-			pollMode={view.pollMode}
-			{closed}
-			locale={uiLocale}
-			oncopied={copied}
-		/>
+			<OptionsSection options={view.options} {closed} locale={uiLocale} />
+
+			<div class="my-8 border-t-2 border-dashed border-border-strong"></div>
+
+			<InviteesSection
+				invitees={view.invitees}
+				pollMode={view.pollMode}
+				{closed}
+				locale={uiLocale}
+				oncopied={copied}
+			/>
+		</div>
 	</div>
 
 	<Toast open={toast.open} text={toast.text} />

@@ -23,7 +23,7 @@
 	const url = $derived(helpers.inviteeUrl(page.url.origin, participant.token));
 </script>
 
-<div class="rounded-xl border border-border bg-card p-3">
+<div class="rounded-card border-2 border-border bg-card-alt p-3">
 	<div class="flex items-center gap-2.5">
 		<TextField
 			placeholder={m.name()}

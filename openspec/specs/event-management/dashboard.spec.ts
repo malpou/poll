@@ -55,8 +55,9 @@ test('add a date option persists to D1', async ({ page }) => {
 	await page.goto(`/e/${OTOK}`);
 	await expect(page.getByRole('heading', { name: TITLE })).toBeVisible();
 
+	// Dates are picked from the month calendar, then submitted in one batch.
 	const addOption = page.locator('form[action="?/addOption"]');
-	await addOption.locator('input[name="value"]').fill('2026-09-20');
+	await addOption.getByRole('button', { name: '20', exact: true }).click();
 	await addOption.getByRole('button', { name: m.addDate() }).click();
 	await expect.poll(() => optionRows().length).toBe(2);
 });
@@ -207,9 +208,10 @@ test('organizer-link banner copies the /e URL and warns to save it', async ({ pa
 	await context.grantPermissions(['clipboard-read', 'clipboard-write']);
 	seed();
 	await page.goto(`/e/${OTOK}`);
-	// The warning heading and its copy button share the banner's outer div.
+	// The warning heading and its copy button share the banner's outer div;
+	// data-tone is the callout's stable hook (never target tint classes).
 	const banner = page
-		.locator('div.border-amber')
+		.locator('div[data-tone="hl"]')
 		.filter({ has: page.getByText(m.organizerLinkTitle()) });
 	await expect(banner).toBeVisible();
 	await banner.getByRole('button', { name: m.copyLink() }).click();

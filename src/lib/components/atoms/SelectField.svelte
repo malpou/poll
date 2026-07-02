@@ -18,13 +18,13 @@
 
 <label class="flex flex-col gap-2">
 	{#if label}
-		<span class="text-sm font-semibold text-ink">{label}</span>
+		<span class="text-2xs font-bold uppercase tracking-widest text-ink-muted">{label}</span>
 	{/if}
 	<select
 		{name}
 		{value}
 		onchange={(e) => onchange?.(e.currentTarget.value)}
-		class="h-11.5 w-full rounded-control border border-border bg-card px-3.5 text-body text-ink outline-none focus:border-primary"
+		class="h-11.5 w-full rounded-control border-2 border-border-strong bg-card-alt px-3.5 text-body text-ink outline-none focus:border-ink"
 	>
 		{@render children()}
 	</select>

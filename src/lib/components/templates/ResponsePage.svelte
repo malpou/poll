@@ -15,7 +15,7 @@
 	import { getLocale } from '$lib/paraglide/runtime';
 	import { tzLabel } from '$lib/logic/date';
 	import { isRichText } from '$lib/forms/richtext';
-	import type { EventStatus, Preference, ResponseDateView } from '$lib/types';
+	import type { Accent, EventStatus, Preference, ResponseDateView } from '$lib/types';
 	import type { OutcomeRow } from '$lib/logic/results';
 
 	// Assigned (/r): name/answers/note come from the load. Open (/s): submitter
@@ -30,6 +30,7 @@
 		title: string;
 		description: string | null;
 		timezone: string;
+		accent: Accent;
 		// The event's enabled choices, in display order.
 		choices: Preference[];
 		dates: ResponseDateView[];
@@ -102,102 +103,110 @@
 				}
 				return update({ reset: false });
 			}}
-		class="mx-auto max-w-120 px-5 pb-32 pt-8"
+		data-accent={view.accent}
+		class="mx-auto max-w-160 px-4 pb-18 pt-7"
 	>
-		{#if cancelled}
-			<NoticeBanner text={m.cancelledBanner()} class="mb-5.5" />
-		{:else if closed && !decided}
-			<!-- Poll closed before decisions existed: plain closed notice. -->
-			<NoticeBanner text={m.closedBanner()} class="mb-5.5" />
-		{/if}
+		<div class="paper-sheet">
+			{#if cancelled}
+				<NoticeBanner text={m.cancelledBanner()} class="mb-5.5" />
+			{:else if closed && !decided}
+				<!-- Poll closed before decisions existed: plain closed notice. -->
+				<NoticeBanner text={m.closedBanner()} class="mb-5.5" />
+			{/if}
 
-		<div class="mb-7.5 flex flex-col gap-1.5">
-			<!-- No greeting once closed: a decided/cancelled poll is an outcome, not a
+			<div class="mb-7.5 flex flex-col gap-1.5">
+				<!-- No greeting once closed: a decided/cancelled poll is an outcome, not a
 			     personal ask, and the counts-only view must show no invitee name. -->
-			{#if !closed}
-				{#if mode === 'assigned'}
-					<div class="text-body font-semibold text-primary">
-						{m.greeting({ name: view.name ?? '' })}
-					</div>
-				{:else if name.trim()}
-					<div class="text-body font-semibold text-primary">
-						{m.greeting({ name: name.trim() })}
-					</div>
+				{#if !closed}
+					{#if mode === 'assigned'}
+						<div class="text-lead text-ink-soft">
+							{m.greeting({ name: view.name ?? '' })}
+						</div>
+					{:else if name.trim()}
+						<div class="text-lead text-ink-soft">
+							{m.greeting({ name: name.trim() })}
+						</div>
+					{/if}
 				{/if}
-			{/if}
-			<h1 class="text-title font-extrabold tracking-[-0.02em] text-ink">{view.title}</h1>
-			{#if view.description}
-				{#if isRichText(view.description)}
-					<!-- Editor HTML, sanitized to the allowed subset at write time. -->
-					<div class="rich-text mt-1.5 text-base leading-relaxed text-ink-muted">
-						<!-- eslint-disable-next-line svelte/no-at-html-tags -->
-						{@html view.description}
-					</div>
-				{:else}
-					<p class="mt-1.5 whitespace-pre-line text-base leading-relaxed text-ink-muted">
-						{view.description}
-					</p>
-				{/if}
-			{/if}
-		</div>
-
-		{#if cancelled || decided}
-			<ResponseOutcome {cancelled} dates={view.dates} {outcomeById} />
-		{:else}
-			<div class="flex flex-col gap-5">
-				{#if mode === 'open'}
-					<TextField label={m.namePrompt()} name="name" bind:value={name} placeholder={m.name()} />
-				{/if}
-				<p class="text-lead font-semibold text-ink">{m.responseIntro()}</p>
-
-				<div class="flex flex-col gap-3.5">
-					<SectionHeading text={m.datesQuestion()} />
-					<!-- Only relevant when times exist; date-only polls have no zone to name. -->
-					{#if view.dates.some((d) => d.timeRange)}
-						<p class="text-caption text-ink-muted">
-							{m.timezoneNote({ timezone: tzLabel(view.timezone, getLocale()) })}
+				<h1 class="text-title font-bold text-ink"><span class="hl-swipe">{view.title}</span></h1>
+				{#if view.description}
+					{#if isRichText(view.description)}
+						<!-- Editor HTML, sanitized to the allowed subset at write time. -->
+						<div class="rich-text mt-1.5 text-base leading-relaxed text-ink-muted">
+							<!-- eslint-disable-next-line svelte/no-at-html-tags -->
+							{@html view.description}
+						</div>
+					{:else}
+						<p class="mt-1.5 whitespace-pre-line text-base leading-relaxed text-ink-muted">
+							{view.description}
 						</p>
 					{/if}
-					{#if hasNewDates && !closed}
-						<NoticeBanner text={m.newDatesBanner()} tone="primary" />
-					{/if}
-					{#each view.dates as d, i (d.id)}
-						<DateOptionCard
-							id={d.id}
-							weekday={d.weekday}
-							dateLabel={d.dateLabel}
-							timeRange={d.timeRange}
-							index={i}
-							bind:value={answers[d.id]}
-							choices={view.choices}
-							readOnly={closed || submitted}
-							isNew={d.needsAnswer ?? false}
-						/>
-					{/each}
-				</div>
-
-				<div class="mt-1.5 flex flex-col gap-2">
-					<TextArea
-						label={m.noteLabel()}
-						name="note"
-						bind:value={note}
-						placeholder={m.notePlaceholder()}
-						disabled={closed || submitted}
-					/>
-				</div>
+				{/if}
 			</div>
-		{/if}
 
-		{#if !closed}
-			<SubmitBar
-				bind:submitted
-				{allAnswered}
-				{editUrl}
-				oncopied={() => {
-					toast.show(m.linkCopied());
-				}}
-			/>
-		{/if}
+			{#if cancelled || decided}
+				<ResponseOutcome {cancelled} dates={view.dates} {outcomeById} />
+			{:else}
+				<div class="flex flex-col gap-5">
+					{#if mode === 'open'}
+						<TextField
+							label={m.namePrompt()}
+							name="name"
+							bind:value={name}
+							placeholder={m.name()}
+						/>
+					{/if}
+					<p class="text-lead font-semibold text-ink">{m.responseIntro()}</p>
+
+					<div class="flex flex-col gap-3.5">
+						<SectionHeading text={m.datesQuestion()} />
+						<!-- Only relevant when times exist; date-only polls have no zone to name. -->
+						{#if view.dates.some((d) => d.timeRange)}
+							<p class="text-caption text-ink-muted">
+								{m.timezoneNote({ timezone: tzLabel(view.timezone, getLocale()) })}
+							</p>
+						{/if}
+						{#if hasNewDates && !closed}
+							<NoticeBanner text={m.newDatesBanner()} tone="ink" />
+						{/if}
+						{#each view.dates as d, i (d.id)}
+							<DateOptionCard
+								id={d.id}
+								weekday={d.weekday}
+								dateLabel={d.dateLabel}
+								timeRange={d.timeRange}
+								index={i}
+								bind:value={answers[d.id]}
+								choices={view.choices}
+								readOnly={closed || submitted}
+								isNew={d.needsAnswer ?? false}
+							/>
+						{/each}
+					</div>
+
+					<div class="mt-1.5 flex flex-col gap-2">
+						<TextArea
+							label={m.noteLabel()}
+							name="note"
+							bind:value={note}
+							placeholder={m.notePlaceholder()}
+							disabled={closed || submitted}
+						/>
+					</div>
+				</div>
+			{/if}
+
+			{#if !closed}
+				<SubmitBar
+					bind:submitted
+					{allAnswered}
+					{editUrl}
+					oncopied={() => {
+						toast.show(m.linkCopied());
+					}}
+				/>
+			{/if}
+		</div>
 	</form>
 
 	<Toast open={toast.open} text={toast.text} />

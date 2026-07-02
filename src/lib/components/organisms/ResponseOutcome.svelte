@@ -33,13 +33,13 @@
 	<!-- The outcome, front and center: the chosen date(s)... -->
 	<div in:fly={flyIn()}>
 		<Callout
-			tone="primary"
+			tone="ink"
 			title={chosenDates.length > 1 ? m.chosenDatesHeading() : m.chosenDateHeading()}
 		>
 			{#snippet icon()}<CalendarCheck size={16} class="shrink-0" />{/snippet}
 			<div class="mt-1.5 flex flex-col gap-1">
 				{#each chosenDates as d (d.id)}
-					<div class="text-xl font-extrabold capitalize tracking-[-0.01em] text-ink">
+					<div class="text-xl font-bold capitalize text-ink">
 						{d.weekday}
 						{d.dateLabel}{#if d.timeRange}
 							<span class="text-base font-semibold text-ink-muted">· {d.timeRange}</span>{/if}
@@ -57,7 +57,7 @@
 			{#if o}
 				<div
 					in:fly={flyIn(i)}
-					class="rounded-xl border bg-card p-4 {o.chosen ? 'border-primary' : 'border-border'}"
+					class="rounded-card border-2 bg-card-alt p-4 {o.chosen ? 'border-ink' : 'border-border'}"
 				>
 					<div class="flex flex-wrap items-center gap-2.5">
 						<div>
@@ -69,7 +69,7 @@
 						</div>
 						{#if o.chosen}
 							<span
-								class="whitespace-nowrap rounded-full bg-primary-tint px-2.5 py-1 text-2xs font-bold uppercase tracking-[0.04em] text-primary"
+								class="whitespace-nowrap rounded-full bg-ink px-2.5 py-1 text-2xs font-bold uppercase tracking-wider text-card"
 							>
 								{m.chosenBadge()}
 							</span>
@@ -82,7 +82,6 @@
 							unavailable={o.unavailable}
 							preferredPct={o.preferredPct}
 							availablePct={o.availablePct}
-							unavailablePct={o.unavailablePct}
 						/>
 					</div>
 				</div>

@@ -27,6 +27,7 @@ function mapEvent(r: Record<string, unknown>): EventRow {
 		status: r.status as EventRow['status'],
 		allowPreferred: r.allow_preferred === 1,
 		allowUnsure: r.allow_unsure === 1,
+		accent: r.accent as EventRow['accent'],
 		createdAt: r.created_at as string
 	};
 }
@@ -81,8 +82,8 @@ export function d1Provider(db: D1Database): DataProvider {
 			const statements: D1PreparedStatement[] = [
 				db
 					.prepare(
-						`INSERT INTO events (id, title, description, locale, timezone, poll_mode, allow_preferred, allow_unsure, organizer_token, share_token, status, created_at)
-						 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'open', ?)`
+						`INSERT INTO events (id, title, description, locale, timezone, poll_mode, allow_preferred, allow_unsure, accent, organizer_token, share_token, status, created_at)
+						 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'open', ?)`
 					)
 					.bind(
 						eventId,
@@ -93,6 +94,7 @@ export function d1Provider(db: D1Database): DataProvider {
 						draft.pollMode,
 						draft.allowPreferred ? 1 : 0,
 						draft.allowUnsure ? 1 : 0,
+						draft.accent,
 						organizerToken,
 						shareToken,
 						now
@@ -401,6 +403,10 @@ export function d1Provider(db: D1Database): DataProvider {
 
 		async setEventLocale(eventId, locale) {
 			await db.prepare(`UPDATE events SET locale = ? WHERE id = ?`).bind(locale, eventId).run();
+		},
+
+		async setEventAccent(eventId, accent) {
+			await db.prepare(`UPDATE events SET accent = ? WHERE id = ?`).bind(accent, eventId).run();
 		},
 
 		async setEventTimezone(eventId, timezone) {

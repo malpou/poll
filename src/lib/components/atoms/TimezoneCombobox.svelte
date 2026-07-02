@@ -63,7 +63,9 @@
 </script>
 
 <label class="relative flex flex-col gap-2">
-	<span class="text-sm font-semibold text-ink">{m.fieldTimezone()}</span>
+	<span class="text-2xs font-bold uppercase tracking-widest text-ink-muted"
+		>{m.fieldTimezone()}</span
+	>
 	<input
 		type="text"
 		role="combobox"
@@ -84,7 +86,7 @@
 		}}
 		{onkeydown}
 		onblur={close}
-		class="h-11.5 w-full rounded-control border border-border bg-card px-3.5 text-body text-ink outline-none focus:border-primary"
+		class="h-11.5 w-full rounded-control border-2 border-border-strong bg-card-alt px-3.5 text-body text-ink outline-none focus:border-ink"
 	/>
 	<input type="hidden" {name} {value} />
 	{#if open && matches.length > 0}
@@ -93,7 +95,7 @@
 			id="{uid}-listbox"
 			role="listbox"
 			aria-label={m.fieldTimezone()}
-			class="absolute top-full z-10 mt-1 max-h-60 w-full overflow-y-auto rounded-control border border-border bg-card py-1"
+			class="absolute top-full z-10 mt-1 max-h-60 w-full overflow-y-auto rounded-control border-2 border-border bg-card-alt py-1"
 		>
 			{#each matches as tz, i (tz)}
 				<!-- pointerdown beats the input's blur; preventDefault keeps focus there -->
@@ -105,9 +107,7 @@
 						e.preventDefault();
 						pick(tz);
 					}}
-					class="cursor-pointer px-3.5 py-2 text-body text-ink {i === active
-						? 'bg-primary-tint'
-						: ''}"
+					class="cursor-pointer px-3.5 py-2 text-body text-ink {i === active ? 'bg-hl-tint' : ''}"
 				>
 					{tzLabel(tz, locale)}
 				</li>

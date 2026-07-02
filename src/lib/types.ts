@@ -21,6 +21,10 @@ export interface Participant {
 
 export type PollMode = 'assigned' | 'open';
 
+// The poll's highlighter accent; validated at the form boundary (no SQL CHECK).
+export const ACCENTS = ['yellow', 'pink', 'green', 'blue'] as const;
+export type Accent = (typeof ACCENTS)[number];
+
 export interface EventDraft {
 	title: string;
 	description: string;
@@ -30,6 +34,7 @@ export interface EventDraft {
 	// Available/Unavailable are always offered; these two are the toggles.
 	allowPreferred: boolean;
 	allowUnsure: boolean;
+	accent: Accent;
 	dates: DateOption[];
 	participants: Participant[];
 }
@@ -54,6 +59,7 @@ export interface EventRow {
 	status: EventStatus;
 	allowPreferred: boolean;
 	allowUnsure: boolean;
+	accent: Accent;
 	createdAt: string;
 }
 

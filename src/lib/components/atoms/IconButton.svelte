@@ -16,7 +16,7 @@
 	{type}
 	{onclick}
 	aria-label={label}
-	class="flex h-9 w-9 shrink-0 cursor-pointer items-center justify-center rounded-control bg-card-alt text-caption text-ink-muted transition-colors duration-150 hover:bg-bad-tint hover:text-bad"
+	class="flex h-9 w-9 shrink-0 cursor-pointer items-center justify-center rounded-control border-2 border-border bg-card-alt text-caption text-ink-muted transition-colors duration-150 hover:bg-bad-tint hover:text-bad"
 >
 	{@render children()}
 </button>

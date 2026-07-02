@@ -1,4 +1,5 @@
 import type {
+	Accent,
 	DateOption,
 	DateOptionResult,
 	EventDraft,
@@ -81,6 +82,7 @@ export interface DataProvider {
 	cancelEvent(eventId: string): Promise<void>;
 	reopenEvent(eventId: string): Promise<void>;
 	setEventLocale(eventId: string, locale: Locale): Promise<void>;
+	setEventAccent(eventId: string, accent: Accent): Promise<void>;
 	setEventTimezone(eventId: string, timezone: string): Promise<void>;
 	updateEventDetails(eventId: string, title: string, description: string | null): Promise<void>;
 }

@@ -36,9 +36,9 @@ function seed(flags: { allowPreferred?: boolean; allowUnsure?: boolean } = {}) {
 	seedInvitee({ id: INV, eventId: EV, label: 'Anna', token: RTOK });
 }
 
-async function addDate(page: Page, value: string) {
-	await page.locator('input[type="date"]:not([name])').fill(value);
-	await page.getByRole('button', { name: m.addDate() }).click();
+// Toggle a day of the visible (current) month in the create page's calendar.
+async function addDate(page: Page, day = 12) {
+	await page.getByRole('button', { name: String(day), exact: true }).click();
 }
 
 // Open the dashboard's edit form and return its locator.
@@ -52,7 +52,7 @@ test('creating without touching the choice settings offers Preferred but not "I 
 }) => {
 	await page.goto('/');
 	await page.getByLabel(m.fieldTitle()).fill('Standardvalg');
-	await addDate(page, '2026-09-12');
+	await addDate(page);
 	await page.getByRole('button', { name: m.create() }).click();
 	await expect(page).toHaveURL(/\/e\/[A-Za-z0-9]+$/);
 	// The result bars render one row per offered choice.
@@ -63,7 +63,7 @@ test('creating without touching the choice settings offers Preferred but not "I 
 test('enabling "I don\'t know" at creation offers all four choices', async ({ page }) => {
 	await page.goto('/');
 	await page.getByLabel(m.fieldTitle()).fill('Med ved-ikke');
-	await addDate(page, '2026-09-12');
+	await addDate(page);
 	await page.getByRole('checkbox', { name: m.prefUnsure() }).check();
 	await page.getByRole('button', { name: m.create() }).click();
 	await expect(page).toHaveURL(/\/e\/[A-Za-z0-9]+$/);

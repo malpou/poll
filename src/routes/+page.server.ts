@@ -4,12 +4,11 @@ import { newToken } from '$lib/data/shared';
 import { m } from '$lib/paraglide/messages';
 import { baseLocale, extractLocaleFromHeader, isLocale } from '$lib/paraglide/runtime';
 import { setRequestLocale } from '../hooks.server';
-import { field, validateTimes } from '$lib/forms/forms';
+import { field, parseIndexed, validateTimes } from '$lib/forms/forms';
 import { richTextIsEmpty, sanitizeRichText } from '$lib/forms/richtext';
-import type { DateOption, Locale, Participant, PollMode } from '$lib/types';
+import type { Accent, DateOption, Locale, Participant, PollMode } from '$lib/types';
+import { ACCENTS } from '$lib/types';
 import type { Actions, PageServerLoad } from './$types';
-
-type Row = Partial<Record<string, string>>;
 
 /**
  * Loads the create page, which is the organizer's own, pre-submit: renders it in
@@ -21,22 +20,6 @@ export const load: PageServerLoad = ({ request }) => {
 	setRequestLocale(suggestedLocale);
 	return { suggestedLocale };
 };
-
-/**
- * Rebuilds the dates/participants arrays from indexed named inputs
- * (`dates.0.value`, `participants.1.token`, ...). Only string fields are read.
- */
-function parseIndexed(form: FormData, prefix: string): Row[] {
-	const re = new RegExp(`^${prefix}\\.(\\d+)\\.(\\w+)$`);
-	const rows: Row[] = [];
-	for (const key of form.keys()) {
-		const m = re.exec(key);
-		if (!m) continue;
-		const i = Number(m[1]);
-		(rows[i] ??= {})[m[2]] = field(form, key);
-	}
-	return rows.filter(Boolean);
-}
 
 export const actions = {
 	create: async ({ request, platform }) => {
@@ -55,6 +38,11 @@ export const actions = {
 		// Hidden inputs carry explicit '1'/'0'; absence falls back to the defaults.
 		const allowPreferred = field(form, 'allowPreferred') !== '0';
 		const allowUnsure = field(form, 'allowUnsure') === '1';
+		// Unknown accent falls back to the default, same discipline as locale/timezone.
+		const accentField = field(form, 'accent');
+		const accent: Accent = (ACCENTS as readonly string[]).includes(accentField)
+			? (accentField as Accent)
+			: 'yellow';
 
 		// Drop rows the user added but never filled with a date.
 		const dates: DateOption[] = parseIndexed(form, 'dates')
@@ -87,6 +75,7 @@ export const actions = {
 			pollMode,
 			allowPreferred,
 			allowUnsure,
+			accent,
 			dates,
 			participants
 		};

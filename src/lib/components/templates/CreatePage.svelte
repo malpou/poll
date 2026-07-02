@@ -2,10 +2,10 @@
 	import TextField from '$lib/components/atoms/TextField.svelte';
 	import RichTextEditor from '$lib/components/atoms/RichTextEditor.svelte';
 	import Button from '$lib/components/atoms/Button.svelte';
-	import SelectField from '$lib/components/atoms/SelectField.svelte';
 	import TimezoneCombobox from '$lib/components/atoms/TimezoneCombobox.svelte';
-	import { Check } from '@lucide/svelte';
-	import DateList from '$lib/components/organisms/DateList.svelte';
+	import { ArrowRight } from '@lucide/svelte';
+	import SectionHeading from '$lib/components/atoms/SectionHeading.svelte';
+	import CalendarDatePicker from '$lib/components/molecules/CalendarDatePicker.svelte';
 	import ParticipantList from '$lib/components/organisms/ParticipantList.svelte';
 	import Toast from '$lib/components/atoms/Toast.svelte';
 	import { createToast } from '$lib/components/atoms/create-toast.svelte';
@@ -14,7 +14,8 @@
 	import { m } from '$lib/paraglide/messages';
 	import { locales, langLabel } from '$lib/logic/locales';
 	import { helpers } from '$lib/data/shared';
-	import type { DateOption, Locale, Participant, PollMode } from '$lib/types';
+	import AccentPicker from '$lib/components/atoms/AccentPicker.svelte';
+	import type { Accent, DateOption, Locale, Participant, PollMode } from '$lib/types';
 
 	// The create action's fail() payload; null on first render / success.
 	// suggestedLocale seeds the picker from the visitor's Accept-Language.
@@ -34,6 +35,8 @@
 	// Choice toggles: yes/no are always offered; these two are optional.
 	let allowPreferred = $state(true);
 	let allowUnsure = $state(false);
+	// The poll's highlighter; data-accent on the form previews it live.
+	let accent = $state<Accent>('yellow');
 	let dates = $state<DateOption[]>([]);
 	let participants = $state<Participant[]>([]);
 
@@ -46,12 +49,6 @@
 
 	const toast = createToast();
 
-	function addDate(d: Omit<DateOption, 'id'>) {
-		dates.push({ ...helpers.blankDate(), ...d });
-	}
-	function removeDate(id: string) {
-		dates = dates.filter((d) => d.id !== id);
-	}
 	function addParticipant(name: string) {
 		participants.push({ ...helpers.blankParticipant(), name });
 	}
@@ -71,114 +68,153 @@
 	}
 </script>
 
-<form method="POST" action="?/create" use:enhance class="mx-auto max-w-160 px-6 pb-24 pt-10">
-	<!-- Language picker sits outside {#key} so re-rendering the form on switch
-	     doesn't steal focus from the <select>. Its own labels re-key with the rest. -->
-	<label class="mb-10 flex flex-col gap-2">
-		<span class="text-sm font-semibold text-ink"
-			>{#key locale}{m.fieldLanguage()}{/key}</span
-		>
-		<select
-			id="locale"
-			name="locale"
-			value={locale}
-			onchange={(e) => {
-				pickLocale(e.currentTarget.value as Locale);
-			}}
-			class="h-11.5 w-full rounded-control border border-border bg-card px-3.5 text-body text-ink outline-none focus:border-primary"
-		>
-			{#each locales as l (l)}
-				<option value={l}>{langLabel(l, locale)}</option>
-			{/each}
-		</select>
-	</label>
-
-	<!-- Re-render every m.*() under the newly picked locale. Form state (title,
-	     dates, participants) lives in $state above the block, so it survives. -->
-	{#key locale}
-		<h1 class="mb-3 text-title font-extrabold tracking-[-0.02em] text-ink">
-			{m.createTitle()}
-		</h1>
-		<p class="mb-8 max-w-[52ch] text-body leading-relaxed text-ink-muted">
-			{m.createIntro()}
-		</p>
-
-		<div class="mb-6">
-			<TextField label={m.fieldTitle()} name="title" bind:value={title} />
-		</div>
-
-		<div class="mb-10">
-			<RichTextEditor label={m.fieldDescription()} name="description" bind:value={description} />
-		</div>
-
-		<div class="mb-10">
-			<DateList bind:dates onadd={addDate} onremove={removeDate} />
-		</div>
-
-		<div class="mb-9">
-			<TimezoneCombobox name="timezone" bind:value={timezone} {locale} />
-		</div>
-
-		<div class="mb-9 flex flex-col gap-2">
-			<SelectField
-				label={m.fieldMode()}
-				name="pollMode"
-				value={pollMode}
-				onchange={(v) => {
-					pollMode = v as PollMode;
-				}}
+<form
+	method="POST"
+	action="?/create"
+	use:enhance
+	data-accent={accent}
+	class="mx-auto max-w-160 px-4 pb-18 pt-7"
+>
+	<div class="paper-sheet">
+		<!-- Language row: native names (stable across UI locale), active one gets
+	     the ink underline. Sits outside {#key} so switching keeps focus. -->
+		<fieldset class="mb-6 flex flex-wrap justify-end gap-3.5">
+			<legend class="sr-only"
+				>{#key locale}{m.fieldLanguage()}{/key}</legend
 			>
-				<option value="assigned">{m.modeAssigned()}</option>
-				<option value="open">{m.modeOpen()}</option>
-			</SelectField>
-			<p class="text-caption leading-relaxed text-ink-muted">
-				{pollMode === 'open' ? m.modeOpenHint() : m.modeAssignedHint()}
+			{#each locales as l (l)}
+				<label class="relative cursor-pointer">
+					<input
+						type="radio"
+						name="locale"
+						value={l}
+						checked={locale === l}
+						onchange={() => pickLocale(l)}
+						class="peer absolute inset-0 h-full w-full cursor-pointer opacity-0"
+					/>
+					<span
+						class="border-b-2 px-0.5 text-xs peer-focus-visible:outline-2 {locale === l
+							? 'border-ink font-bold text-ink'
+							: 'border-transparent text-ink-muted'}"
+					>
+						{langLabel(l, l)}
+					</span>
+				</label>
+			{/each}
+		</fieldset>
+
+		<!-- Re-render every m.*() under the newly picked locale. Form state (title,
+	     dates, participants) lives in $state above the block, so it survives. -->
+		{#key locale}
+			<h1 class="mb-3 text-title font-bold text-ink">
+				<span class="hl-swipe">{m.createTitle()}</span>
+			</h1>
+			<p class="mb-8 max-w-prose text-body leading-relaxed text-ink-muted">
+				{m.createIntro()}
 			</p>
-		</div>
 
-		<!-- Hidden inputs carry explicit values so the server never has to guess
-		     an unchecked box's meaning (allowPreferred defaults on). -->
-		<div class="mb-9 flex flex-col gap-2">
-			<span class="text-sm font-semibold text-ink">{m.fieldChoices()}</span>
-			<label class="flex items-center gap-2 text-body text-ink">
-				<input
-					type="checkbox"
-					bind:checked={allowPreferred}
-					class="h-5 w-5 cursor-pointer accent-[var(--color-primary,#1B3A7B)]"
-				/>
-				{m.prefPreferred()}
-			</label>
-			<label class="flex items-center gap-2 text-body text-ink">
-				<input
-					type="checkbox"
-					bind:checked={allowUnsure}
-					class="h-5 w-5 cursor-pointer accent-[var(--color-primary,#1B3A7B)]"
-				/>
-				{m.prefUnsure()}
-			</label>
-			<p class="text-caption leading-relaxed text-ink-muted">{m.choicesHint()}</p>
-			<input type="hidden" name="allowPreferred" value={allowPreferred ? '1' : '0'} />
-			<input type="hidden" name="allowUnsure" value={allowUnsure ? '1' : '0'} />
-		</div>
-
-		{#if pollMode === 'assigned'}
-			<div class="mb-9">
-				<ParticipantList
-					bind:participants
-					onadd={addParticipant}
-					onremove={removeParticipant}
-					oncopied={() => toast.show(m.linkCopied())}
+			<div class="mb-6">
+				<TextField
+					label={m.fieldTitle()}
+					name="title"
+					bind:value={title}
+					placeholder={m.titlePlaceholder()}
 				/>
 			</div>
-		{/if}
 
-		<div class="mt-2 flex items-center gap-3.5">
-			<Button variant="primary" type="submit"><Check size={18} />{m.create()}</Button>
-			{#if form?.error}
-				<div class="text-sm font-semibold text-bad">{form.error}</div>
+			<div class="mb-10">
+				<RichTextEditor label={m.fieldDescription()} name="description" bind:value={description} />
+			</div>
+
+			<div class="mb-10">
+				<SectionHeading text={m.datesSection()} class="mb-1" />
+				<p class="mb-3.5 text-caption text-ink-muted">{m.datesHint()}</p>
+				<CalendarDatePicker bind:dates {locale} />
+			</div>
+
+			<div class="mb-9">
+				<TimezoneCombobox name="timezone" bind:value={timezone} {locale} />
+			</div>
+
+			<fieldset class="mb-9 flex flex-col gap-2.5">
+				<legend class="mb-3 text-2xs font-bold uppercase tracking-widest text-ink-muted">
+					{m.fieldMode()}
+				</legend>
+				{#each [{ value: 'assigned', label: m.modeAssigned() }, { value: 'open', label: m.modeOpen() }] as opt (opt.value)}
+					{@const active = pollMode === opt.value}
+					<label
+						class="relative flex cursor-pointer items-center gap-3 rounded-control border-2 p-3.5 text-body text-ink transition hover:border-ink {active
+							? 'border-ink bg-hl-tint'
+							: 'border-border-strong bg-card-alt'}"
+					>
+						<input
+							type="radio"
+							name="pollMode"
+							value={opt.value}
+							bind:group={pollMode}
+							class="peer absolute inset-0 h-full w-full cursor-pointer opacity-0"
+						/>
+						<span class="grid h-4 w-4 shrink-0 place-items-center rounded-full border-2 border-ink">
+							<span class="h-2 w-2 rounded-full {active ? 'bg-ink' : ''}"></span>
+						</span>
+						{opt.label}
+					</label>
+				{/each}
+				<p class="text-caption leading-relaxed text-ink-muted">
+					{pollMode === 'open' ? m.modeOpenHint() : m.modeAssignedHint()}
+				</p>
+			</fieldset>
+
+			<!-- Hidden inputs carry explicit values so the server never has to guess
+		     an unchecked box's meaning (allowPreferred defaults on). -->
+			<div class="mb-9 flex flex-col gap-2">
+				<span class="text-2xs font-bold uppercase tracking-widest text-ink-muted"
+					>{m.fieldChoices()}</span
+				>
+				<label class="flex items-center gap-2 text-body text-ink">
+					<input
+						type="checkbox"
+						bind:checked={allowPreferred}
+						class="h-5 w-5 cursor-pointer accent-ink"
+					/>
+					{m.prefPreferred()}
+				</label>
+				<label class="flex items-center gap-2 text-body text-ink">
+					<input
+						type="checkbox"
+						bind:checked={allowUnsure}
+						class="h-5 w-5 cursor-pointer accent-ink"
+					/>
+					{m.prefUnsure()}
+				</label>
+				<p class="text-caption leading-relaxed text-ink-muted">{m.choicesHint()}</p>
+				<input type="hidden" name="allowPreferred" value={allowPreferred ? '1' : '0'} />
+				<input type="hidden" name="allowUnsure" value={allowUnsure ? '1' : '0'} />
+			</div>
+
+			<div class="mb-9">
+				<AccentPicker bind:value={accent} />
+			</div>
+
+			{#if pollMode === 'assigned'}
+				<div class="mb-9">
+					<ParticipantList
+						bind:participants
+						onadd={addParticipant}
+						onremove={removeParticipant}
+						oncopied={() => toast.show(m.linkCopied())}
+					/>
+				</div>
 			{/if}
-		</div>
-	{/key}
+
+			<div class="mt-2 flex flex-col gap-3.5">
+				{#if form?.error}
+					<div class="text-sm font-semibold text-bad">{form.error}</div>
+				{/if}
+				<Button variant="primary" type="submit">{m.create()}<ArrowRight size={17} /></Button>
+			</div>
+		{/key}
+	</div>
 </form>
 
 <Toast open={toast.open} text={toast.text} />

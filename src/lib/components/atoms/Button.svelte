@@ -21,12 +21,15 @@
 	} = $props();
 
 	const variants = {
-		primary: 'h-12.5 px-6 rounded-xl bg-primary text-white font-bold hover:bg-primary-hover',
+		// Solid-ink full-width CTA (52px) with a hover lift.
+		primary:
+			'h-13 w-full px-6 rounded-cta bg-ink text-card font-bold tracking-wider hover:bg-primary-hover hover:-translate-y-0.5',
 		dashed:
-			'mt-2.5 h-10.5 px-4 rounded-control border border-dashed border-border text-primary font-semibold hover:bg-primary-tint hover:border-primary',
-		// Ghost sets its own padding below so an icon-only variant can drop it.
+			'mt-2.5 h-10.5 px-4 rounded-control border-2 border-dashed border-ink-faint text-ink-soft font-bold hover:border-ink hover:text-ink',
+		// Ghost inverts to ink fill on hover; sets its own padding below so an
+		// icon-only variant can drop it.
 		ghost:
-			'h-9 rounded-control border border-border bg-card text-primary text-caption font-semibold hover:bg-primary-tint'
+			'h-9 rounded-cta border-2 border-ink bg-transparent text-ink text-caption font-bold hover:bg-ink hover:text-card'
 	};
 
 	// Only ghost has the icon-only (square) form; primary/dashed keep their padding.
@@ -39,7 +42,7 @@
 	{disabled}
 	aria-label={label}
 	title={iconOnly ? label : undefined}
-	class="inline-flex cursor-pointer items-center justify-center gap-1.5 whitespace-nowrap text-body transition-colors duration-150 disabled:cursor-not-allowed disabled:opacity-35 {variants[
+	class="inline-flex cursor-pointer items-center justify-center gap-1.5 whitespace-nowrap text-body transition duration-150 disabled:cursor-not-allowed disabled:opacity-35 {variants[
 		variant
 	]} {pad}"
 >

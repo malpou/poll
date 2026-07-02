@@ -27,7 +27,7 @@
 </script>
 
 {#snippet card(post: boolean)}
-	<div class="rounded-xl border border-dashed border-border bg-card p-3">
+	<div class="rounded-card border-2 border-dashed border-border-strong bg-card-alt p-3">
 		<div class="flex items-center gap-2.5">
 			{#if post}
 				<TextField placeholder={m.name()} name="label" value="" />

@@ -1,41 +1,147 @@
 @import 'tailwindcss';
 
-/* Light palette ported from the Claude Design mockup. Dark deferred. */
+/* "Paper Poll" light palette (openspec/specs/DESIGN.md). Dark deferred. */
 @theme {
-	--font-sans: 'Inter', ui-sans-serif, system-ui, -apple-system, sans-serif;
+	--font-sans: 'Courier Prime', ui-monospace, 'Courier New', monospace;
 
-	--color-paper: #f7f6f3;
-	--color-card: #ffffff;
-	--color-card-alt: #f1efea;
-	--color-ink: #16233f;
-	--color-ink-muted: #63697a;
-	--color-border: #e4e1da;
-	--color-primary: #1b3a7b;
-	--color-primary-hover: #274b9e;
-	--color-primary-tint: #e8ecf6;
-	--color-amber: #b7863f;
-	--color-amber-tint: #f3e8d6;
+	--color-paper: #eae7de;
+	--color-card: #fcfbf6;
+	--color-card-alt: #fffef9;
+	--color-ink: #26241f;
+	--color-ink-soft: #57534a;
+	--color-ink-muted: #8a8578;
+	--color-border: #dedacb;
+	--color-border-strong: #d5d0bf;
+	--color-ink-faint: #a8a394; /* placeholders, dashed add-borders, weekday header */
+	--color-wash: #e8e4d5; /* selector "available" face */
+	/* Primary is ink: filled CTAs, ghost-hover inversion, toasts. */
+	--color-primary: #26241f;
+	--color-primary-hover: #57534a;
+	--color-primary-tint: #efede2;
 	--color-good: #5c8067;
 	--color-good-tint: #e7eee7;
 	--color-bad: #a85b4e;
 	--color-bad-tint: #f3e6e3;
-
-	/* Type scale and control radii from the mockup - keeps markup free of
-	   one-off pixel values. Sizes without a paired line-height inherit, same
-	   as the arbitrary classes they replace. */
-	--text-2xs: 0.6875rem; /* 11px badges/pills */
+	/* Type scale from the mockup - keeps markup free of one-off pixel values.
+	   Sizes without a paired line-height inherit. */
+	--text-2xs: 0.6875rem; /* 11px badges/pills/eyebrows */
 	--text-caption: 0.8125rem; /* 13px secondary text */
-	--text-body: 0.9375rem; /* 15px primary text */
-	--text-lead: 1.0625rem; /* 17px emphasized intro */
-	--text-title: 1.75rem; /* 28px page titles */
-	--radius-control: 0.625rem; /* 10px inputs, selects, small buttons */
-	--radius-cta: 0.875rem; /* 14px large CTAs + brand glyph */
+	--text-body: 0.90625rem; /* 14.5px primary text */
+	--text-lead: 1rem; /* 16px emphasized intro */
+	--text-title: clamp(1.5rem, 5vw, 1.9375rem); /* 24-31px page titles */
 
-	--shadow-toast: 0 8px 24px rgba(20, 30, 60, 0.08);
+	/* Hand-drawn irregular radius tiers (DESIGN.md "Type & shape"). */
+	--radius-control: 8px 11px 7px 12px / 11px 7px 12px 8px;
+	--radius-card: 9px 13px 8px 14px / 13px 8px 14px 9px;
+	--radius-cta: 10px 6px 12px 7px / 6px 12px 7px 10px;
+
+	--shadow-toast: 0 10px 26px -8px rgba(38, 36, 31, 0.5);
+	--shadow-sheet: 0 1px 2px rgba(38, 36, 31, 0.05), 0 16px 40px -18px rgba(38, 36, 31, 0.22);
+}
+
+/* Highlighter accent + tints; --hl is set per poll via data-accent. `inline`
+   makes bg-hl et al. reference var(--hl) directly, so they resolve against
+   the nearest data-accent ancestor instead of :root's default. */
+@theme inline {
+	--color-hl: var(--hl);
+	--color-hl-tint: var(--hl-tint);
+}
+
+/* Registered so --hl is interpolable: switching the accent sweeps every
+   tinted element to the new color instead of cutting. */
+@property --hl {
+	syntax: '<color>';
+	inherits: true;
+	initial-value: #f7e36b;
+}
+
+/* Highlighter accent: the event page root sets data-accent; everything
+   accent-tinted reads --hl / --hl-tint. Yellow is the default. The tint is
+   re-declared on [data-accent] so var(--hl) resolves against that element's
+   accent, not :root's. */
+@media (prefers-reduced-motion: no-preference) {
+	[data-accent] {
+		transition: --hl 200ms ease;
+	}
+}
+:root {
+	--hl: #f7e36b;
+	--hl-tint: color-mix(in oklab, var(--hl) 26%, #fffef9);
+}
+[data-accent] {
+	--hl-tint: color-mix(in oklab, var(--hl) 26%, #fffef9);
+}
+[data-accent='yellow'] {
+	--hl: #f7e36b;
+}
+[data-accent='pink'] {
+	--hl: #ffc9d4;
+}
+[data-accent='green'] {
+	--hl: #c9e6a5;
+}
+[data-accent='blue'] {
+	--hl: #bfdcf3;
 }
 
 body {
 	@apply bg-paper text-ink min-h-screen font-sans;
+}
+
+/* Paper grain: inline feTurbulence noise over the whole page. */
+body::before {
+	content: '';
+	position: fixed;
+	inset: 0;
+	z-index: 60;
+	pointer-events: none;
+	opacity: 0.05;
+	background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2'/%3E%3C/filter%3E%3Crect width='180' height='180' filter='url(%23n)' opacity='0.7'/%3E%3C/svg%3E");
+}
+
+/* The paper sheet every screen sits on: a floating cream card over the
+   darker page ground. */
+@utility paper-sheet {
+	background: var(--color-card);
+	border: 1px solid var(--color-border);
+	border-radius: var(--radius-card);
+	box-shadow: var(--shadow-sheet);
+	padding: clamp(26px, 6vw, 52px);
+}
+
+/* Diagonal ink hatch for the "unavailable" selector state. */
+.ink-hatch {
+	background-image: repeating-linear-gradient(
+		45deg,
+		color-mix(in srgb, var(--color-ink) 14%, transparent) 0 1.5px,
+		transparent 1.5px 6px
+	);
+}
+
+/* Pencil dots for the "I don't know" selector state - quiet, but clearly
+   distinct from the solid wash, the highlighter, and the hatch. */
+.ink-dots {
+	background-image: radial-gradient(
+		color-mix(in srgb, var(--color-ink) 22%, transparent) 1px,
+		transparent 1px
+	);
+	background-size: 6px 6px;
+}
+
+/* Highlighter swipe under page/section titles. */
+.hl-swipe {
+	background-image: linear-gradient(
+		to bottom,
+		transparent 55%,
+		color-mix(in oklab, var(--hl) 65%, transparent) 55%,
+		color-mix(in oklab, var(--hl) 65%, transparent) 94%,
+		transparent 94%
+	);
+	display: inline;
+	box-decoration-break: clone;
+	-webkit-box-decoration-break: clone;
+	padding-inline: 0.1em;
+	margin-inline: -0.1em;
 }
 
 /* Formatted description content - shared by the editor and every render site.
@@ -56,7 +162,7 @@ body {
 	margin-top: 0.125rem;
 }
 .rich-text strong {
-	font-weight: 600;
+	font-weight: 700;
 	color: var(--color-ink);
 }
 .rich-text small {

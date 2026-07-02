@@ -1,38 +1,82 @@
 import { test, expect, type Page } from '@playwright/test';
 import { m } from '../../../src/lib/paraglide/messages';
+import { d1 } from '../support/db';
 
 // The create page renders in the browser's preferred locale (Accept-Language).
 // Pin an English browser so bare m.*() assertions (baseLocale = en) match the
 // page. The browser timezone is pinned too, for the tz-picker default test.
 test.use({ locale: 'en-US', timezoneId: 'America/New_York' });
 
-// The form starts with no rows; dates are added through the same fill-then-add
-// card the dashboard uses (unnamed inputs so they never post with the form).
-// E2E runs against real D1 (wrangler), so a successful submit actually writes
-// rows before redirecting.
+// Candidate dates are toggled in a month calendar that opens on the current
+// month, so tests pick a fixed day-of-month and derive the expected ISO date
+// from the same clock the browser uses. Each (day, slot) posts as indexed
+// dates.{i}.* fields. E2E runs against real D1 (wrangler), so a successful
+// submit actually writes rows before redirecting.
 
-// The add-card's fields are the unnamed ones; row fields carry dates.{i}.* names.
-async function addDate(page: Page, value: string, startTime = '', endTime = '') {
-	await page.locator('input[type="date"]:not([name])').fill(value);
-	if (startTime) await page.locator('input[type="time"]:not([name])').first().fill(startTime);
-	if (endTime) await page.locator('input[type="time"]:not([name])').last().fill(endTime);
-	await page.getByRole('button', { name: m.addDate() }).click();
+function isoFor(day: number) {
+	const now = new Date();
+	return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(
+		day
+	).padStart(2, '0')}`;
+}
+
+// Toggle a day of the visible month; optionally fill the day's first slot times.
+async function addDate(page: Page, day: number, startTime = '', endTime = '') {
+	await page.getByRole('button', { name: String(day), exact: true }).click();
+	if (startTime) await page.locator('input[name="dates.0.startTime"]').fill(startTime);
+	if (endTime) await page.locator('input[name="dates.0.endTime"]').fill(endTime);
 }
 
 test('valid submit creates an event and redirects to /e/{token}', async ({ page }) => {
 	await page.goto('/');
 	await page.getByLabel(m.fieldTitle()).fill('Sommerfest');
-	await addDate(page, '2026-09-12');
-	await expect(page.locator('input[name="dates.0.value"]')).toHaveValue('2026-09-12');
+	await addDate(page, 12);
+	await expect(page.locator('input[name="dates.0.value"]')).toHaveValue(isoFor(12));
 	await page.getByRole('button', { name: m.create() }).click();
 	// A real /e/{token} only exists because the event row was written (D1-backed).
 	await expect(page).toHaveURL(/\/e\/[A-Za-z0-9]+$/);
 });
 
+test('days are picked from the calendar; toggling again deselects', async ({ page }) => {
+	await page.goto('/');
+	// Two toggled days → two selected date options.
+	await addDate(page, 12);
+	await page.getByRole('button', { name: '14', exact: true }).click();
+	await expect(page.locator('input[name="dates.0.value"]')).toHaveValue(isoFor(12));
+	await expect(page.locator('input[name="dates.1.value"]')).toHaveValue(isoFor(14));
+	// Toggling a selected day off removes it from the list.
+	await page.getByRole('button', { name: '14', exact: true }).click();
+	await expect(page.locator('input[name="dates.1.value"]')).toHaveCount(0);
+	await expect(page.locator('input[name="dates.0.value"]')).toHaveValue(isoFor(12));
+});
+
+test('several time slots on one day yield one date option per slot', async ({ page }) => {
+	await page.goto('/');
+	await page.getByLabel(m.fieldTitle()).fill('To tider samme dag');
+	await addDate(page, 12, '10:00', '11:00');
+	// A second slot on the same day posts as its own dates.{i}.* row.
+	await page.getByRole('button', { name: m.addTime() }).click();
+	await page.locator('input[name="dates.1.startTime"]').fill('14:00');
+	await expect(page.locator('input[name="dates.1.value"]')).toHaveValue(isoFor(12));
+	await page.getByRole('button', { name: m.create() }).click();
+	await expect(page).toHaveURL(/\/e\/[A-Za-z0-9]+$/);
+	// The created event offers two options, both on the picked day.
+	const otok = page.url().split('/').pop() ?? '';
+	await expect
+		.poll(
+			() =>
+				d1(
+					`SELECT COUNT(*) AS n FROM date_options WHERE event_id =
+					 (SELECT id FROM events WHERE organizer_token = '${otok}')`
+				).results[0].n as number
+		)
+		.toBe(2);
+});
+
 test('zero date options is rejected with a validation message, no redirect', async ({ page }) => {
 	await page.goto('/');
 	await page.getByLabel(m.fieldTitle()).fill('Sommerfest');
-	// Add no dates → zero options server-side.
+	// Toggle no days → zero options server-side.
 	await page.getByRole('button', { name: m.create() }).click();
 	// exact - the dates hint copy also contains this phrase as a substring.
 	await expect(page.getByText(m.errorNoDates(), { exact: true })).toBeVisible();
@@ -42,7 +86,7 @@ test('zero date options is rejected with a validation message, no redirect', asy
 test('end time without a start time is rejected server-side', async ({ page }) => {
 	await page.goto('/');
 	await page.getByLabel(m.fieldTitle()).fill('Sommerfest');
-	await addDate(page, '2026-09-12', '', '11:00');
+	await addDate(page, 12, '', '11:00');
 	await page.getByRole('button', { name: m.create() }).click();
 	await expect(page.getByText(m.errorEndNeedsStart())).toBeVisible();
 	await expect(page).toHaveURL(/\/$/);
@@ -51,7 +95,7 @@ test('end time without a start time is rejected server-side', async ({ page }) =
 test('end time before start time is rejected server-side', async ({ page }) => {
 	await page.goto('/');
 	await page.getByLabel(m.fieldTitle()).fill('Sommerfest');
-	await addDate(page, '2026-09-12', '12:00', '10:00');
+	await addDate(page, 12, '12:00', '10:00');
 	await page.getByRole('button', { name: m.create() }).click();
 	await expect(page.getByText(m.errorEndBeforeStart())).toBeVisible();
 	await expect(page).toHaveURL(/\/$/);
@@ -64,8 +108,10 @@ test('language picker switches the whole form live, no reload', async ({ page })
 		page.getByRole('heading', { name: m.createTitle({}, { locale: 'en' }) })
 	).toBeVisible();
 
-	// Switch to Spanish: heading, button, and <html lang> all update in place.
-	await page.locator('select#locale').selectOption('es');
+	// Switch to Spanish via the language row (radios labeled with each
+	// language's own native name): heading, button, and <html lang> all update
+	// in place.
+	await page.getByRole('radio', { name: 'Español' }).check();
 	await expect(
 		page.getByRole('heading', { name: m.createTitle({}, { locale: 'es' }) })
 	).toBeVisible();
@@ -73,7 +119,7 @@ test('language picker switches the whole form live, no reload', async ({ page })
 	await expect(page.locator('html')).toHaveAttribute('lang', 'es');
 
 	// And on to German, still no navigation (URL stays "/").
-	await page.locator('select#locale').selectOption('de');
+	await page.getByRole('radio', { name: 'Deutsch' }).check();
 	await expect(
 		page.getByRole('heading', { name: m.createTitle({}, { locale: 'de' }) })
 	).toBeVisible();
@@ -92,7 +138,7 @@ test('timezone picker defaults to the visitor timezone and persists on create', 
 	await expect(page.locator('input[name="timezone"]')).toHaveValue('America/New_York');
 
 	await page.getByLabel(m.fieldTitle()).fill('NYC brunch');
-	await addDate(page, '2026-09-12');
+	await addDate(page, 12);
 	await page.getByRole('button', { name: m.create() }).click();
 	await expect(page).toHaveURL(/\/e\/[A-Za-z0-9]+$/);
 	// The dashboard header shows the persisted zone, localized.
@@ -107,7 +153,7 @@ test('timezone picker labels follow the picked language', async ({ page }) => {
 		'America/New_York (Eastern Time)'
 	);
 	// Pick Danish: the same zone re-labels with the Danish zone name, live.
-	await page.locator('select#locale').selectOption('da');
+	await page.getByRole('radio', { name: 'Dansk' }).check();
 	await expect(
 		page.getByRole('combobox', { name: m.fieldTimezone({}, { locale: 'da' }) })
 	).toHaveValue('America/New_York (Eastern-tid)');
@@ -116,7 +162,7 @@ test('timezone picker labels follow the picked language', async ({ page }) => {
 test('choosing a timezone by typing creates the event in that zone', async ({ page }) => {
 	await page.goto('/');
 	await page.getByLabel(m.fieldTitle()).fill('CPH brunch');
-	await addDate(page, '2026-09-12');
+	await addDate(page, 12);
 
 	// Typing filters the suggestion list; picking a match selects the zone.
 	const combo = page.getByRole('combobox', { name: m.fieldTimezone() });

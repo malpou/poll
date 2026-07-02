@@ -134,14 +134,12 @@ test('a disabled choice shows no count - its folded answers count in the fixed p
 	await expect(page.getByText(m.prefPreferred())).toHaveCount(0);
 });
 
-test('expanding a result lists the names behind the "I don\'t know" count', async ({ page }) => {
+test('a result lists the names behind the "I don\'t know" count', async ({ page }) => {
 	seedResults([resp('ri1', 'ra', 'unsure'), resp('ri2', 'ra', 'available')], {
 		allowUnsure: true
 	});
 	await page.goto(`/e/${R_OTOK}`);
 	const results = page.locator('section').filter({ hasText: m.resultsSection() });
-	await expect(results.getByText('Anna', { exact: true })).toHaveCount(0);
-	await results.getByRole('button', { name: m.showWho() }).first().click();
 	await expect(results.getByText('Anna', { exact: true })).toBeVisible(); // unsure ra
 	await expect(results.getByText('Bo', { exact: true })).toBeVisible(); // available ra
 });
@@ -161,16 +159,13 @@ test('invitee badges distinguish pending, partial, and fully answered', async ({
 	await expect(page.getByText(m.answered(), { exact: true })).toHaveCount(1); // Bo
 });
 
-test('expanding a result shows which people chose each preference', async ({ page }) => {
+test('each name is marked on the result with the preference they chose', async ({ page }) => {
 	seedResults([resp('ri1', 'ra', 'preferred'), resp('ri2', 'ra', 'unavailable')]);
 	await page.goto(`/e/${R_OTOK}`);
 
 	// Scoped to the results section: the chase-up callout above it also lists the
 	// partial responders by name.
 	const results = page.locator('section').filter({ hasText: m.resultsSection() });
-	// Names hidden until the card is expanded.
-	await expect(results.getByText('Anna', { exact: true })).toHaveCount(0);
-	await results.getByRole('button', { name: m.showWho() }).first().click();
 	await expect(results.getByText('Anna', { exact: true })).toBeVisible(); // preferred ra
 	await expect(results.getByText('Bo', { exact: true })).toBeVisible(); // unavailable ra
 });
@@ -178,7 +173,9 @@ test('expanding a result shows which people chose each preference', async ({ pag
 // --- Chase-up callout: partial responders surfaced with their /r/ links. ---
 
 function callout(page: Page) {
-	return page.locator('div.border-primary').filter({ has: page.getByText(m.needsUpdateTitle()) });
+	return page
+		.locator('div[data-tone="dashed"]')
+		.filter({ has: page.getByText(m.needsUpdateTitle()) });
 }
 
 test('partial responders appear in a callout with their copyable link', async ({
@@ -249,8 +246,7 @@ test('open mode: a partial responder link surfaces in the callout', async ({ pag
 	});
 
 	await page.goto('/e/e2e-dashop-otok');
-	// Open mode hides /r/ links in the participant list; the callout is where
-	// the organizer can grab Mia's personal link.
+	// The chase-up callout carries Mia's personal link ready to resend.
 	await expect(callout(page).getByText('Mia', { exact: true })).toBeVisible();
 	await expect(callout(page)).toContainText('/r/e2e-dashop-rtok');
 });
@@ -279,10 +275,11 @@ test('dashboard in open mode shows the shared link, a read-only respondent list,
 	await expect(page.getByText(`/s/${OSHARE}`)).toBeVisible();
 	// The per-person "add invitee" form is not rendered in open mode.
 	await expect(page.getByRole('button', { name: m.addParticipant() })).toHaveCount(0);
-	// The respondent shows in the read-only list, but with no per-person link.
-	const erinRow = page.locator('div').filter({ hasText: 'Erin' }).last();
-	await expect(erinRow).toBeVisible();
-	await expect(erinRow.getByRole('button', { name: m.copyLink() })).toHaveCount(0);
+	// The respondent shows in the read-only list: no rename field, just the
+	// name (their personal link rides along per specs/invitee-links).
+	const erinCard = page.locator('div.rounded-card').filter({ hasText: 'Erin' }).last();
+	await expect(erinCard.getByText('Erin', { exact: true })).toBeVisible();
+	await expect(erinCard.getByRole('textbox')).toHaveCount(0);
 	// Summary reads "1 har svaret", never "1 af 1 har svaret".
 	await expect(page.getByText(m.answeredLabelOpen({ total: 1 }), { exact: true })).toBeVisible();
 });

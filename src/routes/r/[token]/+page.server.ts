@@ -40,6 +40,7 @@ export const load: PageServerLoad = async ({ params, platform, url }) => {
 			title: ctx.event.title,
 			description: ctx.event.description,
 			timezone: ctx.event.timezone,
+			accent: ctx.event.accent,
 			choices: enabledPreferences(ctx.event),
 			dates: orderForRespondent(ctx.dateOptions, answeredIds).map((d) => ({
 				id: d.id,

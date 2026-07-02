@@ -8,8 +8,8 @@
 {#if open}
 	<div
 		transition:fly={flyIn(0, { y: 16, duration: 200 })}
-		class="pointer-events-none fixed bottom-6 left-1/2 z-50 -translate-x-1/2 rounded-2xl border border-border bg-card px-4.5 py-3.5 shadow-toast"
+		class="pointer-events-none fixed bottom-6 left-1/2 z-70 -translate-x-1/2 rounded-cta bg-ink px-5 py-3 shadow-toast"
 	>
-		<div class="text-sm font-bold text-ink">{text}</div>
+		<div class="text-sm font-bold text-card">{text}</div>
 	</div>
 {/if}

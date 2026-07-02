@@ -31,21 +31,24 @@
 <div
 	data-testid="date-card-{id}"
 	in:fly={flyIn(index)}
-	class="flex flex-col gap-3.5 rounded-2xl border border-border bg-card p-4.5 shadow-[0_1px_2px_var(--shadow-toast)]"
+	class="flex flex-col gap-3.5 rounded-card border-2 border-border bg-card-alt p-4.5"
 >
-	<div class="flex flex-col gap-0.5">
+	<div class="flex flex-col gap-1">
 		{#if isNew}
 			<span
-				class="mb-1 w-fit whitespace-nowrap rounded-full bg-primary-tint px-2.5 py-1 text-2xs font-bold text-primary"
+				class="mb-1 w-fit whitespace-nowrap rounded-full bg-hl px-2.5 py-1 text-2xs font-bold text-ink"
 			>
 				{m.newDateBadge()}
 			</span>
 		{/if}
-		<div class="text-lg font-bold capitalize tracking-[-0.01em] text-ink">{weekday}</div>
-		<div class="text-sm text-ink-muted">{dateLabel}</div>
-		{#if timeRange}
-			<div class="text-caption font-semibold text-ink-muted">{timeRange}</div>
-		{/if}
+		<!-- One baseline row: weekday + date, the time pushed right (DESIGN.md). -->
+		<div class="flex flex-wrap items-baseline gap-x-2.5 gap-y-0.5">
+			<span class="text-lead font-bold capitalize text-ink">{weekday}</span>
+			<span class="text-body text-ink-soft">{dateLabel}</span>
+			{#if timeRange}
+				<span class="ml-auto text-caption text-ink-muted">{timeRange}</span>
+			{/if}
+		</div>
 	</div>
 	<SegmentedControl bind:value {choices} {readOnly} />
 	<!-- Only submits a row when marked; unmarked = no field = no response row. -->

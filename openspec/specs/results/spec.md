@@ -64,15 +64,17 @@ The system SHALL show who has answered.
 
 ### Requirement: Per-preference breakdown
 
-The system SHALL let the organizer expand a date option's result to see which
-named people chose each preference. Names SHALL stay hidden until expanded.
+The system SHALL show, on each date option's result, which named people chose
+each preference — every respondent's name rendered on the option, marked with
+their answer ("I don't know" included). Participant-facing outcome views show
+counts only; names stay with the organizer.
 
-#### Scenario: Expand a result
+#### Scenario: Names marked on a result
 
 - GIVEN a date option with recorded responses, including "I don't know"
-- WHEN the organizer expands that option's result
-- THEN the names behind each shown choice's count are listed, "I don't know"
-  included
+- WHEN the organizer opens the results view
+- THEN each respondent's name is shown on that option, marked with the
+  choice they made, "I don't know" included
 
 ### Requirement: Invitee notes
 
@@ -110,8 +112,7 @@ appear in the callout, and a closed or cancelled poll shows no callout.
 
 - GIVEN an open-mode event where a submitter answered before a date was added
 - WHEN the organizer opens the results view
-- THEN the callout shows that submitter's personal `/r` link (the participant
-  list itself shows no links in open mode)
+- THEN the callout shows that submitter's personal `/r` link
 
 ### Requirement: Best-option highlight
 
@@ -119,9 +120,10 @@ While the poll is open, the system SHALL highlight the option(s) with the
 strongest availability, ranking by a weighted net score of
 `Preferred×1.2 + Available − Unavailable` (highest wins). "I don't know"
 answers carry no weight and SHALL NOT affect the score. Ties on the same score
-highlight every matching option. With no responses at all, no option is
-highlighted. Once the poll is closed or cancelled, the highlight gives way to
-the recorded outcome (see specs/poll-closing).
+highlight every matching option. With no availability answers at all
+(Preferred/Available/Unavailable — "I don't know" alone does not count), no
+option is highlighted. Once the poll is closed or cancelled, the highlight
+gives way to the recorded outcome (see specs/poll-closing).
 
 #### Scenario: A clear winner
 

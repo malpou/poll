@@ -6,11 +6,11 @@
 	import Button from '$lib/components/atoms/Button.svelte';
 	import IconButton from '$lib/components/atoms/IconButton.svelte';
 	import SectionHeading from '$lib/components/atoms/SectionHeading.svelte';
-	import AddDateForm from '$lib/components/molecules/AddDateForm.svelte';
-	import { X, ArrowUpNarrowWide, ChevronUp, ChevronDown, Pencil, Check } from '@lucide/svelte';
+	import CalendarDatePicker from '$lib/components/molecules/CalendarDatePicker.svelte';
+	import { X, ArrowUpNarrowWide, ChevronUp, ChevronDown, Pencil, Save, Plus } from '@lucide/svelte';
 	import { m } from '$lib/paraglide/messages';
 	import { refreshThen, confirmingRefresh } from '$lib/forms/enhance';
-	import type { Locale, OptionView } from '$lib/types';
+	import type { DateOption, Locale, OptionView } from '$lib/types';
 
 	let {
 		options,
@@ -25,6 +25,9 @@
 	// Which option is in inline-edit mode (id) - null when none.
 	let editing = $state<string | null>(null);
 	const closeEdit = refreshThen(() => (editing = null));
+
+	// Days + slots picked in the add-dates calendar, cleared on a successful add.
+	let adding = $state<DateOption[]>([]);
 </script>
 
 {#key locale}
@@ -41,7 +44,7 @@
 		</div>
 		<div class="flex flex-col gap-2.5">
 			{#each options as opt, i (opt.id)}
-				<div in:fly={flyIn(i)} class="rounded-xl border border-border bg-card p-3">
+				<div in:fly={flyIn(i)} class="rounded-card border-2 border-border bg-card-alt p-3">
 					{#if editing === opt.id}
 						<form
 							method="POST"
@@ -53,7 +56,7 @@
 							<div class="flex items-center gap-2.5">
 								<TextField type="date" name="value" value={opt.value} />
 								<Button variant="ghost" type="submit" iconOnly label={m.save()}
-									><Check size={16} /></Button
+									><Save size={16} /></Button
 								>
 								<IconButton
 									label={m.cancel()}
@@ -75,13 +78,11 @@
 						</form>
 					{:else}
 						<div class="flex items-center justify-between gap-2.5">
-							<div class="min-w-0">
-								<div class="text-body font-semibold text-ink">
-									{opt.weekday}
-									{opt.dateLabel}
-								</div>
+							<div class="min-w-0 text-body text-ink">
+								<span class="font-bold capitalize">{opt.weekday}</span>
+								<span class="text-ink-soft">{opt.dateLabel}</span>
 								{#if opt.timeRange}
-									<div class="text-caption text-ink-muted">{opt.timeRange}</div>
+									<span class="text-caption text-ink-muted">· {opt.timeRange}</span>
 								{/if}
 							</div>
 							{#if !closed}
@@ -126,7 +127,17 @@
 		</div>
 
 		{#if !closed}
-			<AddDateForm action="?/addOption" enhance={refreshThen()} />
+			<form
+				method="POST"
+				action="?/addOption"
+				use:enhance={refreshThen(() => (adding = []))}
+				class="mt-2.5 flex flex-col gap-2.5"
+			>
+				<CalendarDatePicker bind:dates={adding} {locale} />
+				<Button variant="dashed" type="submit" disabled={adding.length === 0}>
+					<Plus size={14} />{m.addDate()}
+				</Button>
+			</form>
 		{/if}
 	</section>
 {/key}

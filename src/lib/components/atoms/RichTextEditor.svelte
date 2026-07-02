@@ -109,10 +109,10 @@
 
 <div class="flex flex-col gap-2">
 	{#if label}
-		<span class="text-sm font-semibold text-ink">{label}</span>
+		<span class="text-2xs font-bold uppercase tracking-widest text-ink-muted">{label}</span>
 	{/if}
 	<div
-		class="w-full rounded-control border border-border bg-card text-body leading-normal text-ink focus-within:border-primary"
+		class="w-full rounded-control border-2 border-border-strong bg-card-alt text-body leading-normal text-ink focus-within:border-ink"
 	>
 		<div role="toolbar" aria-label={label} class="flex gap-1 border-b border-border px-2 py-1.5">
 			{#each controls as c (c.active)}
@@ -122,7 +122,7 @@
 					aria-pressed={tick >= 0 && !!editor?.isActive(c.active)}
 					onmousedown={(ev) => ev.preventDefault()}
 					onclick={() => editor && c.cmd(editor)}
-					class="flex h-7 w-7 cursor-pointer items-center justify-center rounded-control text-ink-muted transition-colors duration-150 hover:bg-card-alt aria-pressed:bg-primary-tint aria-pressed:text-primary"
+					class="flex h-7 w-7 cursor-pointer items-center justify-center rounded-control text-ink-muted transition-colors duration-150 hover:bg-card-alt aria-pressed:bg-hl-tint aria-pressed:text-ink"
 				>
 					<c.icon size={14} />
 				</button>

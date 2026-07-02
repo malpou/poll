@@ -36,7 +36,7 @@ test.beforeEach(seed);
 // card's weekday text (12 Sep 2026 is a Saturday, 20 Sep a Sunday).
 function checkboxFor(page: Page, weekday: 'Saturday' | 'Sunday') {
 	return page
-		.locator('div.rounded-xl', { has: page.getByRole('checkbox', { name: m.selectDateLabel() }) })
+		.locator('div.rounded-card', { has: page.getByRole('checkbox', { name: m.selectDateLabel() }) })
 		.filter({ hasText: weekday })
 		.getByRole('checkbox', { name: m.selectDateLabel() });
 }

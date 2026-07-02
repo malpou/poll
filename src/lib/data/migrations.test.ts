@@ -137,6 +137,19 @@ describe('migration stack', () => {
 		).toThrow(/UNIQUE|PRIMARY/);
 	});
 
+	it('0007 defaults accent to yellow on legacy and new rows', () => {
+		const legacy = db.prepare(`SELECT accent FROM events WHERE id = 'e1'`).get() as {
+			accent: string;
+		};
+		expect(legacy.accent).toBe('yellow');
+		db.exec(`INSERT INTO events (id, title, organizer_token, status, created_at)
+		         VALUES ('eA', 'T', 'otok-a', 'open', '2026-07-01T00:00:00Z')`);
+		const fresh = db.prepare(`SELECT accent FROM events WHERE id = 'eA'`).get() as {
+			accent: string;
+		};
+		expect(fresh.accent).toBe('yellow');
+	});
+
 	it('the rebuild drops no rows from events or any child table', () => {
 		const count = (t: string) =>
 			(db.prepare(`SELECT COUNT(*) AS n FROM ${t}`).get() as { n: number }).n;

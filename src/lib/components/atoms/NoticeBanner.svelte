@@ -2,23 +2,24 @@
 	// Dot-prefixed status strip (poll closed/cancelled, new dates pending).
 	let {
 		text,
-		tone = 'amber',
+		tone = 'hl',
 		class: cls = ''
 	}: {
 		text: string;
-		tone?: 'amber' | 'primary';
+		tone?: 'hl' | 'ink';
 		class?: string;
 	} = $props();
 
 	const tones = {
-		amber: { box: 'border-border bg-amber-tint text-amber', dot: 'bg-amber' },
-		primary: { box: 'border-primary bg-primary-tint text-primary', dot: 'bg-primary' }
+		hl: { box: 'border-border bg-hl-tint text-ink', dot: 'bg-hl' },
+		ink: { box: 'border-border-strong bg-card-alt text-ink', dot: 'bg-ink' }
 	};
 </script>
 
 <div
-	class="flex items-center gap-2.5 rounded-xl border px-4 py-3 text-sm font-semibold {tones[tone]
-		.box} {cls}"
+	class="flex items-center gap-2.5 rounded-card border-2 px-4 py-3 text-sm font-semibold {tones[
+		tone
+	].box} {cls}"
 >
 	<span class="h-2 w-2 shrink-0 rounded-full {tones[tone].dot}"></span>
 	{text}

@@ -7,13 +7,14 @@
 	import SectionHeading from '$lib/components/atoms/SectionHeading.svelte';
 	import SelectField from '$lib/components/atoms/SelectField.svelte';
 	import TimezoneCombobox from '$lib/components/atoms/TimezoneCombobox.svelte';
-	import { X, Pencil, Check, Lock, LockOpen, Users, Languages, Clock } from '@lucide/svelte';
+	import { X, Pencil, Save, Lock, LockOpen, Users, Languages, Clock } from '@lucide/svelte';
 	import { m } from '$lib/paraglide/messages';
 	import { locales, langLabel } from '$lib/logic/locales';
 	import { tzLabel } from '$lib/logic/date';
+	import AccentPicker from '$lib/components/atoms/AccentPicker.svelte';
 	import { refreshThen } from '$lib/forms/enhance';
 	import { isRichText, toEditorHtml } from '$lib/forms/richtext';
-	import type { Locale, PollMode } from '$lib/types';
+	import type { Accent, Locale, PollMode } from '$lib/types';
 
 	let {
 		title,
@@ -21,18 +22,21 @@
 		pollMode,
 		allowPreferred,
 		allowUnsure,
+		accent,
 		eventLocale,
 		locale,
 		timezone,
 		closed,
 		selecting = $bindable(),
-		onpreviewlocale
+		onpreviewlocale,
+		onpreviewaccent
 	}: {
 		title: string;
 		description: string | null;
 		pollMode: PollMode;
 		allowPreferred: boolean;
 		allowUnsure: boolean;
+		accent: Accent;
 		// The poll's saved language (shown/edited) vs the page's current preview
 		// language (drives the {#key} re-render below).
 		eventLocale: Locale;
@@ -41,6 +45,7 @@
 		closed: boolean;
 		selecting: boolean;
 		onpreviewlocale: (l: Locale) => void;
+		onpreviewaccent: (a: Accent) => void;
 	} = $props();
 
 	/**
@@ -57,6 +62,7 @@
 	let draftMode = $state<PollMode>('assigned'); // re-seeded by startEdit()
 	let draftAllowPreferred = $state(true);
 	let draftAllowUnsure = $state(false);
+	let draftAccent = $state<Accent>('yellow');
 	let draftTimezone = $state('');
 
 	function startEdit() {
@@ -66,12 +72,14 @@
 		draftMode = pollMode;
 		draftAllowPreferred = allowPreferred;
 		draftAllowUnsure = allowUnsure;
+		draftAccent = accent;
 		draftTimezone = timezone;
 		editingDetails = true;
 	}
 	function cancelEdit() {
 		editingDetails = false;
 		onpreviewlocale(eventLocale); // roll back an unsaved language preview
+		onpreviewaccent(accent); // roll back an unsaved accent preview
 	}
 </script>
 
@@ -102,12 +110,14 @@
 				<!-- Yes/No are never toggles - every event always offers both. Hidden
 				     inputs carry explicit values (see the create page). -->
 				<div class="flex flex-col gap-2">
-					<span class="text-sm font-semibold text-ink">{m.fieldChoices()}</span>
+					<span class="text-2xs font-bold uppercase tracking-widest text-ink-muted"
+						>{m.fieldChoices()}</span
+					>
 					<label class="flex items-center gap-2 text-body text-ink">
 						<input
 							type="checkbox"
 							bind:checked={draftAllowPreferred}
-							class="h-5 w-5 cursor-pointer accent-[var(--color-primary,#1B3A7B)]"
+							class="h-5 w-5 cursor-pointer accent-ink"
 						/>
 						{m.prefPreferred()}
 					</label>
@@ -115,7 +125,7 @@
 						<input
 							type="checkbox"
 							bind:checked={draftAllowUnsure}
-							class="h-5 w-5 cursor-pointer accent-[var(--color-primary,#1B3A7B)]"
+							class="h-5 w-5 cursor-pointer accent-ink"
 						/>
 						{m.prefUnsure()}
 					</label>
@@ -123,6 +133,7 @@
 					<input type="hidden" name="allowPreferred" value={draftAllowPreferred ? '1' : '0'} />
 					<input type="hidden" name="allowUnsure" value={draftAllowUnsure ? '1' : '0'} />
 				</div>
+				<AccentPicker bind:value={draftAccent} onpick={onpreviewaccent} />
 				<!-- Picking a language previews the whole dashboard immediately; saving
 				     persists it, cancelling rolls it back. Same live switch as /. -->
 				<SelectField
@@ -139,14 +150,13 @@
 				     preview since times are server-rendered. -->
 				<TimezoneCombobox name="timezone" bind:value={draftTimezone} {locale} />
 				<div class="flex items-center gap-2.5">
-					<Button variant="ghost" type="submit" iconOnly label={m.save()}
-						><Check size={16} /></Button
+					<Button variant="ghost" type="submit" iconOnly label={m.save()}><Save size={16} /></Button
 					>
 					<IconButton label={m.cancel()} onclick={cancelEdit}><X size={16} /></IconButton>
 				</div>
 			</form>
 		{:else}
-			<h1 class="mt-1 text-title font-extrabold tracking-[-0.02em] text-ink">{title}</h1>
+			<h1 class="mt-1 text-title font-bold text-ink"><span class="hl-swipe">{title}</span></h1>
 			{#if description}
 				{#if isRichText(description)}
 					<!-- Editor HTML, sanitized to the allowed subset at write time. -->
