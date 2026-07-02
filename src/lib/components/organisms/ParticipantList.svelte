@@ -22,7 +22,7 @@
 
 <div>
 	<SectionHeading text={m.participantsSection()} class="mb-1" />
-	<p class="mb-3.5 text-[13px] text-ink-muted">{m.participantsHint()}</p>
+	<p class="mb-3.5 text-caption text-ink-muted">{m.participantsHint()}</p>
 	<div class="flex flex-col gap-2.5">
 		{#each participants as p, i (p.id)}
 			<div in:fly={{ y: 8, duration: 240, delay: i * 40, easing: cubicOut }}>

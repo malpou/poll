@@ -96,30 +96,30 @@
 				}
 				return update({ reset: false });
 			}}
-		class="mx-auto max-w-[480px] px-5 pb-32 pt-8"
+		class="mx-auto max-w-120 px-5 pb-32 pt-8"
 	>
 		{#if cancelled}
-			<NoticeBanner text={m.cancelledBanner()} class="mb-[22px]" />
+			<NoticeBanner text={m.cancelledBanner()} class="mb-5.5" />
 		{:else if closed && !decided}
 			<!-- Poll closed before decisions existed: plain closed notice. -->
-			<NoticeBanner text={m.closedBanner()} class="mb-[22px]" />
+			<NoticeBanner text={m.closedBanner()} class="mb-5.5" />
 		{/if}
 
-		<div class="mb-[30px] flex flex-col gap-1.5">
+		<div class="mb-7.5 flex flex-col gap-1.5">
 			<!-- No greeting once closed: a decided/cancelled poll is an outcome, not a
 			     personal ask, and the counts-only view must show no invitee name. -->
 			{#if !closed}
 				{#if mode === 'assigned'}
-					<div class="text-[15px] font-semibold text-primary">
+					<div class="text-body font-semibold text-primary">
 						{m.greeting({ name: view.name ?? '' })}
 					</div>
 				{:else if name.trim()}
-					<div class="text-[15px] font-semibold text-primary">
+					<div class="text-body font-semibold text-primary">
 						{m.greeting({ name: name.trim() })}
 					</div>
 				{/if}
 			{/if}
-			<h1 class="text-[30px] font-extrabold tracking-[-0.02em] text-ink">{view.title}</h1>
+			<h1 class="text-title font-extrabold tracking-[-0.02em] text-ink">{view.title}</h1>
 			{#if view.description}
 				<p class="mt-1.5 whitespace-pre-line text-base leading-relaxed text-ink-muted">
 					{view.description}
@@ -134,7 +134,7 @@
 				{#if mode === 'open'}
 					<TextField label={m.namePrompt()} name="name" bind:value={name} placeholder={m.name()} />
 				{/if}
-				<p class="text-[17px] font-semibold text-ink">{m.responseIntro()}</p>
+				<p class="text-lead font-semibold text-ink">{m.responseIntro()}</p>
 
 				<div class="flex flex-col gap-3.5">
 					<SectionHeading text={m.datesQuestion()} />

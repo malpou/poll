@@ -57,7 +57,7 @@
 	}
 </script>
 
-<form method="POST" action="?/create" use:enhance class="mx-auto max-w-[640px] px-6 pb-24 pt-10">
+<form method="POST" action="?/create" use:enhance class="mx-auto max-w-160 px-6 pb-24 pt-10">
 	<!-- Language picker sits outside {#key} so re-rendering the form on switch
 	     doesn't steal focus from the <select>. Its own labels re-key with the rest. -->
 	<label class="mb-10 flex flex-col gap-2">
@@ -71,7 +71,7 @@
 			onchange={(e) => {
 				pickLocale(e.currentTarget.value as Locale);
 			}}
-			class="h-[46px] w-full rounded-[10px] border border-border bg-card px-3.5 text-[15px] text-ink outline-none focus:border-primary"
+			class="h-11.5 w-full rounded-control border border-border bg-card px-3.5 text-body text-ink outline-none focus:border-primary"
 		>
 			<option value="da">{m.langDa()}</option>
 			<option value="en">{m.langEn()}</option>
@@ -82,10 +82,10 @@
 	<!-- Re-render every m.*() under the newly picked locale. Form state (title,
 	     dates, participants) lives in $state above the block, so it survives. -->
 	{#key locale}
-		<h1 class="mb-3 text-[28px] font-extrabold tracking-[-0.02em] text-ink">
+		<h1 class="mb-3 text-title font-extrabold tracking-[-0.02em] text-ink">
 			{m.createTitle()}
 		</h1>
-		<p class="mb-8 max-w-[52ch] text-[15px] leading-relaxed text-ink-muted">
+		<p class="mb-8 max-w-[52ch] text-body leading-relaxed text-ink-muted">
 			{m.createIntro()}
 		</p>
 
@@ -113,7 +113,7 @@
 				<option value="assigned">{m.modeAssigned()}</option>
 				<option value="open">{m.modeOpen()}</option>
 			</SelectField>
-			<p class="text-[13px] leading-relaxed text-ink-muted">
+			<p class="text-caption leading-relaxed text-ink-muted">
 				{pollMode === 'open' ? m.modeOpenHint() : m.modeAssignedHint()}
 			</p>
 		</div>

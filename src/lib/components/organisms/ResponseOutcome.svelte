@@ -27,7 +27,7 @@
 {#if cancelled}
 	<!-- No date, no distribution - just the organizer's call, spelled out. -->
 	<Callout>
-		<p class="text-[15px] leading-relaxed text-ink-muted">{m.cancelledMessage()}</p>
+		<p class="text-body leading-relaxed text-ink-muted">{m.cancelledMessage()}</p>
 	</Callout>
 {:else}
 	<!-- The outcome, front and center: the chosen date(s)... -->
@@ -61,15 +61,15 @@
 				>
 					<div class="flex flex-wrap items-center gap-2.5">
 						<div>
-							<div class="text-[15px] font-bold capitalize text-ink">{d.weekday}</div>
-							<div class="text-[13px] text-ink-muted">
+							<div class="text-body font-bold capitalize text-ink">{d.weekday}</div>
+							<div class="text-caption text-ink-muted">
 								{d.dateLabel}{#if d.timeRange}
 									· {d.timeRange}{/if}
 							</div>
 						</div>
 						{#if o.chosen}
 							<span
-								class="whitespace-nowrap rounded-full bg-primary-tint px-2.5 py-1 text-[11px] font-bold uppercase tracking-[0.04em] text-primary"
+								class="whitespace-nowrap rounded-full bg-primary-tint px-2.5 py-1 text-2xs font-bold uppercase tracking-[0.04em] text-primary"
 							>
 								{m.chosenBadge()}
 							</span>

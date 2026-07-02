@@ -79,12 +79,12 @@
 					{:else}
 						<div class="flex items-center justify-between gap-2.5">
 							<div class="min-w-0">
-								<div class="text-[15px] font-semibold text-ink">
+								<div class="text-body font-semibold text-ink">
 									{opt.weekday}
 									{opt.dateLabel}
 								</div>
 								{#if opt.timeRange}
-									<div class="text-[13px] text-ink-muted">{opt.timeRange}</div>
+									<div class="text-caption text-ink-muted">{opt.timeRange}</div>
 								{/if}
 							</div>
 							{#if !closed}

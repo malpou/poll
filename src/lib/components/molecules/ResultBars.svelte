@@ -77,7 +77,7 @@
 			<div class="text-right text-xs font-bold text-ink">{bar.count}</div>
 		</div>
 		{#if expanded && bar.names.length > 0}
-			<div class="pl-[102px] text-[13px] text-ink-muted">
+			<div class="pl-25.5 text-caption text-ink-muted">
 				{bar.names.join(', ')}
 			</div>
 		{/if}

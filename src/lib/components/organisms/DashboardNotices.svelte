@@ -34,7 +34,7 @@
 		<!-- The link to hand out. Kept at the top and visually primary so it's clearly
 		     the one to share - the organizer /e link below is private. -->
 		<Callout tone="primary" title={m.shareLinkTitle()} class="mb-4">
-			<p class="mt-1.5 text-[13px] leading-relaxed text-ink">{m.shareLinkHint()}</p>
+			<p class="mt-1.5 text-caption leading-relaxed text-ink">{m.shareLinkHint()}</p>
 			<CopyLinkRow url={shareUrl} {oncopied} class="mt-2.5" />
 		</Callout>
 	{/if}
@@ -43,7 +43,7 @@
 	     is private - never the link to share (open mode has its own above). -->
 	<Callout tone="amber" title={m.organizerLinkTitle()} class="mb-6">
 		{#snippet icon()}<TriangleAlert size={16} class="shrink-0" />{/snippet}
-		<p class="mt-1.5 text-[13px] leading-relaxed text-ink">{m.organizerLinkWarning()}</p>
+		<p class="mt-1.5 text-caption leading-relaxed text-ink">{m.organizerLinkWarning()}</p>
 		<CopyLinkRow url={organizerUrl} {oncopied} class="mt-2.5" />
 	</Callout>
 
@@ -60,7 +60,7 @@
 				{#snippet icon()}<Lock size={16} class="shrink-0" />{/snippet}
 				<div class="mt-1.5 flex flex-col gap-0.5">
 					{#each chosenDates as d (d.dateLabel + d.timeRange)}
-						<div class="text-[15px] font-bold capitalize text-ink">
+						<div class="text-body font-bold capitalize text-ink">
 							{d.weekday}
 							{d.dateLabel}{#if d.timeRange}
 								<span class="font-semibold text-ink-muted">· {d.timeRange}</span>{/if}
@@ -79,11 +79,11 @@
 	     the only place open-mode /r links surface for the organizer. -->
 	{#if partials.length > 0}
 		<Callout tone="primary" title={m.needsUpdateTitle()} class="mb-6">
-			<p class="mt-1.5 text-[13px] leading-relaxed text-ink">{m.needsUpdateHint()}</p>
+			<p class="mt-1.5 text-caption leading-relaxed text-ink">{m.needsUpdateHint()}</p>
 			<div class="mt-2.5 flex flex-col gap-2">
 				{#each partials as p (p.id)}
 					<div class="flex flex-wrap items-center gap-2.5">
-						<span class="min-w-[80px] text-[15px] font-semibold text-ink">{p.label}</span>
+						<span class="min-w-20 text-body font-semibold text-ink">{p.label}</span>
 						<CopyLinkRow url={p.url} {oncopied} class="flex-1" />
 					</div>
 				{/each}

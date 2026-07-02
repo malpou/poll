@@ -25,8 +25,8 @@
 		{name}
 		{placeholder}
 		bind:value
-		class="w-full rounded-[10px] border border-border bg-card px-3.5 text-[15px] text-ink outline-none placeholder:text-ink-muted/70 focus:border-primary {compact
+		class="w-full rounded-control border border-border bg-card px-3.5 text-body text-ink outline-none placeholder:text-ink-muted/70 focus:border-primary {compact
 			? 'h-10'
-			: 'h-[46px]'}"
+			: 'h-11.5'}"
 	/>
 </label>

@@ -96,13 +96,13 @@
 				</div>
 			</form>
 		{:else}
-			<h1 class="mt-1 text-[28px] font-extrabold tracking-[-0.02em] text-ink">{title}</h1>
+			<h1 class="mt-1 text-title font-extrabold tracking-[-0.02em] text-ink">{title}</h1>
 			{#if description}
-				<p class="mt-1.5 whitespace-pre-line text-[15px] leading-relaxed text-ink-muted">
+				<p class="mt-1.5 whitespace-pre-line text-body leading-relaxed text-ink-muted">
 					{description}
 				</p>
 			{/if}
-			<div class="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-[13px] text-ink-muted">
+			<div class="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-caption text-ink-muted">
 				<span
 					>{m.fieldMode()}:
 					<span class="font-semibold text-ink">{modeLabel(pollMode)}</span></span

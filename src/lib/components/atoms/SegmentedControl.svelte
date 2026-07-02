@@ -42,10 +42,10 @@
 	}
 </script>
 
-<div class="relative flex h-11 w-full rounded-xl bg-card-alt p-[3px]">
+<div class="relative flex h-11 w-full rounded-xl bg-card-alt p-0.75">
 	{#if activeIndex >= 0}
 		<div
-			class="pointer-events-none absolute bottom-[3px] top-[3px] rounded-[9px] transition-colors duration-150"
+			class="pointer-events-none absolute bottom-0.75 top-0.75 rounded-control transition-colors duration-150"
 			style="left:3px; width:calc((100% - 6px) / 3); transform:translateX(calc({pos.current} * 100%)); background:{options[
 				activeIndex
 			].color};"
@@ -59,7 +59,7 @@
 				select(opt.pref);
 			}}
 			aria-pressed={value === opt.pref}
-			class="relative z-10 flex-1 rounded-[9px] border-none bg-transparent px-1 py-[11px] text-sm font-semibold transition-colors duration-150 {value ===
+			class="relative z-10 flex-1 rounded-control border-none bg-transparent px-1 py-2.75 text-sm font-semibold transition-colors duration-150 {value ===
 			opt.pref
 				? 'text-white'
 				: 'text-ink-muted'} {readOnly ? 'cursor-default' : 'cursor-pointer'}"

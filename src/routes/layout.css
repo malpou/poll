@@ -20,6 +20,17 @@
 	--color-bad: #a85b4e;
 	--color-bad-tint: #f3e6e3;
 
+	/* Type scale and control radii from the mockup - keeps markup free of
+	   one-off pixel values. Sizes without a paired line-height inherit, same
+	   as the arbitrary classes they replace. */
+	--text-2xs: 0.6875rem; /* 11px badges/pills */
+	--text-caption: 0.8125rem; /* 13px secondary text */
+	--text-body: 0.9375rem; /* 15px primary text */
+	--text-lead: 1.0625rem; /* 17px emphasized intro */
+	--text-title: 1.75rem; /* 28px page titles */
+	--radius-control: 0.625rem; /* 10px inputs, selects, small buttons */
+	--radius-cta: 0.875rem; /* 14px large CTAs + brand glyph */
+
 	--shadow-toast: 0 8px 24px rgba(20, 30, 60, 0.08);
 }
 

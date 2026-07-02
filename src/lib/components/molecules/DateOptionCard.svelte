@@ -39,12 +39,12 @@
 		delay: index * 40,
 		easing: cubicOut
 	}}
-	class="flex flex-col gap-3.5 rounded-2xl border border-border bg-card p-[18px] shadow-[0_1px_2px_var(--shadow-toast)]"
+	class="flex flex-col gap-3.5 rounded-2xl border border-border bg-card p-4.5 shadow-[0_1px_2px_var(--shadow-toast)]"
 >
 	<div class="flex flex-col gap-0.5">
 		{#if isNew}
 			<span
-				class="mb-1 w-fit whitespace-nowrap rounded-full bg-primary-tint px-2.5 py-1 text-[11px] font-bold text-primary"
+				class="mb-1 w-fit whitespace-nowrap rounded-full bg-primary-tint px-2.5 py-1 text-2xs font-bold text-primary"
 			>
 				{m.newDateBadge()}
 			</span>
@@ -52,7 +52,7 @@
 		<div class="text-lg font-bold capitalize tracking-[-0.01em] text-ink">{weekday}</div>
 		<div class="text-sm text-ink-muted">{dateLabel}</div>
 		{#if timeRange}
-			<div class="text-[13px] font-semibold text-ink-muted">{timeRange}</div>
+			<div class="text-caption font-semibold text-ink-muted">{timeRange}</div>
 		{/if}
 	</div>
 	<SegmentedControl bind:value {readOnly} />

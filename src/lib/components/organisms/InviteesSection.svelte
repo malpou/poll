@@ -53,7 +53,9 @@
 
 {#snippet noteBody(inv: InviteeView)}
 	{#if inv.note && expandedNotes[inv.id]}
-		<div class="mt-2.5 rounded-lg bg-card-alt px-3 py-2 text-[13px] leading-relaxed text-ink-muted">
+		<div
+			class="mt-2.5 rounded-lg bg-card-alt px-3 py-2 text-caption leading-relaxed text-ink-muted"
+		>
 			{inv.note}
 		</div>
 	{/if}
@@ -74,7 +76,7 @@
 							class="rounded-xl border border-border bg-card p-3"
 						>
 							<div class="flex items-center gap-2.5">
-								<div class="flex-1 text-[15px] font-semibold text-ink">{inv.label}</div>
+								<div class="flex-1 text-body font-semibold text-ink">{inv.label}</div>
 								{@render noteToggle(inv)}
 							</div>
 							{@render noteBody(inv)}
@@ -82,7 +84,7 @@
 					{/each}
 				</div>
 			{:else}
-				<p class="text-[13px] leading-relaxed text-ink-muted">{m.shareLinkHint()}</p>
+				<p class="text-caption leading-relaxed text-ink-muted">{m.shareLinkHint()}</p>
 			{/if}
 		{:else}
 			<div class="flex flex-col gap-2.5">
@@ -93,7 +95,7 @@
 					>
 						<div class="flex items-center gap-2.5">
 							{#if closed}
-								<div class="flex-1 text-[15px] font-semibold text-ink">{inv.label}</div>
+								<div class="flex-1 text-body font-semibold text-ink">{inv.label}</div>
 							{:else}
 								<form
 									method="POST"
@@ -109,7 +111,7 @@
 								</form>
 							{/if}
 							<span
-								class="whitespace-nowrap rounded-full px-2.5 py-1 text-[11px] font-bold {statusPill(
+								class="whitespace-nowrap rounded-full px-2.5 py-1 text-2xs font-bold {statusPill(
 									inv.status
 								).cls}"
 							>

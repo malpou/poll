@@ -24,7 +24,7 @@
 		{name}
 		{value}
 		onchange={(e) => onchange?.(e.currentTarget.value)}
-		class="h-[46px] w-full rounded-[10px] border border-border bg-card px-3.5 text-[15px] text-ink outline-none focus:border-primary"
+		class="h-11.5 w-full rounded-control border border-border bg-card px-3.5 text-body text-ink outline-none focus:border-primary"
 	>
 		{@render children()}
 	</select>

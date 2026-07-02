@@ -72,7 +72,7 @@
 {#if !view}
 	<LinkNotFound />
 {:else}
-	<div class="mx-auto max-w-[640px] px-6 pb-24 pt-10">
+	<div class="mx-auto max-w-160 px-6 pb-24 pt-10">
 		<EventHeader
 			title={view.title}
 			description={view.description}

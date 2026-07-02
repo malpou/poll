@@ -43,9 +43,9 @@
 		<section class="mb-10">
 			<SectionHeading text={m.resultsSection()} class="mb-1" />
 			<!-- One "who answered" summary for the whole poll, not per card. -->
-			<div class="mb-3.5 text-[13px] font-semibold text-ink-muted">{respondedLabel}</div>
+			<div class="mb-3.5 text-caption font-semibold text-ink-muted">{respondedLabel}</div>
 			{#if selecting}
-				<div class="mb-3.5 text-[13px] font-semibold text-primary">{m.closeSelectHint()}</div>
+				<div class="mb-3.5 text-caption font-semibold text-primary">{m.closeSelectHint()}</div>
 			{/if}
 			<div class="flex flex-col gap-3">
 				{#each results as r, i (r.id)}
@@ -69,22 +69,22 @@
 									/>
 								{/if}
 								<div>
-									<div class="text-[15px] font-bold capitalize text-ink">{r.weekday}</div>
-									<div class="text-[13px] text-ink-muted">
+									<div class="text-body font-bold capitalize text-ink">{r.weekday}</div>
+									<div class="text-caption text-ink-muted">
 										{r.dateLabel}{#if r.timeRange}
 											· {r.timeRange}{/if}
 									</div>
 								</div>
 								{#if r.chosen}
 									<span
-										class="whitespace-nowrap rounded-full bg-primary-tint px-2.5 py-1 text-[11px] font-bold uppercase tracking-[0.04em] text-primary"
+										class="whitespace-nowrap rounded-full bg-primary-tint px-2.5 py-1 text-2xs font-bold uppercase tracking-[0.04em] text-primary"
 									>
 										{m.chosenBadge()}
 									</span>
 								{:else if r.isBest && !closed}
 									<!-- The recommendation only matters while the call is still open. -->
 									<span
-										class="whitespace-nowrap rounded-full bg-amber-tint px-2.5 py-1 text-[11px] font-bold uppercase tracking-[0.04em] text-amber"
+										class="whitespace-nowrap rounded-full bg-amber-tint px-2.5 py-1 text-2xs font-bold uppercase tracking-[0.04em] text-amber"
 									>
 										{m.bestDate()}
 									</span>
