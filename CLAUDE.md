@@ -1,4 +1,4 @@
-# family-date-poll
+# poll
 
 Capability-URL date poll (no logins — the link is the credential). SvelteKit 2 /
 Svelte 5 + Tailwind 4 on Cloudflare Workers + D1. Package manager: bun.

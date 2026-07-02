@@ -1,6 +1,6 @@
-# family-date-poll
+# poll
 
-[![CI](https://github.com/malpou/family-date-poll/actions/workflows/ci.yml/badge.svg)](https://github.com/malpou/family-date-poll/actions/workflows/ci.yml)
+[![CI](https://github.com/malpou/poll/actions/workflows/ci.yml/badge.svg)](https://github.com/malpou/poll/actions/workflows/ci.yml)
 
 A tiny, no-login date poll. One organizer seeds a few candidate dates and sees
 at a glance which date suits everyone - originally built to schedule a

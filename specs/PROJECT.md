@@ -1,8 +1,8 @@
-# Project: family-date-poll
+# Project: poll
 
 ## Purpose
 
-Let one organizer collect preferred dates from family members. The organizer
+Let one organizer collect preferred dates from participants. The organizer
 supplies the candidate dates; recipients only choose among them. Distribution is
 by the organizer copying each recipient's link and sending it themselves (email,
 text, etc.). No participant accounts.
