@@ -72,6 +72,9 @@
 	"statusClosed": "Clôturé",
 	"save": "Enregistrer",
 	"edit": "Modifier",
+	"moveUp": "Monter",
+	"moveDown": "Descendre",
+	"sortByDate": "Trier par date",
 	"confirmDeleteOption": "Cette date a des réponses. La supprimer quand même ?",
 	"confirmDeleteInvitee": "Ce participant a répondu. Le retirer quand même ? Son lien cessera de fonctionner.",
 	"timeAt": "à "

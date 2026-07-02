@@ -305,6 +305,17 @@ export function d1Provider(db: D1Database): DataProvider {
 				.run();
 		},
 
+		async reorderDateOptions(eventId, orderedIds) {
+			// event_id guard so a stray id can't renumber another event's option.
+			await db.batch(
+				orderedIds.map((optionId, i) =>
+					db
+						.prepare(`UPDATE date_options SET sort_order = ? WHERE id = ? AND event_id = ?`)
+						.bind(i, optionId, eventId)
+				)
+			);
+		},
+
 		async removeDateOption(optionId) {
 			// No FK cascade - clear responses first, then the option.
 			await db.batch([

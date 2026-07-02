@@ -12,6 +12,7 @@
 	import {
 		X,
 		TriangleAlert,
+		ArrowUpNarrowWide,
 		ChevronUp,
 		ChevronDown,
 		MessageSquare,
@@ -372,8 +373,17 @@
 
 		<!-- Options -->
 		<section class="mb-10">
-			<div class="mb-3.5 text-[13px] font-bold uppercase tracking-[0.06em] text-ink-muted">
-				{m.datesSection()}
+			<div class="mb-3.5 flex items-center justify-between gap-2.5">
+				<div class="text-[13px] font-bold uppercase tracking-[0.06em] text-ink-muted">
+					{m.datesSection()}
+				</div>
+				{#if !view.closed && view.options.length > 1}
+					<form method="POST" action="?/sortOptions" use:enhance={refresh}>
+						<Button variant="ghost" type="submit"
+							><ArrowUpNarrowWide size={14} />{m.sortByDate()}</Button
+						>
+					</form>
+				{/if}
 			</div>
 			<div class="flex flex-col gap-2.5">
 				{#each view.options as opt, i (opt.id)}
@@ -425,6 +435,30 @@
 								</div>
 								{#if !view.closed}
 									<div class="flex shrink-0 items-center gap-2">
+										{#if view.options.length > 1}
+											<form method="POST" action="?/moveOption" use:enhance={refresh}>
+												<input type="hidden" name="optionId" value={opt.id} />
+												<input type="hidden" name="direction" value="up" />
+												<Button
+													variant="ghost"
+													iconOnly
+													type="submit"
+													label={m.moveUp()}
+													disabled={i === 0}><ChevronUp size={16} /></Button
+												>
+											</form>
+											<form method="POST" action="?/moveOption" use:enhance={refresh}>
+												<input type="hidden" name="optionId" value={opt.id} />
+												<input type="hidden" name="direction" value="down" />
+												<Button
+													variant="ghost"
+													iconOnly
+													type="submit"
+													label={m.moveDown()}
+													disabled={i === view.options.length - 1}><ChevronDown size={16} /></Button
+												>
+											</form>
+										{/if}
 										<Button
 											variant="ghost"
 											iconOnly

@@ -60,6 +60,8 @@ export interface DataProvider {
 	addDateOption(eventId: string, date: DateOptionInput): Promise<void>;
 	updateDateOption(optionId: string, date: DateOptionInput): Promise<void>;
 	removeDateOption(optionId: string): Promise<void>;
+	// Rewrite sort_order so the event's options follow orderedIds' array order.
+	reorderDateOptions(eventId: string, orderedIds: string[]): Promise<void>;
 	addInvitee(eventId: string, label: string): Promise<{ token: string }>;
 	renameInvitee(inviteeId: string, label: string): Promise<void>;
 	removeInvitee(inviteeId: string): Promise<void>;
