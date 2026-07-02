@@ -12,7 +12,7 @@ import type {
 	ShareContext
 } from '$lib/types';
 import { helpers, id, newToken, RESULTS_SQL } from './shared';
-import { zonedToUtcIso } from '$lib/date';
+import { zonedToUtcIso } from '$lib/logic/date';
 
 function mapEvent(r: Record<string, unknown>): EventRow {
 	return {

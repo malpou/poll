@@ -1,9 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import {
-	inviteeStatus,
-	orderForRespondent,
-	responseCountByInvitee
-} from '../src/lib/participant-status';
+import { inviteeStatus, orderForRespondent, responseCountByInvitee } from './participant-status';
 
 describe('responseCountByInvitee', () => {
 	it('counts rows per invitee', () => {

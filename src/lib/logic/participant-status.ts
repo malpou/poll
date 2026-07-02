@@ -16,9 +16,11 @@ export function inviteeStatus(count: number, optionCount: number): InviteeStatus
 	return count < optionCount ? 'partial' : 'complete';
 }
 
-// Unanswered dates first (each group keeps its incoming order), flagged so the
-// UI can badge them. A first visit (no prior answers) flags nothing and keeps
-// the original order - the treatment only applies to returning respondents.
+/**
+ * Orders dates with unanswered ones first (each group keeps its incoming order), flagged so the
+ * UI can badge them. A first visit (no prior answers) flags nothing and keeps
+ * the original order - the treatment only applies to returning respondents.
+ */
 export function orderForRespondent<T extends { id: string }>(
 	dates: T[],
 	answeredIds: Set<string>

@@ -1,9 +1,9 @@
 import { fail } from '@sveltejs/kit';
 import { getProvider } from '$lib/data/provider';
-import { formatDateOption, utcIsoToZonedParts } from '$lib/date';
-import { field, validateTimes } from '$lib/forms';
-import { inviteeStatus, responseCountByInvitee } from '$lib/participant-status';
-import { markBest } from '$lib/results';
+import { formatDateOption, utcIsoToZonedParts } from '$lib/logic/date';
+import { field, validateTimes } from '$lib/forms/forms';
+import { inviteeStatus, responseCountByInvitee } from '$lib/logic/participant-status';
+import { markBest } from '$lib/logic/results';
 import { cachedLoad, invalidateCache } from '$lib/server/cache';
 import { setRequestLocale } from '../../../hooks.server';
 import { m } from '$lib/paraglide/messages';
@@ -12,7 +12,9 @@ import type { DateOptionInput } from '$lib/data/provider';
 import type { EventWithDetails, Preference } from '$lib/types';
 import type { Actions, PageServerLoad } from './$types';
 
-// Read date + optional times from a form into the provider's input shape.
+/**
+ * Reads date + optional times from a form into the provider's input shape.
+ */
 function dateInput(form: FormData): DateOptionInput {
 	return {
 		value: field(form, 'value'),
@@ -21,9 +23,11 @@ function dateInput(form: FormData): DateOptionInput {
 	};
 }
 
-// The whole dashboard view, computed from D1. Cached per token+origin, so it
-// must not touch per-request state: the locale goes to m.*() explicitly, and
-// setRequestLocale happens in `load` (also needed on cache hits).
+/**
+ * Computes the whole dashboard view from D1. Cached per token+origin, so it
+ * must not touch per-request state: the locale goes to m.*() explicitly, and
+ * setRequestLocale happens in `load` (also needed on cache hits).
+ */
 async function computeDashboard(platform: App.Platform | undefined, token: string, origin: string) {
 	const provider = getProvider(platform);
 	const event = await provider.getEventByOrganizerToken(token);
@@ -139,26 +143,32 @@ export const load: PageServerLoad = async ({ params, platform, url }) => {
 	return payload;
 };
 
-// Every action re-resolves the event by token server-side; never trust the
-// client for event id or status.
+/**
+ * Re-resolves the event by token server-side, as every action must; never
+ * trust the client for event id or status.
+ */
 async function resolve(platform: App.Platform | undefined, token: string) {
 	const provider = getProvider(platform);
 	const event = await provider.getEventByOrganizerToken(token);
 	return { provider, event };
 }
 
-// A closed or cancelled poll is immutable except for reopening
-// (specs/poll-closing) - the UI hides the edit affordances, but the recorded
-// decision must also survive a crafted POST.
+/**
+ * Reports whether a poll is not open. A closed or cancelled poll is immutable
+ * except for reopening (specs/poll-closing) - the UI hides the edit
+ * affordances, but the recorded decision must also survive a crafted POST.
+ */
 function notOpen(event: { status: string }) {
 	return event.status !== 'open';
 }
 
-// Purge everything a dashboard mutation can affect: the dashboard itself, the
-// shared page, and every invitee page (date/detail/status/locale edits change
-// them all). Uses the pre-mutation event, so a removed invitee's page is
-// purged too; a just-added invitee has no entry yet. Await before returning -
-// the client re-runs load immediately after a successful action.
+/**
+ * Purges everything a dashboard mutation can affect: the dashboard itself, the
+ * shared page, and every invitee page (date/detail/status/locale edits change
+ * them all). Uses the pre-mutation event, so a removed invitee's page is
+ * purged too; a just-added invitee has no entry yet. Await before returning -
+ * the client re-runs load immediately after a successful action.
+ */
 function purgeEvent(
 	platform: App.Platform | undefined,
 	origin: string,

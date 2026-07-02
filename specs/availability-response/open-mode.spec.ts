@@ -1,5 +1,5 @@
 import { test, expect, type Page } from '@playwright/test';
-import { m } from '../src/lib/paraglide/messages';
+import { m } from '../../src/lib/paraglide/messages';
 import {
 	inviteesFor,
 	responsesFor,
@@ -8,7 +8,7 @@ import {
 	seedInvitee,
 	seedResponse,
 	wipeEvent
-} from './db';
+} from '../support/db';
 
 // Open mode: one shared /s/{share_token} link. Anyone opening it names themselves
 // and submits; each submission becomes an invitee row, so results reuse the same

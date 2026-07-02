@@ -8,7 +8,7 @@
 	import SelectField from '$lib/components/atoms/SelectField.svelte';
 	import { X, Pencil, Check, Lock, LockOpen } from '@lucide/svelte';
 	import { m } from '$lib/paraglide/messages';
-	import { refreshThen } from '$lib/enhance';
+	import { refreshThen } from '$lib/forms/enhance';
 	import type { Locale, PollMode } from '$lib/types';
 
 	let {
@@ -33,7 +33,9 @@
 		onpreviewlocale: (l: Locale) => void;
 	} = $props();
 
-	// Plain-text labels for the non-edit header. Keyed by the poll's stored values.
+	/**
+	 * Plain-text labels for the non-edit header. Keyed by the poll's stored values.
+	 */
 	const localeLabel = (l: Locale) => ({ da: m.langDa(), en: m.langEn(), fr: m.langFr() })[l];
 	const modeLabel = (mo: PollMode) => (mo === 'open' ? m.modeOpen() : m.modeAssigned());
 

@@ -3,13 +3,15 @@ import { defineConfig } from '@playwright/test';
 // E2E runs against the real Worker + local D1 (`bun run preview` = vite build &&
 // wrangler dev on :8787), so the create flow actually writes rows. `vite dev`
 // would fall back to the mock provider and never persist. globalSetup applies
-// migrations to the local D1 before the server boots.
+// migrations to the local D1 before the server boots. Specs live next to the
+// spec.md they exercise (specs/<feature>/*.spec.ts); shared seed/setup helpers
+// are in specs/support.
 export default defineConfig({
-	testDir: 'e2e',
-	globalSetup: './e2e/global-setup.ts',
+	testDir: 'specs',
+	globalSetup: './specs/support/global-setup.ts',
 	// The preview server and every worker share one local-D1 SQLite file, and
 	// miniflare's D1 connection takes no busy_timeout, so parallel app writes
-	// collide (SQLITE_BUSY). Seeding is in-process now (e2e/db.ts), so the whole
+	// collide (SQLITE_BUSY). Seeding is in-process now (specs/support/db.ts), so the whole
 	// suite runs in well under a minute single-worker - cheaper than fighting the
 	// lock. One retry still absorbs any genuine transient.
 	workers: 1,

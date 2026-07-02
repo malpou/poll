@@ -9,7 +9,7 @@
 	import AddDateForm from '$lib/components/molecules/AddDateForm.svelte';
 	import { X, ArrowUpNarrowWide, ChevronUp, ChevronDown, Pencil, Check } from '@lucide/svelte';
 	import { m } from '$lib/paraglide/messages';
-	import { refreshThen, confirmingRefresh } from '$lib/enhance';
+	import { refreshThen, confirmingRefresh } from '$lib/forms/enhance';
 	import type { Locale, OptionView } from '$lib/types';
 
 	let {

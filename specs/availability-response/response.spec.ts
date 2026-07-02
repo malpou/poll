@@ -1,5 +1,5 @@
 import { test, expect, type Page } from '@playwright/test';
-import { m } from '../src/lib/paraglide/messages';
+import { m } from '../../src/lib/paraglide/messages';
 import {
 	responsesFor,
 	seedDateOption,
@@ -7,7 +7,7 @@ import {
 	seedInvitee,
 	seedResponse,
 	wipeEvent
-} from './db';
+} from '../support/db';
 
 // The response page needs a seeded invitee link, but no UI surfaces invitee
 // tokens yet (that's the iteration-5 dashboard). So we seed local D1 through the

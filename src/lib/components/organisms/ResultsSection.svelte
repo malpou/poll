@@ -8,7 +8,7 @@
 	import ResultBars from '$lib/components/molecules/ResultBars.svelte';
 	import { ChevronUp, ChevronDown, Lock } from '@lucide/svelte';
 	import { m } from '$lib/paraglide/messages';
-	import { refreshThen, confirmingRefresh } from '$lib/enhance';
+	import { refreshThen, confirmingRefresh } from '$lib/forms/enhance';
 	import type { Locale, ResultView } from '$lib/types';
 
 	let {

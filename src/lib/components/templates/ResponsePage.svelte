@@ -13,7 +13,7 @@
 	import SubmitBar from '$lib/components/organisms/SubmitBar.svelte';
 	import { m } from '$lib/paraglide/messages';
 	import type { EventStatus, Preference, ResponseDateView } from '$lib/types';
-	import type { OutcomeRow } from '$lib/results';
+	import type { OutcomeRow } from '$lib/logic/results';
 
 	// Assigned (/r): name/answers/note come from the load. Open (/s): submitter
 	// names themselves, so those are absent until the form is filled.

@@ -2,7 +2,10 @@ import type { DateOption, Participant } from '$lib/types';
 
 const BASE62 = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
 
-// ≥128 bits of entropy, base62 (PROJECT.md). 22 chars ≈ 131 bits.
+/**
+ * Generates a random base62 token with at least 128 bits of entropy (PROJECT.md).
+ * 22 chars is approximately 131 bits.
+ */
 export function newToken(): string {
 	const bytes = crypto.getRandomValues(new Uint8Array(22));
 	let out = '';
@@ -39,8 +42,11 @@ export const helpers = {
 		return { id: id('p'), name: '', token: newToken() };
 	},
 
-	// Absolute links off the runtime origin (request host in prod, localhost in
-	// dev) - pass url.origin server-side or page.url.origin in a component.
+	/**
+	 * Builds an absolute invitee link off the runtime origin (request host in
+	 * prod, localhost in dev).
+	 * @param origin Pass url.origin server-side or page.url.origin in a component.
+	 */
 	inviteeUrl(origin: string, token: string): string {
 		return `${origin}/r/${token}`;
 	},
@@ -49,7 +55,10 @@ export const helpers = {
 		return `${origin}/e/${token}`;
 	},
 
-	// Open-mode shared submission link. One per event; anyone with it can respond.
+	/**
+	 * Builds the open-mode shared submission link. One per event; anyone with it
+	 * can respond.
+	 */
 	shareUrl(origin: string, token: string): string {
 		return `${origin}/s/${token}`;
 	}

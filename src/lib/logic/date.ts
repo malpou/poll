@@ -86,8 +86,12 @@ export function utcIsoToZonedParts(iso: string | null): { value: string; time: s
 	return { value: `${p.year}-${p.month}-${p.day}`, time: `${p.hour}:${p.minute}` };
 }
 
-// Defensive: a date option with no starts_at renders blank rather than crashing
-// (create form requires a date, so this is only reached if data is malformed).
+/**
+ * Formats a date option into locale-aware weekday, date, and time-range parts.
+ *
+ * Defensive: a date option with no starts_at renders blank rather than crashing
+ * (the create form requires a date, so this is only reached if data is malformed).
+ */
 export function formatDateOption(
 	startsAt: string | null,
 	endsAt: string | null,

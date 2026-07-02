@@ -37,11 +37,16 @@ export interface DataProvider {
 	createEvent(draft: EventDraft): Promise<CreateResult>;
 	getEventByOrganizerToken(token: string): Promise<EventWithDetails | null>;
 	getInviteeContext(inviteeToken: string): Promise<InviteeContext | null>;
-	// Open-mode shared link: resolve the event + its dates by share_token. Null if
-	// unknown or the poll is not in open mode.
+	/**
+	 * Open-mode shared link: resolve the event + its dates by share_token. Null if
+	 * unknown or the poll is not in open mode.
+	 */
 	getShareContext(shareToken: string): Promise<ShareContext | null>;
-	// One open submission: create an invitee (label = name) and save its answers +
-	// note in one go. Returns the new invitee token (personal edit link / cookie).
+	/**
+	 * One open submission: create an invitee (label = name) and save its answers +
+	 * note in one go.
+	 * @returns the new invitee token (personal edit link / cookie)
+	 */
 	submitOpenResponse(
 		eventId: string,
 		name: string,
@@ -52,21 +57,23 @@ export interface DataProvider {
 	saveResponses(inviteeId: string, answers: ResponseInput[]): Promise<void>;
 	saveNote(inviteeId: string, note: string): Promise<void>;
 	getResults(eventId: string): Promise<DateOptionResult[]>;
-	// Every response for the event, so the dashboard can list who chose what.
+	/** Every response for the event, so the dashboard can list who chose what. */
 	getEventResponses(eventId: string): Promise<ResponseRow[]>;
-	// Organizer dashboard mutations. IDs/tokens are generated server-side.
+	/** Organizer dashboard mutations. IDs/tokens are generated server-side. */
 	addDateOption(eventId: string, date: DateOptionInput): Promise<void>;
 	updateDateOption(optionId: string, date: DateOptionInput): Promise<void>;
 	removeDateOption(optionId: string): Promise<void>;
-	// Rewrite sort_order so the event's options follow orderedIds' array order.
+	/** Rewrite sort_order so the event's options follow orderedIds' array order. */
 	reorderDateOptions(eventId: string, orderedIds: string[]): Promise<void>;
 	addInvitee(eventId: string, label: string): Promise<{ token: string }>;
 	renameInvitee(inviteeId: string, label: string): Promise<void>;
 	removeInvitee(inviteeId: string): Promise<void>;
-	// The three legal status transitions, each atomic with its selection write
-	// (a close that set status but lost the pick would show a decided poll with
-	// no dates). closeEvent flags the chosen options and clears the rest;
-	// cancelEvent and reopenEvent clear every flag.
+	/**
+	 * The three legal status transitions, each atomic with its selection write
+	 * (a close that set status but lost the pick would show a decided poll with
+	 * no dates). closeEvent flags the chosen options and clears the rest;
+	 * cancelEvent and reopenEvent clear every flag.
+	 */
 	closeEvent(eventId: string, selectedOptionIds: string[]): Promise<void>;
 	cancelEvent(eventId: string): Promise<void>;
 	reopenEvent(eventId: string): Promise<void>;
@@ -74,8 +81,10 @@ export interface DataProvider {
 	updateEventDetails(eventId: string, title: string, description: string | null): Promise<void>;
 }
 
-// Swap point: D1 when a platform/DB is present (Workers), mock otherwise
-// (`bun run dev` without a DB, and unit tests). This is the only decision point.
+/**
+ * Swap point: D1 when a platform/DB is present (Workers), mock otherwise
+ * (`bun run dev` without a DB, and unit tests). This is the only decision point.
+ */
 export function getProvider(platform?: App.Platform): DataProvider {
 	return platform?.env.DB ? d1Provider(platform.env.DB) : mockProvider;
 }

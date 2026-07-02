@@ -1,8 +1,8 @@
 import { fail } from '@sveltejs/kit';
 import { getProvider } from '$lib/data/provider';
-import { formatDateOption } from '$lib/date';
-import { orderForRespondent } from '$lib/participant-status';
-import { outcomeFor } from '$lib/results';
+import { formatDateOption } from '$lib/logic/date';
+import { orderForRespondent } from '$lib/logic/participant-status';
+import { outcomeFor } from '$lib/logic/results';
 import { cachedLoad, invalidateCache } from '$lib/server/cache';
 import { setRequestLocale } from '../../../hooks.server';
 import type { Preference } from '$lib/types';

@@ -1,10 +1,12 @@
 import type { DataProvider } from '$lib/data/provider';
 import type { DateOptionResult, DateOptionRow, EventRow } from '$lib/types';
 
-// Best-option ranking (specs/results/spec.md): weighted net score
-// preferred*1.2 + available - unavailable, highest wins. Counting available stops
-// a thinly-answered date from tying well-attended ones. Ties on the same score
-// → every matching row is flagged best, leaving the final call to the organizer.
+/**
+ * Ranks options by weighted net score (specs/results/spec.md):
+ * `preferred*1.2 + available - unavailable`, highest wins. Counting available
+ * stops a thinly-answered date from tying well-attended ones. Ties on the same
+ * score flag every matching row as best, leaving the final call to the organizer.
+ */
 export function markBest<T extends { preferred: number; available: number; unavailable: number }>(
 	rows: T[]
 ): (T & { isBest: boolean })[] {
@@ -58,9 +60,10 @@ export function buildOutcome(
 	});
 }
 
-// The /r and /s loads both surface a decided poll's outcome the same way:
-// only when closed, pulling counts fresh. Kept here so both routes stay a
-// one-liner.
+/**
+ * Surfaces a decided poll's outcome for the /r and /s loads the same way: only
+ * when closed, pulling counts fresh. Kept here so both routes stay a one-liner.
+ */
 export async function outcomeFor(
 	provider: Pick<DataProvider, 'getResults'>,
 	event: Pick<EventRow, 'id' | 'status'>,

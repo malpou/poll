@@ -10,7 +10,7 @@
 	import AddParticipantForm from '$lib/components/molecules/AddParticipantForm.svelte';
 	import { X, MessageSquare, Check } from '@lucide/svelte';
 	import { m } from '$lib/paraglide/messages';
-	import { refreshThen, confirmingRefresh } from '$lib/enhance';
+	import { refreshThen, confirmingRefresh } from '$lib/forms/enhance';
 	import type { InviteeView, Locale, PollMode } from '$lib/types';
 
 	let {
@@ -27,7 +27,10 @@
 		oncopied: () => void;
 	} = $props();
 
-	// Invitee pill: partial gets its own copy; both incomplete states stay amber.
+	/**
+	 * Builds the status pill's CSS classes and label for an invitee.
+	 * The partial state gets its own copy; both incomplete states stay amber.
+	 */
 	const statusPill = (s: InviteeView['status']) =>
 		s === 'complete'
 			? { cls: 'bg-good-tint text-good', text: m.answered() }

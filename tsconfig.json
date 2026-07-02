@@ -13,8 +13,8 @@
 		"moduleResolution": "bundler",
 		"types": ["node"]
 	},
-	// The generated config includes src/ and tests/ but not e2e/ - add it so the
-	// Playwright specs (which import node: builtins) type-check in the editor.
+	// Add specs/ so the Playwright specs and their support helpers (which import
+	// node: builtins) type-check in the editor; unit tests live under src/.
 	"include": [
 		".svelte-kit/ambient.d.ts",
 		".svelte-kit/non-ambient.d.ts",
@@ -23,8 +23,7 @@
 		"src/**/*.js",
 		"src/**/*.ts",
 		"src/**/*.svelte",
-		"tests/**/*.ts",
-		"e2e/**/*.ts"
+		"specs/**/*.ts"
 	],
 	// Paraglide's generated server.js trips checkJs against Cloudflare's Request
 	// type; we don't import it (locale is resolved in hooks.server.ts). The typed

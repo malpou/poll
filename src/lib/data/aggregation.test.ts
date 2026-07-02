@@ -2,12 +2,12 @@ import { describe, it, expect, beforeEach } from 'vitest';
 import Database from 'better-sqlite3';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
-import { RESULTS_SQL } from '../src/lib/data/shared';
+import { RESULTS_SQL } from './shared';
 
 // D1 is SQLite, so we exercise the real 0001_init.sql + the real RESULTS_SQL
 // against in-memory better-sqlite3 - test and prod schema can't drift.
 const migration = readFileSync(
-	fileURLToPath(new URL('../migrations/0001_init.sql', import.meta.url)),
+	fileURLToPath(new URL('../../../migrations/0001_init.sql', import.meta.url)),
 	'utf8'
 );
 

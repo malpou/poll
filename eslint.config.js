@@ -82,7 +82,7 @@ export default defineConfig(
 	},
 	{
 		// Test files exercise SQL against a raw driver; loosen the strictest bans.
-		files: ['tests/**/*.ts', '**/*.test.ts'],
+		files: ['**/*.test.ts'],
 		rules: {
 			'@typescript-eslint/no-non-null-assertion': 'off'
 		}
@@ -100,9 +100,9 @@ export default defineConfig(
 		extends: [ts.configs.disableTypeChecked]
 	},
 	{
-		// Playwright e2e + its config aren't in the SvelteKit tsconfig include, so
-		// skip type-aware rules there rather than wiring a separate project.
-		files: ['e2e/**/*.ts', 'playwright.config.ts'],
+		// Playwright specs (specs/**/*.spec.ts + their support helpers) and the
+		// config skip type-aware rules rather than wiring a separate project.
+		files: ['specs/**/*.ts', 'playwright.config.ts'],
 		extends: [ts.configs.disableTypeChecked]
 	}
 );

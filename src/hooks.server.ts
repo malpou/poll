@@ -18,8 +18,10 @@ if (!building) {
 	overwriteGetLocale(currentLocale);
 }
 
-// Called from load functions once the poll's locale is known. No-op if the
-// negotiated value isn't a supported locale.
+/**
+ * Called from load functions once the poll's locale is known. No-op if the
+ * negotiated value isn't a supported locale.
+ */
 export function setRequestLocale(locale: string): void {
 	const box = store.getStore();
 	if (box && isLocale(locale)) box.locale = locale;

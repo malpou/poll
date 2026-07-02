@@ -24,9 +24,11 @@ export interface CachePlatform {
 	context?: { waitUntil(promise: Promise<unknown>): void };
 }
 
-// Cache API keys must be request URLs. The origin is part of the key so
-// payloads with baked absolute URLs (dashboard share/invitee links) can never
-// leak between localhost and the production host.
+/**
+ * Builds the Cache API key for an entry. Cache API keys must be request URLs.
+ * The origin is part of the key so payloads with baked absolute URLs (dashboard
+ * share/invitee links) can never leak between localhost and the production host.
+ */
 export function cacheKey(origin: string, kind: CacheKind, token: string): string {
 	return `${origin}/__cache/${kind}/${encodeURIComponent(token)}`;
 }
@@ -36,11 +38,13 @@ function ttlSeconds(platform: CachePlatform | undefined): number {
 	return Number.isFinite(ttl) ? ttl : 0;
 }
 
-// Serve `compute()`'s result from the edge cache when possible. Passthrough
-// when there is no Cache API (vite dev, unit tests) or the TTL is disabled
-// (.dev.vars sets 0 so wrangler-dev e2e runs stay deterministic). A null from
-// compute is never cached: unknown tokens must not pin a just-created event
-// or re-added invitee invisible.
+/**
+ * Serves `compute()`'s result from the edge cache when possible. Passthrough
+ * when there is no Cache API (vite dev, unit tests) or the TTL is disabled
+ * (.dev.vars sets 0 so wrangler-dev e2e runs stay deterministic). A null from
+ * compute is never cached: unknown tokens must not pin a just-created event
+ * or re-added invitee invisible.
+ */
 export async function cachedLoad<T>(
 	platform: CachePlatform | undefined,
 	origin: string,
@@ -75,9 +79,11 @@ export async function cachedLoad<T>(
 	return value;
 }
 
-// Purge entries after a mutation. Callers must await this before returning
-// from an action: the client re-runs load immediately afterwards against the
-// same colo, so awaited deletes give the acting user read-your-writes.
+/**
+ * Purges entries after a mutation. Callers must await this before returning
+ * from an action: the client re-runs load immediately afterwards against the
+ * same colo, so awaited deletes give the acting user read-your-writes.
+ */
 export async function invalidateCache(
 	platform: CachePlatform | undefined,
 	origin: string,

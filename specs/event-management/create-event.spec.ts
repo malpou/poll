@@ -1,5 +1,5 @@
 import { test, expect, type Page } from '@playwright/test';
-import { m } from '../src/lib/paraglide/messages';
+import { m } from '../../src/lib/paraglide/messages';
 
 // The create page renders in the browser's preferred locale (Accept-Language).
 // Pin a Danish browser so the m.*() assertions (baseLocale = da) match the page.
