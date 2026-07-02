@@ -1,7 +1,7 @@
 import { fail, redirect } from '@sveltejs/kit';
 import { getProvider } from '$lib/data/provider';
-import { formatDateOption } from '$lib/date';
-import { outcomeFor } from '$lib/results';
+import { formatDateOption } from '$lib/logic/date';
+import { outcomeFor } from '$lib/logic/results';
 import { cachedLoad, invalidateCache } from '$lib/server/cache';
 import { setRequestLocale } from '../../../hooks.server';
 import type { Preference } from '$lib/types';
@@ -11,8 +11,11 @@ import type { Actions, PageServerLoad } from './$types';
 const PREFERENCES: readonly string[] = ['preferred', 'available', 'unavailable'];
 const isPreference = (v: string): v is Preference => PREFERENCES.includes(v);
 
-// One cookie per event holds the invitee token of this browser's own submission,
-// so a revisit edits in place instead of creating a duplicate.
+/**
+ * Builds the cookie name that holds the invitee token of this browser's own
+ * submission for a given event, so a revisit edits in place instead of creating
+ * a duplicate.
+ */
 const cookieName = (eventId: string) => `edit_${eventId}`;
 
 export const load: PageServerLoad = async ({ params, platform, cookies, url }) => {

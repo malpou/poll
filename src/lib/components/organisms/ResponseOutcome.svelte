@@ -7,7 +7,7 @@
 	import { CalendarCheck } from '@lucide/svelte';
 	import { m } from '$lib/paraglide/messages';
 	import type { ResponseDateView } from '$lib/types';
-	import type { OutcomeRow } from '$lib/results';
+	import type { OutcomeRow } from '$lib/logic/results';
 
 	// What a participant sees once the poll is decided or cancelled: the
 	// organizer's call, then counts only - names stay with the organizer.

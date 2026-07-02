@@ -1,5 +1,5 @@
 import { test, expect, type Page } from '@playwright/test';
-import { m } from '../src/lib/paraglide/messages';
+import { m } from '../../src/lib/paraglide/messages';
 import {
 	eventStatus,
 	optionIds,
@@ -9,7 +9,7 @@ import {
 	seedResponse,
 	selectedOptionIds,
 	wipeEvent
-} from './db';
+} from '../support/db';
 
 // Closing a poll records a decision (specs/poll-closing): the organizer picks
 // one or more dates and confirms, or cancels outright; participant links then

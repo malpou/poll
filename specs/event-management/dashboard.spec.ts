@@ -1,6 +1,6 @@
 import { test, expect, type Page } from '@playwright/test';
-import { m } from '../src/lib/paraglide/messages';
-import type { Preference } from '../src/lib/types';
+import { m } from '../../src/lib/paraglide/messages';
+import type { Preference } from '../../src/lib/types';
 import {
 	countResponsesForOption,
 	eventDetails,
@@ -14,7 +14,7 @@ import {
 	setNote,
 	wipeEvent,
 	type ResponseSeed
-} from './db';
+} from '../support/db';
 
 // Organizer dashboard at /e/{organizer_token}. Seeds local D1 through the shared
 // e2e/db.ts helper; fixed tokens so re-runs are deterministic; seeding is

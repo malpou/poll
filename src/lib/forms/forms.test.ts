@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { field, validateTimes } from '../src/lib/forms';
+import { field, validateTimes } from './forms';
 
 // field() reads one trimmed string field; validateTimes() guards a date
 // option's optional start/end times (src/lib/forms).

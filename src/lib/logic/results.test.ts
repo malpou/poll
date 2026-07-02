@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { buildOutcome, markBest } from '../src/lib/results';
-import type { DateOptionResult } from '../src/lib/types';
+import { buildOutcome, markBest } from './results';
+import type { DateOptionResult } from '../types';
 
 // buildOutcome drives the participant-facing outcome view on a decided poll
 // (specs/poll-closing): per-option counts + percentages, chosen flags, and the

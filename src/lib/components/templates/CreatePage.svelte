@@ -47,10 +47,12 @@
 		participants = participants.filter((p) => p.id !== id);
 	}
 
-	// Live language switch: m.*() reads getLocale(), which on the client returns
-	// <html lang> (see +layout.svelte). Update <html lang> synchronously the moment
-	// the picker changes - before the {#key locale} block re-renders and re-reads
-	// it - so the whole form re-renders in the new language with no page refresh.
+	/**
+	 * Live language switch: m.*() reads getLocale(), which on the client returns
+	 * <html lang> (see +layout.svelte). Updates <html lang> synchronously the moment
+	 * the picker changes - before the {#key locale} block re-renders and re-reads
+	 * it - so the whole form re-renders in the new language with no page refresh.
+	 */
 	function pickLocale(next: Locale) {
 		if (browser) document.documentElement.lang = next;
 		locale = next;

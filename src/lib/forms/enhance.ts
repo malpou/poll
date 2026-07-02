@@ -3,8 +3,10 @@
 
 type AfterSubmit = (a: { result: { type: string }; update: () => Promise<void> }) => Promise<void>;
 
-// enhance factory: re-run load on success, plus an optional local-state reset
-// (close an inline edit, leave selection mode, ...).
+/**
+ * enhance factory: re-run load on success, plus an optional local-state reset
+ * (close an inline edit, leave selection mode, ...).
+ */
 export function refreshThen(onSuccess?: () => void) {
 	return (): AfterSubmit =>
 		({ result, update }) => {
@@ -13,9 +15,11 @@ export function refreshThen(onSuccess?: () => void) {
 		};
 }
 
-// enhance factory: warn first when deleting something with responses. cancel()
-// aborts the submit cleanly - done in the SubmitFunction (not onsubmit) so it
-// cooperates with enhance's own preventDefault.
+/**
+ * enhance factory: warn first when deleting something with responses. cancel()
+ * aborts the submit cleanly - done in the SubmitFunction (not onsubmit) so it
+ * cooperates with enhance's own preventDefault.
+ */
 export function confirmingRefresh(message: string, needsConfirm: boolean, onSuccess?: () => void) {
 	return ({ cancel }: { cancel: () => void }): AfterSubmit | undefined => {
 		if (needsConfirm && !confirm(message)) {

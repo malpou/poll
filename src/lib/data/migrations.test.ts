@@ -8,7 +8,7 @@ import { fileURLToPath } from 'node:url';
 // this guards the rebuild: rows survive, unique indexes come back, and the new
 // constraints hold - before the migration ever touches remote D1.
 
-const dir = fileURLToPath(new URL('../migrations', import.meta.url));
+const dir = fileURLToPath(new URL('../../../migrations', import.meta.url));
 const migrations = readdirSync(dir)
 	.filter((f) => f.endsWith('.sql'))
 	.sort();

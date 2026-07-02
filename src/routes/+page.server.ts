@@ -4,23 +4,27 @@ import { newToken } from '$lib/data/shared';
 import { m } from '$lib/paraglide/messages';
 import { baseLocale, extractLocaleFromHeader, isLocale } from '$lib/paraglide/runtime';
 import { setRequestLocale } from '../hooks.server';
-import { field, validateTimes } from '$lib/forms';
+import { field, validateTimes } from '$lib/forms/forms';
 import type { DateOption, Locale, Participant, PollMode } from '$lib/types';
 import type { Actions, PageServerLoad } from './$types';
 
 type Row = Partial<Record<string, string>>;
 
-// The create page is the organizer's own, pre-submit: render it in the browser's
-// preferred locale and pre-select that in the language picker. Falls back to
-// baseLocale (da) when Accept-Language matches none of da/en/fr.
+/**
+ * Loads the create page, which is the organizer's own, pre-submit: renders it in
+ * the browser's preferred locale and pre-selects that in the language picker.
+ * Falls back to baseLocale (da) when Accept-Language matches none of da/en/fr.
+ */
 export const load: PageServerLoad = ({ request }) => {
 	const suggestedLocale: Locale = extractLocaleFromHeader(request) ?? baseLocale;
 	setRequestLocale(suggestedLocale);
 	return { suggestedLocale };
 };
 
-// Rebuild the dates/participants arrays from indexed named inputs
-// (`dates.0.value`, `participants.1.token`, ...). Only string fields are read.
+/**
+ * Rebuilds the dates/participants arrays from indexed named inputs
+ * (`dates.0.value`, `participants.1.token`, ...). Only string fields are read.
+ */
 function parseIndexed(form: FormData, prefix: string): Row[] {
 	const re = new RegExp(`^${prefix}\\.(\\d+)\\.(\\w+)$`);
 	const rows: Row[] = [];
