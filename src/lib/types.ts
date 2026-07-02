@@ -34,6 +34,10 @@ export interface EventDraft {
 
 export type Preference = 'preferred' | 'available' | 'unavailable';
 
+// closed = the organizer picked final date(s); cancelled = closed without a
+// pick (abandoned). Reopening returns to open and clears any selection.
+export type EventStatus = 'open' | 'closed' | 'cancelled';
+
 export interface EventRow {
 	id: string;
 	title: string;
@@ -42,7 +46,7 @@ export interface EventRow {
 	pollMode: PollMode;
 	organizerToken: string;
 	shareToken: string;
-	status: 'open' | 'closed';
+	status: EventStatus;
 	createdAt: string;
 }
 
@@ -52,6 +56,8 @@ export interface DateOptionRow {
 	startsAt: string | null;
 	endsAt: string | null;
 	sortOrder: number;
+	// True on the option(s) the organizer picked when closing; false while open.
+	selected: boolean;
 }
 
 export interface InviteeRow {

@@ -1,3 +1,5 @@
+import type { DateOptionResult } from '$lib/types';
+
 // Best-option ranking (specs/results/spec.md): rank by fewest Unavailable, then
 // most Preferred. Ties → every row matching the top (unavailable, preferred)
 // pair is flagged best, leaving the final call to the organizer.
@@ -16,6 +18,44 @@ export function markBest<T extends { preferred: number; available: number; unava
 		...r,
 		isBest: anyAnswered && r.unavailable === top.unavailable && r.preferred === top.preferred
 	}));
+}
+
+// Outcome view for a decided poll (specs/poll-closing): per-option counts and
+// percentages shown to participants after close. Null when no option is
+// selected - polls closed before decisions existed render as plain closed.
+// Percentage denominator is that option's full roster (answered + not), the
+// same basis the organizer dashboard uses.
+export interface OutcomeRow {
+	id: string;
+	chosen: boolean;
+	preferred: number;
+	available: number;
+	unavailable: number;
+	preferredPct: number;
+	availablePct: number;
+	unavailablePct: number;
+}
+
+export function buildOutcome(
+	options: { id: string; selected: boolean }[],
+	counts: Map<string, DateOptionResult>
+): OutcomeRow[] | null {
+	if (!options.some((o) => o.selected)) return null;
+	return options.map((o) => {
+		const c = counts.get(o.id) ?? { preferred: 0, available: 0, unavailable: 0, notAnswered: 0 };
+		const total = c.preferred + c.available + c.unavailable + c.notAnswered;
+		const pct = (n: number) => (total ? Math.round((n / total) * 100) : 0);
+		return {
+			id: o.id,
+			chosen: o.selected,
+			preferred: c.preferred,
+			available: c.available,
+			unavailable: c.unavailable,
+			preferredPct: pct(c.preferred),
+			availablePct: pct(c.available),
+			unavailablePct: pct(c.unavailable)
+		};
+	});
 }
 
 // Assert-based self-check, no test framework needed. Run directly with the runtime.

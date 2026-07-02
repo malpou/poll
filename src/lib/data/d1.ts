@@ -23,7 +23,7 @@ function mapEvent(r: Record<string, unknown>): EventRow {
 		pollMode: r.poll_mode as EventRow['pollMode'],
 		organizerToken: r.organizer_token as string,
 		shareToken: r.share_token as string,
-		status: r.status as 'open' | 'closed',
+		status: r.status as EventRow['status'],
 		createdAt: r.created_at as string
 	};
 }
@@ -34,7 +34,8 @@ function mapDateOption(r: Record<string, unknown>): DateOptionRow {
 		eventId: r.event_id as string,
 		startsAt: (r.starts_at as string | null) ?? null,
 		endsAt: (r.ends_at as string | null) ?? null,
-		sortOrder: r.sort_order as number
+		sortOrder: r.sort_order as number,
+		selected: r.selected === 1
 	};
 }
 
@@ -336,8 +337,32 @@ export function d1Provider(db: D1Database): DataProvider {
 			]);
 		},
 
-		async setEventStatus(eventId, status) {
-			await db.prepare(`UPDATE events SET status = ? WHERE id = ?`).bind(status, eventId).run();
+		async closeEvent(eventId, selectedOptionIds) {
+			const marks = selectedOptionIds.map(() => '?').join(', ');
+			await db.batch([
+				db.prepare(`UPDATE events SET status = 'closed' WHERE id = ?`).bind(eventId),
+				db
+					.prepare(
+						`UPDATE date_options SET selected = CASE WHEN id IN (${marks}) THEN 1 ELSE 0 END
+						 WHERE event_id = ?`
+					)
+					.bind(...selectedOptionIds, eventId)
+			]);
+		},
+
+		async cancelEvent(eventId) {
+			await db.batch([
+				db.prepare(`UPDATE events SET status = 'cancelled' WHERE id = ?`).bind(eventId),
+				db.prepare(`UPDATE date_options SET selected = 0 WHERE event_id = ?`).bind(eventId)
+			]);
+		},
+
+		async reopenEvent(eventId) {
+			// Clearing the flags means closing again always asks for a fresh pick.
+			await db.batch([
+				db.prepare(`UPDATE events SET status = 'open' WHERE id = ?`).bind(eventId),
+				db.prepare(`UPDATE date_options SET selected = 0 WHERE event_id = ?`).bind(eventId)
+			]);
 		},
 
 		async setEventLocale(eventId, locale) {

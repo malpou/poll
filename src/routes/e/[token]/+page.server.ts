@@ -64,6 +64,7 @@ export const load: PageServerLoad = async ({ params, platform, url }) => {
 			};
 			return {
 				id: d.id,
+				chosen: d.selected,
 				preferred: c.preferred,
 				available: c.available,
 				unavailable: c.unavailable,
@@ -92,7 +93,11 @@ export const load: PageServerLoad = async ({ params, platform, url }) => {
 		description: event.description,
 		locale: event.locale,
 		pollMode: event.pollMode,
-		closed: event.status === 'closed',
+		status: event.status,
+		// The decided dates for the closed banner - empty unless closed with a pick.
+		chosenDates: event.dateOptions
+			.filter((d) => d.selected)
+			.map((d) => formatDateOption(d.startsAt, d.endsAt, event.locale)),
 		results: resultsView,
 		// One summary of who has answered, shown under the results heading. Open mode
 		// has no fixed roster, so it drops the "of Y" denominator.
@@ -130,10 +135,18 @@ async function resolve(platform: App.Platform | undefined, token: string) {
 	return { provider, event };
 }
 
+// A closed or cancelled poll is immutable except for reopening
+// (specs/poll-closing) - the UI hides the edit affordances, but the recorded
+// decision must also survive a crafted POST.
+function notOpen(event: { status: string }) {
+	return event.status !== 'open';
+}
+
 export const actions = {
 	saveDetails: async ({ params, request, platform }) => {
 		const { provider, event } = await resolve(platform, params.token);
 		if (!event) return fail(404);
+		if (notOpen(event)) return fail(409);
 		const form = await request.formData();
 		const title = field(form, 'title');
 		// Validation error copy renders in the poll's own locale.
@@ -158,6 +171,7 @@ export const actions = {
 	addOption: async ({ params, request, platform }) => {
 		const { provider, event } = await resolve(platform, params.token);
 		if (!event) return fail(404);
+		if (notOpen(event)) return fail(409);
 		const form = await request.formData();
 		const date = dateInput(form);
 		if (!date.value) return fail(400, { error: 'value' });
@@ -170,6 +184,7 @@ export const actions = {
 	editOption: async ({ params, request, platform }) => {
 		const { provider, event } = await resolve(platform, params.token);
 		if (!event) return fail(404);
+		if (notOpen(event)) return fail(409);
 		const form = await request.formData();
 		const optionId = field(form, 'optionId');
 		const date = dateInput(form);
@@ -184,6 +199,7 @@ export const actions = {
 	removeOption: async ({ params, request, platform }) => {
 		const { provider, event } = await resolve(platform, params.token);
 		if (!event) return fail(404);
+		if (notOpen(event)) return fail(409);
 		const optionId = field(await request.formData(), 'optionId');
 		if (!event.dateOptions.some((d) => d.id === optionId)) return fail(404);
 		await provider.removeDateOption(optionId);
@@ -224,6 +240,7 @@ export const actions = {
 	addInvitee: async ({ params, request, platform }) => {
 		const { provider, event } = await resolve(platform, params.token);
 		if (!event) return fail(404);
+		if (notOpen(event)) return fail(409);
 		const label = field(await request.formData(), 'label');
 		if (!label) return fail(400, { error: 'label' });
 		await provider.addInvitee(event.id, label);
@@ -233,6 +250,7 @@ export const actions = {
 	renameInvitee: async ({ params, request, platform }) => {
 		const { provider, event } = await resolve(platform, params.token);
 		if (!event) return fail(404);
+		if (notOpen(event)) return fail(409);
 		const form = await request.formData();
 		const inviteeId = field(form, 'inviteeId');
 		const label = field(form, 'label');
@@ -245,23 +263,44 @@ export const actions = {
 	removeInvitee: async ({ params, request, platform }) => {
 		const { provider, event } = await resolve(platform, params.token);
 		if (!event) return fail(404);
+		if (notOpen(event)) return fail(409);
 		const inviteeId = field(await request.formData(), 'inviteeId');
 		if (!event.invitees.some((i) => i.id === inviteeId)) return fail(404);
 		await provider.removeInvitee(inviteeId);
 		return { ok: true };
 	},
 
-	close: async ({ params, platform }) => {
+	close: async ({ params, request, platform }) => {
 		const { provider, event } = await resolve(platform, params.token);
 		if (!event) return fail(404);
-		await provider.setEventStatus(event.id, 'closed');
+		if (notOpen(event)) return fail(409);
+		// Closing means deciding: at least one chosen option, every id belonging
+		// to this event (specs/poll-closing).
+		const form = await request.formData();
+		const ids = [
+			...new Set(form.getAll('selectedOptionIds').filter((v): v is string => typeof v === 'string'))
+		];
+		const valid = new Set(event.dateOptions.map((d) => d.id));
+		if (ids.length === 0 || !ids.every((id) => valid.has(id)))
+			return fail(400, { error: m.errorNoSelection({}, { locale: event.locale }) });
+		await provider.closeEvent(event.id, ids);
+		return { ok: true };
+	},
+
+	cancel: async ({ params, platform }) => {
+		const { provider, event } = await resolve(platform, params.token);
+		if (!event) return fail(404);
+		if (notOpen(event)) return fail(409);
+		await provider.cancelEvent(event.id);
 		return { ok: true };
 	},
 
 	reopen: async ({ params, platform }) => {
 		const { provider, event } = await resolve(platform, params.token);
 		if (!event) return fail(404);
-		await provider.setEventStatus(event.id, 'open');
+		if (!notOpen(event)) return fail(409);
+		// Also discards the chosen dates - closing again asks for a fresh pick.
+		await provider.reopenEvent(event.id);
 		return { ok: true };
 	}
 } satisfies Actions;

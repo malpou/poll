@@ -1,5 +1,4 @@
 <script lang="ts">
-	import { onMount } from 'svelte';
 	import { fly } from 'svelte/transition';
 	import { cubicOut } from 'svelte/easing';
 	import { enhance } from '$app/forms';
@@ -9,6 +8,7 @@
 	import IconButton from '$lib/components/atoms/IconButton.svelte';
 	import LinkChip from '$lib/components/atoms/LinkChip.svelte';
 	import Toast from '$lib/components/atoms/Toast.svelte';
+	import ResultBars from '$lib/components/molecules/ResultBars.svelte';
 	import {
 		X,
 		TriangleAlert,
@@ -24,7 +24,7 @@
 		LockOpen
 	} from '@lucide/svelte';
 	import { m } from '$lib/paraglide/messages';
-	import type { Locale, PollMode } from '$lib/types';
+	import type { EventStatus, Locale, PollMode } from '$lib/types';
 
 	interface OptionView {
 		id: string;
@@ -38,6 +38,7 @@
 	}
 	interface ResultView {
 		id: string;
+		chosen: boolean;
 		preferred: number;
 		available: number;
 		unavailable: number;
@@ -68,7 +69,8 @@
 		description: string | null;
 		locale: Locale;
 		pollMode: PollMode;
-		closed: boolean;
+		status: EventStatus;
+		chosenDates: { weekday: string; dateLabel: string; timeRange: string }[];
 		respondedLabel: string;
 		results: ResultView[];
 		options: OptionView[];
@@ -82,11 +84,14 @@
 	let { data }: { data: { invalid: true } | ValidData } = $props();
 	const view = $derived<ValidData | null>(data.invalid ? null : data);
 
+	// Closed and cancelled polls share the read-only dashboard affordances.
+	const closed = $derived(!!view && view.status !== 'open');
+
 	// 'partial' = answered before more dates were added. Surfaced in a callout
 	// with their links so the organizer can chase the missing answers. Closed
 	// polls hide it - nobody can respond anyway.
 	const partials = $derived(
-		view && !view.closed ? view.invitees.filter((i) => i.status === 'partial') : []
+		view && !closed ? view.invitees.filter((i) => i.status === 'partial') : []
 	);
 
 	// Invitee pill: partial gets its own copy; both incomplete states stay amber.
@@ -104,18 +109,16 @@
 	// Title/description inline-edit toggle for the event header.
 	let editingDetails = $state(false);
 
+	// Closing flow: "Close poll" enters selection mode, where each result card
+	// gets a checkbox; confirming posts the picked ids. Cancelling (no decision)
+	// and backing out live in the same block.
+	let selecting = $state(false);
+	let picked = $state<Record<string, boolean>>({});
+	const pickedIds = $derived(Object.keys(picked).filter((id) => picked[id]));
+
 	// Expanded result cards (show who chose what) and expanded invitee notes.
 	let expandedResults = $state<Record<string, boolean>>({});
 	let expandedNotes = $state<Record<string, boolean>>({});
-
-	// Results bars grow from 0 to their width once mounted (DESIGN.md: animate
-	// width on mount, ~450ms ease-out). Reduced-motion → straight to full width.
-	const reduced =
-		typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-	let revealed = $state(reduced);
-	onMount(() => {
-		if (!revealed) requestAnimationFrame(() => (revealed = true));
-	});
 
 	let toastOpen = $state(false);
 	let toastTimer: ReturnType<typeof setTimeout> | undefined;
@@ -137,6 +140,8 @@
 		if (result.type === 'success') {
 			editing = null;
 			editingDetails = false;
+			selecting = false;
+			picked = {};
 		}
 		return update();
 	};
@@ -241,7 +246,7 @@
 						<span class="font-semibold text-ink">{localeLabel(view.locale)}</span></span
 					>
 				</div>
-				{#if !view.closed}
+				{#if !closed}
 					<div class="mt-3">
 						<Button
 							variant="ghost"
@@ -253,15 +258,26 @@
 				{/if}
 			{/if}
 
-			<!-- Poll controls on their own row, under the title/description. -->
+			<!-- Poll controls on their own row, under the title/description. Closing
+			     means deciding: the button enters a selection mode on the results
+			     cards; confirm/cancel/back live under the results section. -->
 			<div class="mt-5 flex flex-wrap items-center gap-2.5">
-				<form method="POST" action={view.closed ? '?/reopen' : '?/close'} use:enhance={refresh}>
-					<Button variant="ghost" type="submit">
-						{#if view.closed}<LockOpen size={14} />{m.reopenPoll()}{:else}<Lock
-								size={14}
-							/>{m.closePoll()}{/if}
+				{#if closed}
+					<form method="POST" action="?/reopen" use:enhance={refresh}>
+						<Button variant="ghost" type="submit">
+							<LockOpen size={14} />{m.reopenPoll()}
+						</Button>
+					</form>
+				{:else if !selecting}
+					<Button
+						variant="ghost"
+						onclick={() => {
+							selecting = true;
+						}}
+					>
+						<Lock size={14} />{m.closePoll()}
 					</Button>
-				</form>
+				{/if}
 			</div>
 		</div>
 
@@ -306,13 +322,40 @@
 			</div>
 		</div>
 
-		{#if view.closed}
+		{#if view.status === 'cancelled'}
 			<div
 				class="mb-6 flex items-center gap-2.5 rounded-xl border border-border bg-amber-tint px-4 py-3 text-sm font-semibold text-amber"
 			>
 				<span class="h-2 w-2 shrink-0 rounded-full bg-amber"></span>
-				{m.closedBanner()}
+				{m.cancelledBanner()}
 			</div>
+		{:else if view.status === 'closed'}
+			{#if view.chosenDates.length > 0}
+				<!-- The decision, front and center: closed + the chosen date(s). -->
+				<div class="mb-6 rounded-xl border border-primary bg-primary-tint px-4 py-3.5">
+					<div class="flex items-center gap-2 text-sm font-bold text-primary">
+						<Lock size={16} class="shrink-0" />
+						{view.chosenDates.length > 1 ? m.chosenDatesHeading() : m.chosenDateHeading()}
+					</div>
+					<div class="mt-1.5 flex flex-col gap-0.5">
+						{#each view.chosenDates as d (d.dateLabel + d.timeRange)}
+							<div class="text-[15px] font-bold capitalize text-ink">
+								{d.weekday}
+								{d.dateLabel}{#if d.timeRange}
+									<span class="font-semibold text-ink-muted">· {d.timeRange}</span>{/if}
+							</div>
+						{/each}
+					</div>
+				</div>
+			{:else}
+				<!-- Poll closed before decisions existed: plain closed notice. -->
+				<div
+					class="mb-6 flex items-center gap-2.5 rounded-xl border border-border bg-amber-tint px-4 py-3 text-sm font-semibold text-amber"
+				>
+					<span class="h-2 w-2 shrink-0 rounded-full bg-amber"></span>
+					{m.closedBanner()}
+				</div>
+			{/if}
 		{/if}
 
 		<!-- Chase-up callout: participants who answered before more dates were added,
@@ -349,14 +392,30 @@
 				</div>
 				<!-- One "who answered" summary for the whole poll, not per card. -->
 				<div class="mb-3.5 text-[13px] font-semibold text-ink-muted">{view.respondedLabel}</div>
+				{#if selecting}
+					<div class="mb-3.5 text-[13px] font-semibold text-primary">{m.closeSelectHint()}</div>
+				{/if}
 				<div class="flex flex-col gap-3">
 					{#each view.results as r, i (r.id)}
 						<div
 							in:fly={{ y: 8, duration: 240, delay: i * 40, easing: cubicOut }}
-							class="rounded-xl border border-border bg-card p-4"
+							class="rounded-xl border bg-card p-4 transition-colors duration-150 {selecting &&
+							picked[r.id]
+								? 'border-primary'
+								: 'border-border'}"
 						>
 							<div class="flex flex-wrap items-center justify-between gap-2.5">
 								<div class="flex items-center gap-2.5">
+									{#if selecting}
+										<!-- The closing pick: one checkbox per date, posted on confirm. -->
+										<input
+											type="checkbox"
+											aria-label={m.selectDateLabel()}
+											checked={picked[r.id] ?? false}
+											onchange={() => (picked[r.id] = !picked[r.id])}
+											class="h-5 w-5 shrink-0 cursor-pointer accent-[var(--color-primary,#1B3A7B)]"
+										/>
+									{/if}
 									<div>
 										<div class="text-[15px] font-bold capitalize text-ink">{r.weekday}</div>
 										<div class="text-[13px] text-ink-muted">
@@ -364,7 +423,14 @@
 												· {r.timeRange}{/if}
 										</div>
 									</div>
-									{#if r.isBest}
+									{#if r.chosen}
+										<span
+											class="whitespace-nowrap rounded-full bg-primary-tint px-2.5 py-1 text-[11px] font-bold uppercase tracking-[0.04em] text-primary"
+										>
+											{m.chosenBadge()}
+										</span>
+									{:else if r.isBest && !closed}
+										<!-- The recommendation only matters while the call is still open. -->
 										<span
 											class="whitespace-nowrap rounded-full bg-amber-tint px-2.5 py-1 text-[11px] font-bold uppercase tracking-[0.04em] text-amber"
 										>
@@ -386,30 +452,55 @@
 								</div>
 							</div>
 
-							<div class="mt-4 flex flex-col gap-2">
-								{#each [{ label: m.prefPreferred(), count: r.preferred, pct: r.preferredPct, color: 'bg-amber', names: r.preferredNames }, { label: m.prefAvailable(), count: r.available, pct: r.availablePct, color: 'bg-good', names: r.availableNames }, { label: m.prefUnavailable(), count: r.unavailable, pct: r.unavailablePct, color: 'bg-bad', names: r.unavailableNames }] as bar (bar.label)}
-									<div class="grid grid-cols-[92px_1fr_22px] items-center gap-2.5">
-										<div class="text-xs font-semibold text-ink-muted">{bar.label}</div>
-										<div class="h-2.5 overflow-hidden rounded-md bg-card-alt">
-											<div
-												class="h-full rounded-md {bar.color}"
-												style="width:{revealed ? bar.pct : 0}%; transition:{reduced
-													? 'none'
-													: 'width 450ms cubic-bezier(0.16,1,0.3,1)'};"
-											></div>
-										</div>
-										<div class="text-right text-xs font-bold text-ink">{bar.count}</div>
-									</div>
-									{#if expandedResults[r.id] && bar.names.length > 0}
-										<div class="pl-[102px] text-[13px] text-ink-muted">
-											{bar.names.join(', ')}
-										</div>
-									{/if}
-								{/each}
+							<div class="mt-4">
+								<ResultBars
+									preferred={r.preferred}
+									available={r.available}
+									unavailable={r.unavailable}
+									preferredPct={r.preferredPct}
+									availablePct={r.availablePct}
+									unavailablePct={r.unavailablePct}
+									names={{
+										preferred: r.preferredNames,
+										available: r.availableNames,
+										unavailable: r.unavailableNames
+									}}
+									expanded={expandedResults[r.id] ?? false}
+								/>
 							</div>
 						</div>
 					{/each}
 				</div>
+
+				{#if selecting}
+					<!-- Confirm the pick, cancel the whole poll (no decision), or back out. -->
+					<div class="mt-4 flex flex-wrap items-center gap-2.5">
+						<form method="POST" action="?/close" use:enhance={refresh}>
+							{#each pickedIds as id (id)}
+								<input type="hidden" name="selectedOptionIds" value={id} />
+							{/each}
+							<Button variant="ghost" type="submit" disabled={pickedIds.length === 0}>
+								<Lock size={14} />{m.confirmClose()}
+							</Button>
+						</form>
+						<form
+							method="POST"
+							action="?/cancel"
+							use:enhance={confirmingRefresh(m.confirmCancelPoll(), true)}
+						>
+							<Button variant="ghost" type="submit">{m.cancelPoll()}</Button>
+						</form>
+						<Button
+							variant="ghost"
+							onclick={() => {
+								selecting = false;
+								picked = {};
+							}}
+						>
+							{m.closeBack()}
+						</Button>
+					</div>
+				{/if}
 			</section>
 		{/if}
 
@@ -419,7 +510,7 @@
 				<div class="text-[13px] font-bold uppercase tracking-[0.06em] text-ink-muted">
 					{m.datesSection()}
 				</div>
-				{#if !view.closed && view.options.length > 1}
+				{#if !closed && view.options.length > 1}
 					<form method="POST" action="?/sortOptions" use:enhance={refresh}>
 						<Button variant="ghost" type="submit"
 							><ArrowUpNarrowWide size={14} />{m.sortByDate()}</Button
@@ -475,7 +566,7 @@
 										<div class="text-[13px] text-ink-muted">{opt.timeRange}</div>
 									{/if}
 								</div>
-								{#if !view.closed}
+								{#if !closed}
 									<div class="flex shrink-0 items-center gap-2">
 										{#if view.options.length > 1}
 											{#each [{ dir: 'up', Icon: ChevronUp, label: m.moveUp(), off: i === 0 }, { dir: 'down', Icon: ChevronDown, label: m.moveDown(), off: i === view.options.length - 1 }] as mv (mv.dir)}
@@ -516,7 +607,7 @@
 				{/each}
 			</div>
 
-			{#if !view.closed}
+			{#if !closed}
 				<form method="POST" action="?/addOption" use:enhance={refresh} class="mt-2.5">
 					<div class="rounded-xl border border-dashed border-border bg-card p-3">
 						<div class="flex items-center gap-2.5">
@@ -587,7 +678,7 @@
 							class="rounded-xl border border-border bg-card p-3"
 						>
 							<div class="flex items-center gap-2.5">
-								{#if view.closed}
+								{#if closed}
 									<div class="flex-1 text-[15px] font-semibold text-ink">{inv.label}</div>
 								{:else}
 									<form
@@ -618,7 +709,7 @@
 										💬
 									</IconButton>
 								{/if}
-								{#if !view.closed}
+								{#if !closed}
 									<form
 										method="POST"
 										action="?/removeInvitee"
@@ -651,7 +742,7 @@
 					{/each}
 				</div>
 
-				{#if !view.closed}
+				{#if !closed}
 					<form method="POST" action="?/addInvitee" use:enhance={refresh} class="mt-2.5">
 						<div class="rounded-xl border border-dashed border-border bg-card p-3">
 							<div class="flex items-center gap-2.5">
