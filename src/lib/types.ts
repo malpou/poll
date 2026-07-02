@@ -21,9 +21,10 @@ export interface Participant {
 
 export type PollMode = 'assigned' | 'open';
 
-// dates = candidate-date options; question = free-form text options. Chosen at
-// creation, immutable after; validated at the form boundary (no SQL CHECK).
-export const POLL_TYPES = ['dates', 'question'] as const;
+// dates = candidate-date options; question = free-form text options; rsvp =
+// one fixed date, yes/no answers. Chosen at creation, immutable after;
+// validated at the form boundary (no SQL CHECK).
+export const POLL_TYPES = ['dates', 'question', 'rsvp'] as const;
 export type PollType = (typeof POLL_TYPES)[number];
 
 // The poll's highlighter accent; validated at the form boundary (no SQL CHECK).

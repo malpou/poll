@@ -231,10 +231,13 @@ export const actions = {
 
 		// Choice toggles ride the same form. Disabling folds recorded answers into
 		// the fixed pair (Preferred→Available, unsure→Unavailable) in the provider.
-		const allowPreferred = field(form, 'allowPreferred') !== '0';
-		const allowUnsure = field(form, 'allowUnsure') === '1';
-		if (allowPreferred !== event.allowPreferred || allowUnsure !== event.allowUnsure)
-			await provider.setResponseChoices(event.id, allowPreferred, allowUnsure);
+		// RSVP polls are strictly yes/no - the toggles never apply, even crafted.
+		if (event.pollType !== 'rsvp') {
+			const allowPreferred = field(form, 'allowPreferred') !== '0';
+			const allowUnsure = field(form, 'allowUnsure') === '1';
+			if (allowPreferred !== event.allowPreferred || allowUnsure !== event.allowUnsure)
+				await provider.setResponseChoices(event.id, allowPreferred, allowUnsure);
+		}
 
 		await purgeEvent(platform, url.origin, params.token, event);
 		return { ok: true };
@@ -244,6 +247,9 @@ export const actions = {
 		const { provider, event } = await resolve(platform, params.token);
 		if (!event) return fail(404);
 		if (notOpen(event)) return fail(409);
+		// An RSVP poll keeps exactly one option (openspec/specs/rsvp-poll) - the
+		// UI hides the form, but a crafted POST must be rejected too.
+		if (event.pollType === 'rsvp') return fail(409);
 		const form = await request.formData();
 		// Question polls add one text option at a time; empty text is rejected.
 		if (event.pollType === 'question') {
@@ -300,6 +306,7 @@ export const actions = {
 		const { provider, event } = await resolve(platform, params.token);
 		if (!event) return fail(404);
 		if (notOpen(event)) return fail(409);
+		if (event.pollType === 'rsvp') return fail(409);
 		const optionId = field(await request.formData(), 'optionId');
 		if (!event.dateOptions.some((d) => d.id === optionId)) return fail(404);
 		await provider.removeDateOption(optionId);
@@ -311,6 +318,7 @@ export const actions = {
 		const { provider, event } = await resolve(platform, params.token);
 		if (!event) return fail(404);
 		if (notOpen(event)) return fail(409);
+		if (event.pollType === 'rsvp') return fail(409);
 		const form = await request.formData();
 		const optionId = field(form, 'optionId');
 		const direction = field(form, 'direction');
@@ -331,6 +339,7 @@ export const actions = {
 		const { provider, event } = await resolve(platform, params.token);
 		if (!event) return fail(404);
 		if (notOpen(event)) return fail(409);
+		if (event.pollType === 'rsvp') return fail(409);
 		// Chronological ascending. UTC ISO strings compare lexically; a malformed
 		// option with no starts_at sinks to the end. Sort is stable, so ties keep
 		// their current order.
@@ -388,11 +397,18 @@ export const actions = {
 		if (!event) return fail(404);
 		if (notOpen(event)) return fail(409);
 		// Closing means deciding: at least one chosen option, every id belonging
-		// to this event (openspec/specs/poll-closing).
-		const form = await request.formData();
-		const ids = [
-			...new Set(form.getAll('selectedOptionIds').filter((v): v is string => typeof v === 'string'))
-		];
+		// to this event (openspec/specs/poll-closing). An RSVP has no pick to
+		// make - confirming records its lone option as chosen (rsvp-poll).
+		const ids =
+			event.pollType === 'rsvp'
+				? event.dateOptions.map((d) => d.id)
+				: [
+						...new Set(
+							(await request.formData())
+								.getAll('selectedOptionIds')
+								.filter((v): v is string => typeof v === 'string')
+						)
+					];
 		const valid = new Set(event.dateOptions.map((d) => d.id));
 		if (ids.length === 0 || !ids.every((id) => valid.has(id)))
 			return fail(400, {

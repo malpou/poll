@@ -14,6 +14,8 @@ each of the event's enabled choices, and SHALL show one overall "who
 answered" summary under the results heading. An "I don't know" answer counts
 as having answered. Only enabled choices appear — disabling a choice folds
 its recorded answers into Available or Unavailable (see event-management).
+An RSVP poll shows a headcount instead of the per-option summary (see
+specs/rsvp-poll).
 
 #### Scenario: View the summary
 
@@ -122,8 +124,10 @@ strongest availability, ranking by a weighted net score of
 answers carry no weight and SHALL NOT affect the score. Ties on the same score
 highlight every matching option. With no availability answers at all
 (Preferred/Available/Unavailable — "I don't know" alone does not count), no
-option is highlighted. Once the poll is closed or cancelled, the highlight
-gives way to the recorded outcome (see specs/poll-closing).
+option is highlighted. An RSVP poll has a single date, so no best-option
+highlight is shown on it (see specs/rsvp-poll). Once the poll is closed or
+cancelled, the highlight gives way to the recorded outcome (see
+specs/poll-closing).
 
 #### Scenario: A clear winner
 

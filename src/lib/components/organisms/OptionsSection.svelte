@@ -25,6 +25,9 @@
 	} = $props();
 
 	const question = $derived(pollType === 'question');
+	// An RSVP keeps exactly one date: editable while open, never added to,
+	// removed, or reordered (openspec/specs/rsvp-poll).
+	const rsvp = $derived(pollType === 'rsvp');
 
 	// Which option is in inline-edit mode (id) - null when none.
 	let editing = $state<string | null>(null);
@@ -39,7 +42,9 @@
 {#key locale}
 	<section class="mb-10">
 		<div class="mb-3.5 flex items-center justify-between gap-2.5">
-			<SectionHeading text={question ? m.optionsSection() : m.datesSection()} />
+			<SectionHeading
+				text={question ? m.optionsSection() : rsvp ? m.dateSectionRsvp() : m.datesSection()}
+			/>
 			{#if !closed && !question && options.length > 1}
 				<form method="POST" action="?/sortOptions" use:enhance={refreshThen()}>
 					<Button variant="ghost" type="submit"
@@ -129,17 +134,19 @@
 											editing = opt.id;
 										}}><Pencil size={16} /></Button
 									>
-									<form
-										method="POST"
-										action="?/removeOption"
-										use:enhance={confirmingRefresh(
-											question ? m.confirmDeleteOptionQuestion() : m.confirmDeleteOption(),
-											opt.hasResponses
-										)}
-									>
-										<input type="hidden" name="optionId" value={opt.id} />
-										<IconButton label={m.remove()} type="submit"><X size={16} /></IconButton>
-									</form>
+									{#if !rsvp}
+										<form
+											method="POST"
+											action="?/removeOption"
+											use:enhance={confirmingRefresh(
+												question ? m.confirmDeleteOptionQuestion() : m.confirmDeleteOption(),
+												opt.hasResponses
+											)}
+										>
+											<input type="hidden" name="optionId" value={opt.id} />
+											<IconButton label={m.remove()} type="submit"><X size={16} /></IconButton>
+										</form>
+									{/if}
 								</div>
 							{/if}
 						</div>
@@ -148,7 +155,7 @@
 			{/each}
 		</div>
 
-		{#if !closed}
+		{#if !closed && !rsvp}
 			{#if question}
 				<form
 					method="POST"

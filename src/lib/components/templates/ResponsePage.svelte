@@ -75,6 +75,7 @@
 	const toast = createToast();
 
 	const question = $derived(!!view && view.pollType === 'question');
+	const rsvp = $derived(!!view && view.pollType === 'rsvp');
 	const nameOk = $derived(mode === 'assigned' || name.trim().length > 0);
 	const allAnswered = $derived(
 		!!view &&
@@ -159,11 +160,17 @@
 						/>
 					{/if}
 					<p class="text-lead font-semibold text-ink">
-						{question ? m.responseIntroQuestion() : m.responseIntro()}
+						{question
+							? m.responseIntroQuestion()
+							: rsvp
+								? m.responseIntroRsvp()
+								: m.responseIntro()}
 					</p>
 
 					<div class="flex flex-col gap-3.5">
-						<SectionHeading text={question ? m.optionsQuestion() : m.datesQuestion()} />
+						<SectionHeading
+							text={question ? m.optionsQuestion() : rsvp ? m.rsvpQuestion() : m.datesQuestion()}
+						/>
 						<!-- Only relevant when times exist; date-only and question polls have
 						     no zone to name. -->
 						{#if view.dates.some((d) => d.timeRange)}

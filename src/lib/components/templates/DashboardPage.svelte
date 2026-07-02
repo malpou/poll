@@ -56,6 +56,14 @@
 		view && !closed ? view.invitees.filter((i) => i.status === 'partial') : []
 	);
 
+	// RSVP headcount: who hasn't answered yet. Only assigned mode has a fixed
+	// roster to count against; open mode shows counts only.
+	const pendingNames = $derived(
+		view?.pollType === 'rsvp' && view.pollMode === 'assigned'
+			? view.invitees.filter((i) => i.status === 'none').map((i) => i.label)
+			: []
+	);
+
 	// Live language preview (same trick as the create page): picking a language
 	// in the edit form flips <html lang> - which m.*() reads - and this state,
 	// which every organism keys its markup on. Saving persists it; cancelling
@@ -127,6 +135,7 @@
 				allowPreferred={view.allowPreferred}
 				allowUnsure={view.allowUnsure}
 				pollType={view.pollType}
+				{pendingNames}
 				{closed}
 				bind:selecting
 				locale={uiLocale}

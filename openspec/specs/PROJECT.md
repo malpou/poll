@@ -49,14 +49,16 @@ for this write volume.
     (preferred → available, unsure → unavailable); re-enabling never restores
   - accent ∈ {yellow, pink, green, blue}, default yellow - the poll's
     highlighter color, validated at the form boundary (no SQL CHECK)
-  - poll_type ∈ {dates, question}, default dates, validated at the form
+  - poll_type ∈ {dates, question, rsvp}, default dates, validated at the form
     boundary (no SQL CHECK). Immutable after creation. `question`: the poll
     asks a free-form question (title/description) over 2+ text options; no
-    timezone surfaced, no calendar, no sort-by-date
+    timezone surfaced, no calendar, no sort-by-date. `rsvp`: one fixed
+    date/time (exactly one date_options row), strict yes/no answers stored as
+    available/unavailable with both choice toggles forced off
 - `date_options(id, event_id, starts_at, ends_at, label, sort_order, selected)`
-  - one row per option regardless of poll type. Dates polls: `starts_at`/
-    `ends_at` set, `label` null. Question polls: `label` holds the option's
-    text, `starts_at`/`ends_at` null
+  - one row per option regardless of poll type. Dates and RSVP polls:
+    `starts_at`/`ends_at` set, `label` null. Question polls: `label` holds
+    the option's text, `starts_at`/`ends_at` null
   - `starts_at` and `ends_at` are both optional (nullable); `ends_at` requires `starts_at`
   - `selected` ∈ {0, 1} - flagged on the option(s) the organizer picked when
     closing; always 0 while the poll is open or cancelled

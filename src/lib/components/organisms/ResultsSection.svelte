@@ -19,7 +19,8 @@
 		closed,
 		selecting = $bindable(),
 		locale,
-		pollType = 'dates'
+		pollType = 'dates',
+		pendingNames = []
 	}: {
 		results: ResultView[];
 		respondedLabel: string;
@@ -29,9 +30,13 @@
 		selecting: boolean;
 		locale: Locale;
 		pollType?: PollType;
+		// RSVP headcount only: who hasn't answered (assigned mode; empty in open
+		// mode, which has no fixed roster).
+		pendingNames?: string[];
 	} = $props();
 
 	const question = $derived(pollType === 'question');
+	const rsvp = $derived(pollType === 'rsvp');
 
 	// Closing flow: each result card gets a checkbox; confirming posts the ids.
 	let picked = $state<Record<string, boolean>>({});
@@ -44,7 +49,55 @@
 </script>
 
 {#key locale}
-	{#if results.length > 0}
+	{#if rsvp && results.length > 0}
+		<!-- RSVP: a headcount instead of the per-option matrix - coming / not
+		     coming / pending with names (names stay with the organizer). Closing
+		     is confirm-or-cancel; no option to pick. -->
+		{@const r = results[0]}
+		<section class="mb-10">
+			<SectionHeading text={m.resultsSection()} class="mb-1" />
+			<div class="mb-3.5 text-caption font-semibold text-ink-muted">{respondedLabel}</div>
+			{#if selecting}
+				<div class="mb-3.5 text-caption font-semibold text-primary">{m.closeSelectHintRsvp()}</div>
+			{/if}
+			<div class="flex flex-col gap-3">
+				{#each [{ key: 'coming', label: m.headcountComing(), count: r.available, names: r.availableNames }, { key: 'notComing', label: m.headcountNotComing(), count: r.unavailable, names: r.unavailableNames }, { key: 'pending', label: m.pending(), count: pendingNames.length, names: pendingNames }] as row, i (row.key)}
+					{#if row.key !== 'pending' || row.count > 0}
+						<div in:fly={flyIn(i)} class="rounded-card border-2 border-border bg-card-alt p-4">
+							<div class="flex items-baseline gap-2.5">
+								<span class="text-lead font-bold text-ink">{row.label}</span>
+								<span class="text-body font-semibold text-ink-soft">{row.count}</span>
+							</div>
+							{#if row.names.length > 0}
+								<p class="mt-1 text-caption text-ink-muted">{row.names.join(', ')}</p>
+							{/if}
+						</div>
+					{/if}
+				{/each}
+			</div>
+
+			{#if selecting}
+				<!-- Confirm the event, cancel the whole poll (called off), or back out. -->
+				<div class="mt-4 flex flex-wrap items-center gap-2.5">
+					<form method="POST" action="?/close" use:enhance={refreshThen(leaveSelection)}>
+						<Button variant="ghost" type="submit">
+							<Lock size={14} />{m.confirmEventRsvp()}
+						</Button>
+					</form>
+					<form
+						method="POST"
+						action="?/cancel"
+						use:enhance={confirmingRefresh(m.confirmCancelPollRsvp(), true, leaveSelection)}
+					>
+						<Button variant="ghost" type="submit">{m.cancelPoll()}</Button>
+					</form>
+					<Button variant="ghost" onclick={leaveSelection}>
+						{m.closeBack()}
+					</Button>
+				</div>
+			{/if}
+		</section>
+	{:else if results.length > 0}
 		<section class="mb-10">
 			<SectionHeading text={m.resultsSection()} class="mb-1" />
 			<!-- One "who answered" summary for the whole poll, not per card. -->

@@ -54,7 +54,11 @@
 		<div class="flex flex-col gap-2.5">
 			{#if !allAnswered}
 				<div class="text-center text-caption text-ink-muted">
-					{pollType === 'question' ? m.chooseEachQuestion() : m.chooseEach()}
+					{pollType === 'question'
+						? m.chooseEachQuestion()
+						: pollType === 'rsvp'
+							? m.chooseEachRsvp()
+							: m.chooseEach()}
 				</div>
 			{/if}
 			<button

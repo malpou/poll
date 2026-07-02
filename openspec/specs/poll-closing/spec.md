@@ -10,10 +10,12 @@ outcome to everyone who holds a link.
 
 ### Requirement: Closing requires a decision
 
-The system SHALL require the organizer, when closing a poll, to select one or
-more of the poll's existing date options as the final date(s). The system SHALL
-reject a close with zero options selected, or with any option that does not
-belong to the poll. Closing SHALL stop further response changes.
+The system SHALL require the organizer, when closing a dates or question
+poll, to select one or more of the poll's existing date options as the final
+date(s). The system SHALL reject a close with zero options selected, or with
+any option that does not belong to the poll. Closing SHALL stop further
+response changes. Closing an RSVP poll asks for no selection — it is a
+confirm or call-off (see specs/rsvp-poll).
 
 #### Scenario: Close with one chosen date
 
@@ -69,10 +71,11 @@ organizer SHALL be asked to confirm before the cancellation takes effect.
 Once a poll is closed with chosen dates, the system SHALL show the chosen
 date(s) prominently on the invitee page (`/r`), the shared page (`/s`), and the
 organizer dashboard (`/e`), together with a per-date result distribution
-(Preferred / Available / Unavailable counts as bars). Participant pages SHALL
-show counts only, never which named person chose what. For a cancelled poll,
-the system SHALL show a cancelled message instead of chosen dates and
-distribution.
+(Preferred / Available / Unavailable counts as bars). A confirmed RSVP poll
+shows its date and the final headcount instead (see specs/rsvp-poll).
+Participant pages SHALL show counts only, never which named person chose
+what. For a cancelled poll, the system SHALL show a cancelled message instead
+of chosen dates and distribution.
 
 #### Scenario: Invitee link on a decided poll
 

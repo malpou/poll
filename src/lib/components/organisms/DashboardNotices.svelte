@@ -31,6 +31,7 @@
 	} = $props();
 
 	const question = $derived(pollType === 'question');
+	const rsvp = $derived(pollType === 'rsvp');
 </script>
 
 {#key locale}
@@ -58,13 +59,15 @@
 			<!-- The decision, front and center: closed + the chosen option(s). -->
 			<Callout
 				tone="ink"
-				title={question
-					? chosenDates.length > 1
-						? m.chosenOptionsHeading()
-						: m.chosenOptionHeading()
-					: chosenDates.length > 1
-						? m.chosenDatesHeading()
-						: m.chosenDateHeading()}
+				title={rsvp
+					? m.confirmedHeadingRsvp()
+					: question
+						? chosenDates.length > 1
+							? m.chosenOptionsHeading()
+							: m.chosenOptionHeading()
+						: chosenDates.length > 1
+							? m.chosenDatesHeading()
+							: m.chosenDateHeading()}
 				class="mb-6"
 			>
 				{#snippet icon()}<Lock size={16} class="shrink-0" />{/snippet}

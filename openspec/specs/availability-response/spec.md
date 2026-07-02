@@ -48,7 +48,8 @@ The system SHALL let an invitee mark each date option with one of the event's
 enabled choices — always Available and Unavailable, plus Preferred and
 "I don't know" when the event enables them — and SHALL persist the choices.
 An "I don't know" answer counts as answering that date. A submission
-carrying a choice the event does not offer SHALL be rejected.
+carrying a choice the event does not offer SHALL be rejected. Answering an
+RSVP poll is a strict yes/no on its single date (see specs/rsvp-poll).
 
 #### Scenario: Submit preferences
 

@@ -116,31 +116,35 @@
 					<option value="open">{m.modeOpen()}</option>
 				</SelectField>
 				<!-- Yes/No are never toggles - every event always offers both. Hidden
-				     inputs carry explicit values (see the create page). -->
-				<div class="flex flex-col gap-2">
-					<span class="text-2xs font-bold uppercase tracking-widest text-ink-muted"
-						>{m.fieldChoices()}</span
-					>
-					<label class="flex items-center gap-2 text-body text-ink">
-						<input
-							type="checkbox"
-							bind:checked={draftAllowPreferred}
-							class="h-5 w-5 cursor-pointer accent-ink"
-						/>
-						{m.prefPreferred()}
-					</label>
-					<label class="flex items-center gap-2 text-body text-ink">
-						<input
-							type="checkbox"
-							bind:checked={draftAllowUnsure}
-							class="h-5 w-5 cursor-pointer accent-ink"
-						/>
-						{m.prefUnsure()}
-					</label>
-					<p class="text-caption leading-relaxed text-ink-muted">{m.choicesHint()}</p>
-					<input type="hidden" name="allowPreferred" value={draftAllowPreferred ? '1' : '0'} />
-					<input type="hidden" name="allowUnsure" value={draftAllowUnsure ? '1' : '0'} />
-				</div>
+				     inputs carry explicit values (see the create page). RSVP polls
+				     are strictly yes/no, so no toggles at all (the server ignores
+				     them for rsvp too). -->
+				{#if pollType !== 'rsvp'}
+					<div class="flex flex-col gap-2">
+						<span class="text-2xs font-bold uppercase tracking-widest text-ink-muted"
+							>{m.fieldChoices()}</span
+						>
+						<label class="flex items-center gap-2 text-body text-ink">
+							<input
+								type="checkbox"
+								bind:checked={draftAllowPreferred}
+								class="h-5 w-5 cursor-pointer accent-ink"
+							/>
+							{m.prefPreferred()}
+						</label>
+						<label class="flex items-center gap-2 text-body text-ink">
+							<input
+								type="checkbox"
+								bind:checked={draftAllowUnsure}
+								class="h-5 w-5 cursor-pointer accent-ink"
+							/>
+							{m.prefUnsure()}
+						</label>
+						<p class="text-caption leading-relaxed text-ink-muted">{m.choicesHint()}</p>
+						<input type="hidden" name="allowPreferred" value={draftAllowPreferred ? '1' : '0'} />
+						<input type="hidden" name="allowUnsure" value={draftAllowUnsure ? '1' : '0'} />
+					</div>
+				{/if}
 				<AccentPicker bind:value={draftAccent} onpick={onpreviewaccent} />
 				<!-- Picking a language previews the whole dashboard immediately; saving
 				     persists it, cancelling rolls it back. Same live switch as /. -->

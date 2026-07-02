@@ -60,7 +60,7 @@ export interface EventSeed {
 	allowPreferred?: boolean; // omit → column default on
 	allowUnsure?: boolean; // omit → column default off
 	accent?: 'yellow' | 'pink' | 'green' | 'blue' | 'purple'; // omit → column default 'yellow'
-	pollType?: 'dates' | 'question'; // omit → column default 'dates'
+	pollType?: 'dates' | 'question' | 'rsvp'; // omit → column default 'dates'
 	createdAt?: string;
 }
 export interface DateOptionSeed {

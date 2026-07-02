@@ -24,17 +24,22 @@
 	// ink hatch for unavailable, pencil dots for unsure - all four distinct.
 	// Each segment stacks icon over label.
 	const question = $derived(pollType === 'question');
+	const rsvp = $derived(pollType === 'rsvp');
 	const META = $derived<
 		Record<Preference, { label: () => string; face: string; icon: typeof Star }>
 	>({
 		preferred: { label: m.prefPreferred, face: 'bg-hl', icon: Star },
 		available: {
-			label: question ? m.prefAvailableQuestion : m.prefAvailable,
+			label: rsvp ? m.prefAvailableRsvp : question ? m.prefAvailableQuestion : m.prefAvailable,
 			face: 'bg-wash',
 			icon: Check
 		},
 		unavailable: {
-			label: question ? m.prefUnavailableQuestion : m.prefUnavailable,
+			label: rsvp
+				? m.prefUnavailableRsvp
+				: question
+					? m.prefUnavailableQuestion
+					: m.prefUnavailable,
 			face: 'ink-hatch',
 			icon: X
 		},

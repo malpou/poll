@@ -39,10 +39,12 @@
 	// The poll's highlighter; data-accent on the form previews it live.
 	let accent = $state<Accent>('yellow');
 	// Immutable after creation: dates polls pick candidate dates, question polls
-	// carry free-form text options. Both lists survive a type switch pre-submit;
-	// only the picked type's rows are mounted, so only those post.
+	// carry free-form text options, RSVP polls carry exactly one date. Each list
+	// survives a type switch pre-submit; only the picked type's rows are
+	// mounted, so only those post.
 	let pollType = $state<PollType>('dates');
 	let dates = $state<DateOption[]>([]);
+	let rsvpDates = $state<DateOption[]>([]);
 	let textOptions = $state<{ id: string; text: string }[]>([]);
 	let participants = $state<Participant[]>([]);
 
@@ -101,7 +103,11 @@
 				<span class="hl-swipe">{m.createTitle()}</span>
 			</h1>
 			<p class="mb-8 max-w-prose text-body leading-relaxed text-ink-muted">
-				{pollType === 'question' ? m.createIntroQuestion() : m.createIntro()}
+				{pollType === 'question'
+					? m.createIntroQuestion()
+					: pollType === 'rsvp'
+						? m.createIntroRsvp()
+						: m.createIntro()}
 			</p>
 
 			<!-- The type decides what the rest of the form asks for, so it leads. -->
@@ -109,7 +115,7 @@
 				<legend class="mb-3 text-2xs font-bold uppercase tracking-widest text-ink-muted">
 					{m.fieldPollType()}
 				</legend>
-				{#each [{ value: 'dates', label: m.pollTypeDates() }, { value: 'question', label: m.pollTypeQuestion() }] as opt (opt.value)}
+				{#each [{ value: 'dates', label: m.pollTypeDates() }, { value: 'question', label: m.pollTypeQuestion() }, { value: 'rsvp', label: m.pollTypeRsvp() }] as opt (opt.value)}
 					{@const active = pollType === opt.value}
 					<label
 						class="relative flex cursor-pointer items-center gap-3 rounded-control border-2 p-3.5 text-body text-ink transition hover:border-ink {active
@@ -130,7 +136,11 @@
 					</label>
 				{/each}
 				<p class="text-caption leading-relaxed text-ink-muted">
-					{pollType === 'question' ? m.pollTypeQuestionHint() : m.pollTypeDatesHint()}
+					{pollType === 'question'
+						? m.pollTypeQuestionHint()
+						: pollType === 'rsvp'
+							? m.pollTypeRsvpHint()
+							: m.pollTypeDatesHint()}
 				</p>
 			</fieldset>
 
@@ -152,6 +162,16 @@
 					<SectionHeading text={m.optionsSection()} class="mb-1" />
 					<p class="mb-3.5 text-caption text-ink-muted">{m.optionsHint()}</p>
 					<TextOptionList bind:options={textOptions} />
+				</div>
+			{:else if pollType === 'rsvp'}
+				<div class="mb-10">
+					<SectionHeading text={m.dateSectionRsvp()} class="mb-1" />
+					<p class="mb-3.5 text-caption text-ink-muted">{m.dateHintRsvp()}</p>
+					<CalendarDatePicker bind:dates={rsvpDates} {locale} single />
+				</div>
+
+				<div class="mb-9">
+					<TimezoneCombobox name="timezone" bind:value={timezone} {locale} />
 				</div>
 			{:else}
 				<div class="mb-10">
@@ -206,31 +226,37 @@
 			{/if}
 
 			<!-- Hidden inputs carry explicit values so the server never has to guess
-		     an unchecked box's meaning (allowPreferred defaults on). -->
-			<div class="mb-9 flex flex-col gap-2">
-				<span class="text-2xs font-bold uppercase tracking-widest text-ink-muted"
-					>{m.fieldChoices()}</span
-				>
-				<label class="flex items-center gap-2 text-body text-ink">
-					<input
-						type="checkbox"
-						bind:checked={allowPreferred}
-						class="h-5 w-5 cursor-pointer accent-ink"
-					/>
-					{m.prefPreferred()}
-				</label>
-				<label class="flex items-center gap-2 text-body text-ink">
-					<input
-						type="checkbox"
-						bind:checked={allowUnsure}
-						class="h-5 w-5 cursor-pointer accent-ink"
-					/>
-					{m.prefUnsure()}
-				</label>
-				<p class="text-caption leading-relaxed text-ink-muted">{m.choicesHint()}</p>
-				<input type="hidden" name="allowPreferred" value={allowPreferred ? '1' : '0'} />
-				<input type="hidden" name="allowUnsure" value={allowUnsure ? '1' : '0'} />
-			</div>
+		     an unchecked box's meaning (allowPreferred defaults on). RSVP is
+		     strictly yes/no: no toggles offered, both posted off. -->
+			{#if pollType === 'rsvp'}
+				<input type="hidden" name="allowPreferred" value="0" />
+				<input type="hidden" name="allowUnsure" value="0" />
+			{:else}
+				<div class="mb-9 flex flex-col gap-2">
+					<span class="text-2xs font-bold uppercase tracking-widest text-ink-muted"
+						>{m.fieldChoices()}</span
+					>
+					<label class="flex items-center gap-2 text-body text-ink">
+						<input
+							type="checkbox"
+							bind:checked={allowPreferred}
+							class="h-5 w-5 cursor-pointer accent-ink"
+						/>
+						{m.prefPreferred()}
+					</label>
+					<label class="flex items-center gap-2 text-body text-ink">
+						<input
+							type="checkbox"
+							bind:checked={allowUnsure}
+							class="h-5 w-5 cursor-pointer accent-ink"
+						/>
+						{m.prefUnsure()}
+					</label>
+					<p class="text-caption leading-relaxed text-ink-muted">{m.choicesHint()}</p>
+					<input type="hidden" name="allowPreferred" value={allowPreferred ? '1' : '0'} />
+					<input type="hidden" name="allowUnsure" value={allowUnsure ? '1' : '0'} />
+				</div>
+			{/if}
 
 			<div class="mt-2 flex flex-col gap-3.5">
 				{#if form?.error}

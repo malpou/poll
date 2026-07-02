@@ -7,7 +7,7 @@ import { setRequestLocale } from '../hooks.server';
 import { field, parseIndexed, validateTimes } from '$lib/forms/forms';
 import { richTextIsEmpty, sanitizeRichText } from '$lib/forms/richtext';
 import type { Accent, DateOption, Locale, Participant, PollMode, PollType } from '$lib/types';
-import { ACCENTS } from '$lib/types';
+import { ACCENTS, POLL_TYPES } from '$lib/types';
 import type { Actions, PageServerLoad } from './$types';
 
 /**
@@ -35,11 +35,15 @@ export const actions = {
 			? tzField
 			: 'Europe/Copenhagen';
 		const pollMode: PollMode = field(form, 'pollMode') === 'open' ? 'open' : 'assigned';
-		// Same discipline as pollMode: anything but the known other value is the default.
-		const pollType: PollType = field(form, 'pollType') === 'question' ? 'question' : 'dates';
+		// Same discipline as pollMode: anything but a known value is the default.
+		const typeField = field(form, 'pollType');
+		const pollType: PollType = (POLL_TYPES as readonly string[]).includes(typeField)
+			? (typeField as PollType)
+			: 'dates';
 		// Hidden inputs carry explicit '1'/'0'; absence falls back to the defaults.
-		const allowPreferred = field(form, 'allowPreferred') !== '0';
-		const allowUnsure = field(form, 'allowUnsure') === '1';
+		// RSVP is strictly yes/no - both toggles forced off regardless of the form.
+		const allowPreferred = pollType !== 'rsvp' && field(form, 'allowPreferred') !== '0';
+		const allowUnsure = pollType !== 'rsvp' && field(form, 'allowUnsure') === '1';
 		// Unknown accent falls back to the default, same discipline as locale/timezone.
 		const accentField = field(form, 'accent');
 		const accent: Accent = (ACCENTS as readonly string[]).includes(accentField)
@@ -99,7 +103,8 @@ export const actions = {
 		if (!title) error = m.errorNoTitle();
 		else if (pollType === 'question') {
 			if (textOptions.length < 2) error = m.errorTooFewOptions();
-		} else if (dates.length === 0) error = m.errorNoDates();
+		} else if (pollType === 'rsvp' && dates.length !== 1) error = m.errorRsvpOneDate();
+		else if (dates.length === 0) error = m.errorNoDates();
 		else {
 			for (const d of dates) {
 				error = validateTimes(d.startTime, d.endTime);

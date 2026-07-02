@@ -17,11 +17,15 @@
 	let {
 		dates = $bindable(),
 		locale,
-		name = 'dates'
+		name = 'dates',
+		single = false
 	}: {
 		dates: DateOption[];
 		locale: Locale;
 		name?: string;
+		// RSVP polls have exactly one date: picking a day replaces the previous
+		// pick, and the extra-time-slot affordance is hidden.
+		single?: boolean;
 	} = $props();
 
 	// Group entries by day for display, keeping each entry's flat index for its
@@ -38,6 +42,7 @@
 
 	function toggleDay(day: string) {
 		if (dates.some((d) => d.value === day)) dates = dates.filter((d) => d.value !== day);
+		else if (single) dates = [{ ...helpers.blankDate(), value: day }];
 		else dates.push({ ...helpers.blankDate(), value: day });
 	}
 	function addSlot(day: string) {
@@ -94,11 +99,13 @@
 					</div>
 				{/each}
 			</div>
-			<div class="mt-2">
-				<Button variant="dashed" onclick={() => addSlot(day)}>
-					<Plus size={14} />{m.addTime()}
-				</Button>
-			</div>
+			{#if !single}
+				<div class="mt-2">
+					<Button variant="dashed" onclick={() => addSlot(day)}>
+						<Plus size={14} />{m.addTime()}
+					</Button>
+				</div>
+			{/if}
 		</div>
 	{/each}
 </div>

@@ -10,10 +10,10 @@ manage the event through a secret organizer link.
 ### Requirement: Event creation
 
 The system SHALL allow anyone to create an event with a title, a language, a
-poll mode, and a poll type — dates (the default) or question (see
-specs/question-options) — and SHALL return a secret organizer link for it. A
-dates-type event SHALL additionally require a timezone and one or more
-candidate date options. The timezone picker SHALL default to the visitor's
+poll mode, and a poll type — dates (the default), question (see
+specs/question-options), or RSVP (see specs/rsvp-poll) — and SHALL return a
+secret organizer link for it. A dates-type event SHALL additionally require a
+timezone and one or more candidate date options. The timezone picker SHALL default to the visitor's
 own timezone, and SHALL label each timezone with its identifier plus a zone
 name localized to the form's current language. The timezone picker SHALL be a
 combo box: an editable text field whose suggestion list narrows to the
@@ -172,9 +172,10 @@ render with the event's accent color.
 
 ### Requirement: Manage date options
 
-The system SHALL let the organizer add, edit, and remove date options while the
-event is open. Candidate dates SHALL be chosen by toggling days in a month
-calendar (navigable month by month), not by free-form entry. A selected day
+The system SHALL let the organizer of a dates-type poll add, edit, and remove
+date options while the event is open (RSVP polls keep exactly one option —
+see specs/rsvp-poll). Candidate dates SHALL be chosen by toggling days in a
+month calendar (navigable month by month), not by free-form entry. A selected day
 MAY carry any number of optional time slots; a day with several time slots
 SHALL yield one date option per slot.
 
@@ -252,11 +253,12 @@ only be accepted when a start time is present, and MUST NOT be before it.
 
 ### Requirement: Configurable response choices
 
-Every event SHALL offer the Available and Unavailable choices. The organizer
-SHALL be able to enable or disable the "Preferred" choice (enabled by
-default) and the "I don't know" choice (disabled by default), both at
-creation and while the event is open — including events that already have
-recorded answers. Disabling a choice SHALL fold its already-recorded answers
+Every event SHALL offer the Available and Unavailable choices. On dates and
+question polls the organizer SHALL be able to enable or disable the
+"Preferred" choice (enabled by default) and the "I don't know" choice
+(disabled by default), both at creation and while the event is open —
+including events that already have recorded answers. RSVP polls offer exactly
+yes and no; the choice toggles do not apply to them (see specs/rsvp-poll). Disabling a choice SHALL fold its already-recorded answers
 into the fixed pair: Preferred answers become Available, "I don't know"
 answers become Unavailable. Folded answers still count as answered.
 Re-enabling a choice offers it again but SHALL NOT restore folded answers.
@@ -327,9 +329,9 @@ submit.
 
 ### Requirement: Event timezone
 
-On a dates-type poll, the system SHALL render every date option's times in
-the event's timezone, chosen by the organizer at creation and changeable
-afterwards alongside the title and description. Wherever the event's timezone
+On a dates-type or RSVP poll, the system SHALL render every date option's
+times in the event's timezone, chosen by the organizer at creation and
+changeable afterwards alongside the title and description. Wherever the event's timezone
 is named — on the dashboard and in the timezone picker when editing — the
 label SHALL include a zone name localized to the current language alongside
 the identifier. The edit picker SHALL be the same combo box as at creation:
