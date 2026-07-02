@@ -138,8 +138,8 @@ line breaks.
 
 ### Requirement: Poll accent color
 
-Each event SHALL have an accent color, one of four: yellow (the default),
-pink, green, or blue. The organizer SHALL be able to pick it at creation and
+Each event SHALL have an accent color, one of five: yellow (the default),
+pink, green, blue, or purple. The organizer SHALL be able to pick it at creation and
 change it afterwards alongside the title and description. Every page of the
 event — dashboard, response pages, and the shared open-mode page — SHALL
 render with the event's accent color.
@@ -164,7 +164,7 @@ render with the event's accent color.
 
 #### Scenario: Invalid accent rejected
 
-- GIVEN a save request whose accent value is not one of the four colors
+- GIVEN a save request whose accent value is not one of the five colors
 - WHEN the system processes it
 - THEN it rejects the value and the event keeps its previous accent
 

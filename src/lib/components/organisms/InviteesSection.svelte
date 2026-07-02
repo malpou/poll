@@ -83,7 +83,9 @@
 					{#each invitees as inv, i (inv.id)}
 						<div in:fly={flyIn(i)} class="rounded-card border-2 border-border bg-card-alt p-3">
 							<div class="flex items-center gap-2.5">
-								<div class="flex-1 text-body font-semibold text-ink">{inv.label}</div>
+								<div class="min-w-0 flex-1 break-words text-body font-semibold text-ink">
+									{inv.label}
+								</div>
 								{@render noteToggle(inv)}
 							</div>
 							{@render noteBody(inv)}
@@ -98,58 +100,66 @@
 			<div class="flex flex-col gap-2.5">
 				{#each invitees as inv, i (inv.id)}
 					<div in:fly={flyIn(i)} class="rounded-card border-2 border-border bg-card-alt p-3">
-						<div class="flex items-center gap-2.5">
-							{#if closed || renaming !== inv.id}
-								<div class="flex-1 text-body font-semibold text-ink">{inv.label}</div>
-								{#if !closed}
-									<Button
-										variant="ghost"
-										iconOnly
-										label={m.edit()}
-										onclick={() => {
-											renaming = inv.id;
-										}}><Pencil size={16} /></Button
-									>
-								{/if}
-							{:else}
-								<form
-									method="POST"
-									action="?/renameInvitee"
-									use:enhance={closeRename}
-									class="flex flex-1 items-center gap-2.5"
-								>
-									<input type="hidden" name="inviteeId" value={inv.id} />
-									<TextField name="label" value={inv.label} />
-									<Button variant="ghost" type="submit" iconOnly label={m.save()}
-										><Save size={16} /></Button
-									>
-									<IconButton
-										label={m.cancel()}
-										onclick={() => {
-											renaming = null;
-										}}><X size={16} /></IconButton
-									>
-								</form>
-							{/if}
-							<span
-								class="whitespace-nowrap rounded-full px-2.5 py-1 text-2xs font-bold {statusPill(
-									inv.status
-								).cls}"
+						{#if !closed && renaming === inv.id}
+							<!-- The rename form takes the whole header row - the pill and the
+							     other controls step aside so the field has room to type in. -->
+							<form
+								method="POST"
+								action="?/renameInvitee"
+								use:enhance={closeRename}
+								class="flex items-center gap-2.5"
 							>
-								{statusPill(inv.status).text}
-							</span>
-							{@render noteToggle(inv)}
-							{#if !closed}
-								<form
-									method="POST"
-									action="?/removeInvitee"
-									use:enhance={confirmingRefresh(m.confirmDeleteInvitee(), true)}
+								<input type="hidden" name="inviteeId" value={inv.id} />
+								<TextField name="label" value={inv.label} />
+								<Button variant="ghost" type="submit" iconOnly label={m.save()}
+									><Save size={16} /></Button
 								>
-									<input type="hidden" name="inviteeId" value={inv.id} />
-									<IconButton label={m.remove()} type="submit"><X size={16} /></IconButton>
-								</form>
-							{/if}
-						</div>
+								<IconButton
+									label={m.cancel()}
+									onclick={() => {
+										renaming = null;
+									}}><X size={16} /></IconButton
+								>
+							</form>
+						{:else}
+							<!-- Name first; the controls cluster wraps onto its own row on a
+							     narrow screen instead of squeezing the name into a column. -->
+							<div class="flex flex-wrap items-center gap-x-2.5 gap-y-1.5">
+								<div class="min-w-0 flex-1 basis-40 break-words text-body font-semibold text-ink">
+									{inv.label}
+								</div>
+								<div class="ml-auto flex shrink-0 items-center gap-2">
+									{#if !closed}
+										<Button
+											variant="ghost"
+											iconOnly
+											label={m.edit()}
+											onclick={() => {
+												renaming = inv.id;
+											}}><Pencil size={16} /></Button
+										>
+									{/if}
+									<span
+										class="whitespace-nowrap rounded-full px-2.5 py-1 text-2xs font-bold {statusPill(
+											inv.status
+										).cls}"
+									>
+										{statusPill(inv.status).text}
+									</span>
+									{@render noteToggle(inv)}
+									{#if !closed}
+										<form
+											method="POST"
+											action="?/removeInvitee"
+											use:enhance={confirmingRefresh(m.confirmDeleteInvitee(), true)}
+										>
+											<input type="hidden" name="inviteeId" value={inv.id} />
+											<IconButton label={m.remove()} type="submit"><X size={16} /></IconButton>
+										</form>
+									{/if}
+								</div>
+							</div>
+						{/if}
 						{@render noteBody(inv)}
 						<CopyLinkRow url={inv.url} {oncopied} class="mt-2.5" />
 					</div>

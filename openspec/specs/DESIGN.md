@@ -27,9 +27,9 @@ theme token instead.
 - **Paper grain:** a subtle noise overlay (inline-SVG `feTurbulence` data URI
   on a `body::before` pseudo-element, ~5% opacity, `pointer-events: none`)
   sits over the whole page. No image assets, no JS.
-- **Highlighter accent — a poll setting, not a fixed token.** Four options:
+- **Highlighter accent — a poll setting, not a fixed token.** Five options:
   yellow `#f7e36b` (default), pink `#ffc9d4`, green `#c9e6a5`, blue
-  `#bfdcf3`. The organizer picks it at creation and can change it when
+  `#bfdcf3`, purple `#d9c9f0`. The organizer picks it at creation and can change it when
   editing the poll; every page of that poll renders with it. The event page
   root carries `data-accent="<name>"`; `layout.css` maps each name to the
   `--hl` custom property, and every highlighter-tinted style references
@@ -71,6 +71,11 @@ theme token instead.
 - Section headings AND field labels are eyebrows: uppercase 11px bold,
   `tracking-widest`, muted ink (the `SectionHeading` atom; every form
   control label uses the same style).
+- **Text wraps pretty:** headings and paragraphs use `text-wrap: pretty`
+  (better break points, no orphaned words) and `overflow-wrap: break-word`
+  so a long unbroken word breaks instead of overflowing the sheet. Rows of
+  controls wrap on narrow screens — content is never squeezed into a
+  one-word-per-line column to keep a button cluster on the same row.
 - **Hand-drawn shape:** irregular eight-value corner radii instead of uniform
   rounding, as radius tokens in three tiers — control
   (`--radius-control: 8px 11px 7px 12px / 11px 7px 12px 8px`), card
@@ -92,18 +97,26 @@ theme token instead.
   hover lift and `tracking-wider`. Dashed 2px rules as section dividers.
 - **Radio choices** (who-can-answer and similar): bordered option cards with
   a hand-drawn control radius and an ink dot indicator; the active card gets
-  an ink border on the highlighter tint. The **language row** is a compact
-  radio row of each language's native name, active one bold with a 2px ink
-  underline.
+  an ink border on the highlighter tint. The **language selector** is a row
+  of circular flag swatches styled like the accent picker (28px circles, 2px
+  `border-strong` border, ink border + ring when active); the artwork is the
+  MIT-licensed circle-flags SVG set, inlined — no external requests. Each
+  language's native name stays as the radio's accessible label and tooltip.
+  On the create page both swatch rows are legend-less and sit in the sheet's
+  top corners — accent top-left, language top-right — pinned to the edges at
+  every width; on narrow phones each row wraps onto multiple lines rather than
+  the two pickers stacking.
 - **Buttons** (the `Button` atom's three variants): primary ink-filled
   (52px, full-width, hover lift, the arrow icon trailing the label), dashed
   add-row, ghost ink-bordered (36px, inverts to ink on hover, with an
-  icon-only square form). Copy buttons are labeled ghosts — a short visible
-  "Copy" with the icon; the aria-label keeps the full "Copy link". A fourth,
+  icon-only square form). Copy buttons are icon-only ghosts (the Copy icon
+  beside the link chip — the row stays one line on any phone); the
+  aria-label keeps the full "Copy link". A fourth,
   destructive form (the `IconButton` atom): 36px square on `card-alt` with a
   quiet border and muted icon that signals intent on hover
   (`hover:bg-bad-tint hover:text-bad`).
-- **Icons:** Lucide (`@lucide/svelte`), stroke style, sized small (12–17px)
+- **Icons:** Lucide (`@lucide/svelte`), stroke style — the one exception is
+  the language selector's circle-flags artwork (above) — sized small (12–17px)
   to sit in the mono type: 13–14 inside compact/inline controls, 16 in
   icon-only buttons and callout/notice title rows, 17 for primary actions.
   The star is **filled**
@@ -142,8 +155,11 @@ theme token instead.
   time, the badge pushed right — then an icon-marked count per enabled
   choice in muted caption text, then a single stacked bar on the `wash`
   track (`--hl` preferred fill, `border-strong` available fill; Available
-  takes `--hl` when Preferred isn't offered; unavailable/unsure stay track),
-  and — organizer only — one pill per respondent marked with their answer:
+  takes `--hl` when Preferred isn't offered; unavailable fills with the
+  diagonal ink hatch — the same mark as the selector's "no" face — so it
+  never reads as "hasn't answered"; unsure and not-yet-answered stay plain
+  track), and — organizer only — one pill per respondent marked with their
+  answer:
   `--hl` fill with a filled star for preferred, bordered with a check for
   available, a question mark for "I don't know", and struck-through muted
   with an X for unavailable. Best and chosen cards take an ink border.

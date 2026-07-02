@@ -59,7 +59,7 @@ export interface EventSeed {
 	shareToken?: string; // open-mode shared link token
 	allowPreferred?: boolean; // omit → column default on
 	allowUnsure?: boolean; // omit → column default off
-	accent?: 'yellow' | 'pink' | 'green' | 'blue'; // omit → column default 'yellow'
+	accent?: 'yellow' | 'pink' | 'green' | 'blue' | 'purple'; // omit → column default 'yellow'
 	createdAt?: string;
 }
 export interface DateOptionSeed {

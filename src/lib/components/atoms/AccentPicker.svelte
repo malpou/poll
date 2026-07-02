@@ -5,22 +5,32 @@
 	let {
 		value = $bindable('yellow'),
 		name = 'accent',
-		onpick
-	}: { value?: Accent; name?: string; onpick?: (a: Accent) => void } = $props();
+		showLegend = true,
+		onpick,
+		class: cls = ''
+	}: {
+		value?: Accent;
+		name?: string;
+		showLegend?: boolean;
+		onpick?: (a: Accent) => void;
+		class?: string;
+	} = $props();
 
 	const labels: Record<Accent, () => string> = {
 		yellow: m.accentYellow,
 		pink: m.accentPink,
 		green: m.accentGreen,
-		blue: m.accentBlue
+		blue: m.accentBlue,
+		purple: m.accentPurple
 	};
 </script>
 
-<fieldset class="flex flex-col gap-2">
-	<legend class="text-2xs font-bold uppercase tracking-widest text-ink-muted"
+<fieldset class="flex flex-col gap-2 {cls}">
+	<legend
+		class={showLegend ? 'text-2xs font-bold uppercase tracking-widest text-ink-muted' : 'sr-only'}
 		>{m.fieldAccent()}</legend
 	>
-	<div class="flex items-center gap-3">
+	<div class="flex flex-wrap items-center gap-3">
 		<!-- Each swatch paints itself via its own data-accent → --hl; the chosen
 		     hexes never appear in markup. -->
 		{#each ACCENTS as a (a)}
