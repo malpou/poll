@@ -39,7 +39,7 @@
 	{disabled}
 	aria-label={label}
 	title={iconOnly ? label : undefined}
-	class="inline-flex cursor-pointer items-center justify-center gap-1.5 whitespace-nowrap text-body transition-colors duration-150 disabled:pointer-events-none disabled:opacity-35 {variants[
+	class="inline-flex cursor-pointer items-center justify-center gap-1.5 whitespace-nowrap text-body transition-colors duration-150 disabled:cursor-not-allowed disabled:opacity-35 {variants[
 		variant
 	]} {pad}"
 >

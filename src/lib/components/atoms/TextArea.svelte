@@ -26,6 +26,6 @@
 		{placeholder}
 		{disabled}
 		bind:value
-		class="min-h-21 w-full resize-none rounded-control border border-border bg-card px-3.5 py-3 text-body leading-normal text-ink outline-none placeholder:text-ink-muted/70 focus:border-primary disabled:opacity-70"
+		class="min-h-21 w-full resize-none rounded-control border border-border bg-card px-3.5 py-3 text-body leading-normal text-ink outline-none placeholder:text-ink-muted/70 focus:border-primary disabled:cursor-not-allowed disabled:opacity-70"
 	></textarea>
 </label>

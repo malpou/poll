@@ -62,7 +62,7 @@
 			class="relative z-10 flex-1 rounded-control border-none bg-transparent px-1 py-2.75 text-sm font-semibold transition-colors duration-150 {value ===
 			opt.pref
 				? 'text-white'
-				: 'text-ink-muted'} {readOnly ? 'cursor-default' : 'cursor-pointer'}"
+				: 'text-ink-muted'} {readOnly ? 'cursor-not-allowed' : 'cursor-pointer'}"
 		>
 			{opt.label}
 		</button>

@@ -62,7 +62,7 @@
 					disabled={!allAnswered}
 					class="flex h-13 w-full items-center justify-center gap-2 rounded-cta text-base font-bold transition-colors duration-150 {allAnswered
 						? 'cursor-pointer bg-primary text-white'
-						: 'cursor-default bg-border text-ink-muted'}"
+						: 'cursor-not-allowed bg-border text-ink-muted'}"
 				>
 					<Send size={18} />
 					{m.sendAnswer()}

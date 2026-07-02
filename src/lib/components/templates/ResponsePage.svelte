@@ -161,7 +161,7 @@
 						name="note"
 						bind:value={note}
 						placeholder={m.notePlaceholder()}
-						disabled={closed}
+						disabled={closed || submitted}
 					/>
 				</div>
 			</div>
