@@ -2,7 +2,7 @@
 	"$schema": "https://inlang.com/schema/inlang-message-format",
 	"appName": "Sondage de disponibilités",
 	"createTitle": "Créer un sondage",
-	"createIntro": "Choisissez des dates, ajoutez les personnes à consulter et partagez leur lien personnel. Chaque participant indique ses préférences, s´il peut ou ne peut pas.",
+	"createIntro": "Choisissez des dates, décidez qui peut répondre et partagez le sondage. Chaque participant indique ses préférences, s'il peut ou ne peut pas.",
 	"fieldTitle": "Titre",
 	"titlePlaceholder": "p. ex. Dîner d'été chez nous",
 	"fieldDescription": "Description",

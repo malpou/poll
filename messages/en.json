@@ -2,7 +2,7 @@
 	"$schema": "https://inlang.com/schema/inlang-message-format",
 	"appName": "Date poll",
 	"createTitle": "Create a poll",
-	"createIntro": "Pick some dates, add the people you want to ask, and share their personal link. Each participant answers whether they prefer, can, or can't make it.",
+	"createIntro": "Pick some dates, choose who can answer, and share the poll. Each participant says whether they prefer, can, or can't make it.",
 	"fieldTitle": "Title",
 	"titlePlaceholder": "e.g. Summer dinner at ours",
 	"fieldDescription": "Description",
