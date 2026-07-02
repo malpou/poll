@@ -109,17 +109,6 @@ time MAY only be set when a start time is present, and MUST NOT be before it.
 - WHEN the organizer sets an end time earlier than the start time
 - THEN the system rejects it
 
-### Requirement: Close and reopen an event
-
-The system SHALL let the organizer close an event to stop further responses, and
-reopen it.
-
-#### Scenario: Closing an event
-
-- GIVEN an open event
-- WHEN the organizer closes it
-- THEN new and existing invitees can view but not change their responses
-
 ### Requirement: Switch mode and language
 
 The system SHALL let the organizer change an event's poll mode and language after
