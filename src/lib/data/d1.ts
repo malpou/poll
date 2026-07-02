@@ -250,18 +250,6 @@ export function d1Provider(db: D1Database): DataProvider {
 			}));
 		},
 
-		async getAnsweredInviteeIds(eventId: string): Promise<Set<string>> {
-			const rows = await db
-				.prepare(
-					`SELECT DISTINCT r.invitee_id AS id
-					 FROM responses r JOIN invitees i ON i.id = r.invitee_id
-					 WHERE i.event_id = ?`
-				)
-				.bind(eventId)
-				.all<{ id: string }>();
-			return new Set(rows.results.map((r) => r.id));
-		},
-
 		async getEventResponses(eventId: string): Promise<ResponseRow[]> {
 			const rows = await db
 				.prepare(

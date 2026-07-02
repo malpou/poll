@@ -52,8 +52,6 @@ export interface DataProvider {
 	saveResponses(inviteeId: string, answers: ResponseInput[]): Promise<void>;
 	saveNote(inviteeId: string, note: string): Promise<void>;
 	getResults(eventId: string): Promise<DateOptionResult[]>;
-	// Ids of invitees with at least one response - the complement is "pending".
-	getAnsweredInviteeIds(eventId: string): Promise<Set<string>>;
 	// Every response for the event, so the dashboard can list who chose what.
 	getEventResponses(eventId: string): Promise<ResponseRow[]>;
 	// Organizer dashboard mutations. IDs/tokens are generated server-side.

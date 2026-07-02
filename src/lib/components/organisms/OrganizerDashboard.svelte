@@ -56,7 +56,7 @@
 		id: string;
 		label: string;
 		url: string;
-		answered: boolean;
+		status: 'complete' | 'partial' | 'none';
 		note: string | null;
 	}
 	interface ValidData {
@@ -81,6 +81,22 @@
 
 	let { data }: { data: { invalid: true } | ValidData } = $props();
 	const view = $derived<ValidData | null>(data.invalid ? null : data);
+
+	// 'partial' = answered before more dates were added. Surfaced in a callout
+	// with their links so the organizer can chase the missing answers. Closed
+	// polls hide it - nobody can respond anyway.
+	const partials = $derived(
+		view && !view.closed ? view.invitees.filter((i) => i.status === 'partial') : []
+	);
+
+	// Invitee pill: partial gets its own copy; both incomplete states stay amber.
+	const statusPill = (s: InviteeView['status']) =>
+		s === 'complete'
+			? { cls: 'bg-good-tint text-good', text: m.answered() }
+			: {
+					cls: 'bg-amber-tint text-amber',
+					text: s === 'partial' ? m.partialAnswered() : m.pending()
+				};
 
 	// Which option is in inline-edit mode (id) - null when none.
 	let editing = $state<string | null>(null);
@@ -296,6 +312,32 @@
 			>
 				<span class="h-2 w-2 shrink-0 rounded-full bg-amber"></span>
 				{m.closedBanner()}
+			</div>
+		{/if}
+
+		<!-- Chase-up callout: participants who answered before more dates were added,
+		     with their personal links ready to resend. Covers open mode too - this is
+		     the only place open-mode /r links surface for the organizer. -->
+		{#if partials.length > 0}
+			<div class="mb-6 rounded-xl border border-primary bg-primary-tint px-4 py-3.5">
+				<div class="text-sm font-bold text-primary">{m.needsUpdateTitle()}</div>
+				<p class="mt-1.5 text-[13px] leading-relaxed text-ink">{m.needsUpdateHint()}</p>
+				<div class="mt-2.5 flex flex-col gap-2">
+					{#each partials as p (p.id)}
+						<div class="flex flex-wrap items-center gap-2.5">
+							<span class="min-w-[80px] text-[15px] font-semibold text-ink">{p.label}</span>
+							<LinkChip text={p.url.replace(/^https?:\/\//, '')} />
+							<Button
+								variant="ghost"
+								iconOnly
+								label={m.copyLink()}
+								onclick={() => {
+									copy(p.url);
+								}}><Copy size={16} /></Button
+							>
+						</div>
+					{/each}
+				</div>
 			</div>
 		{/if}
 
@@ -562,11 +604,11 @@
 									</form>
 								{/if}
 								<span
-									class="whitespace-nowrap rounded-full px-2.5 py-1 text-[11px] font-bold {inv.answered
-										? 'bg-good-tint text-good'
-										: 'bg-amber-tint text-amber'}"
+									class="whitespace-nowrap rounded-full px-2.5 py-1 text-[11px] font-bold {statusPill(
+										inv.status
+									).cls}"
 								>
-									{inv.answered ? m.answered() : m.pending()}
+									{statusPill(inv.status).text}
 								</span>
 								{#if inv.note}
 									<IconButton

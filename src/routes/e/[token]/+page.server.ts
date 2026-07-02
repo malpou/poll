@@ -2,6 +2,7 @@ import { fail } from '@sveltejs/kit';
 import { getProvider } from '$lib/data/provider';
 import { formatDateOption, utcIsoToZonedParts } from '$lib/date';
 import { field, validateTimes } from '$lib/forms';
+import { inviteeStatus, responseCountByInvitee } from '$lib/participant-status';
 import { markBest } from '$lib/results';
 import { setRequestLocale } from '../../../hooks.server';
 import { m } from '$lib/paraglide/messages';
@@ -28,12 +29,14 @@ export const load: PageServerLoad = async ({ params, platform, url }) => {
 	// The whole dashboard renders in the poll's stored locale (m.*() + dates).
 	setRequestLocale(event.locale);
 
-	const [results, answered, responses] = await Promise.all([
+	const [results, responses] = await Promise.all([
 		provider.getResults(event.id),
-		provider.getAnsweredInviteeIds(event.id),
 		provider.getEventResponses(event.id)
 	]);
 	const totalInvitees = event.invitees.length;
+	// Per-invitee answer counts vs option count: 'partial' means dates were added
+	// after they answered (the UI's only way to save is all-at-once).
+	const responseCounts = responseCountByInvitee(responses);
 
 	// Who chose what, per option: group responder names by preference so the
 	// organizer can expand a date and see the specific people behind each count.
@@ -95,8 +98,8 @@ export const load: PageServerLoad = async ({ params, platform, url }) => {
 		// has no fixed roster, so it drops the "of Y" denominator.
 		respondedLabel:
 			event.pollMode === 'open'
-				? m.answeredLabelOpen({ total: answered.size })
-				: m.answeredLabel({ total: answered.size, totalInvitees }),
+				? m.answeredLabelOpen({ total: responseCounts.size })
+				: m.answeredLabel({ total: responseCounts.size, totalInvitees }),
 		options: event.dateOptions.map((d) => {
 			// Copenhagen wall-clock parts for the edit form's native inputs.
 			const start = utcIsoToZonedParts(d.startsAt);
@@ -113,7 +116,7 @@ export const load: PageServerLoad = async ({ params, platform, url }) => {
 			id: inv.id,
 			label: inv.label,
 			url: provider.inviteeUrl(url.origin, inv.token),
-			answered: answered.has(inv.id),
+			status: inviteeStatus(responseCounts.get(inv.id) ?? 0, event.dateOptions.length),
 			note: inv.note
 		}))
 	};

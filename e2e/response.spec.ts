@@ -1,6 +1,13 @@
 import { test, expect, type Page } from '@playwright/test';
 import { m } from '../src/lib/paraglide/messages';
-import { responsesFor, seedDateOption, seedEvent, seedInvitee, wipeEvent } from './db';
+import {
+	responsesFor,
+	seedDateOption,
+	seedEvent,
+	seedInvitee,
+	seedResponse,
+	wipeEvent
+} from './db';
 
 // The response page needs a seeded invitee link, but no UI surfaces invitee
 // tokens yet (that's the iteration-5 dashboard). So we seed local D1 through the
@@ -136,4 +143,50 @@ test('closed event renders read-only with the closed banner and no submit', asyn
 	await expect(page.getByText(m.closedBanner())).toBeVisible();
 	await expect(page.getByRole('button', { name: m.sendAnswer() })).toHaveCount(0);
 	await expect(page.getByRole('button', { name: m.prefPreferred() }).first()).toBeDisabled();
+});
+
+// --- Dates added after the invitee answered (chase-up flow). ---
+
+test('a date added after answering is flagged, sorted first, and editable', async ({ page }) => {
+	seed();
+	// Anna answered D1 while it was the only date; D2 arrived later.
+	seedResponse({ inviteeId: INV_OPEN, dateOptionId: D1, preference: 'preferred' });
+	await page.goto(`/r/${OPEN_TOKEN}`);
+
+	await expect(page.getByText(m.newDatesBanner())).toBeVisible();
+	// Straight into editing - no saved-state bar to click through.
+	await expect(page.getByRole('button', { name: m.sendAnswer() })).toBeVisible();
+	await expect(page.getByRole('button', { name: m.editAnswer() })).toHaveCount(0);
+	// Only the unanswered date carries the badge, and it renders first.
+	await expect(page.getByTestId(`date-card-${D2}`).getByText(m.newDateBadge())).toBeVisible();
+	await expect(page.getByTestId(`date-card-${D1}`).getByText(m.newDateBadge())).toHaveCount(0);
+	const cards = page.locator('[data-testid^="date-card-"]');
+	await expect(cards.first()).toHaveAttribute('data-testid', `date-card-${D2}`);
+
+	// Answering the new date clears the chase-up on the next visit.
+	await mark(page, D2, m.prefAvailable());
+	await page.getByRole('button', { name: m.sendAnswer() }).click();
+	await expect(page.getByText(m.savedSub())).toBeVisible();
+	await page.reload();
+	await expect(page.getByText(m.newDatesBanner())).toHaveCount(0);
+	await expect(cards.first()).toHaveAttribute('data-testid', `date-card-${D1}`);
+});
+
+test('a closed poll never flags or reorders unanswered dates', async ({ page }) => {
+	seed();
+	seedDateOption({
+		id: `${D2}-c`,
+		eventId: EV_CLOSED,
+		startsAt: '2026-09-20T09:00:00Z',
+		sortOrder: 1
+	});
+	seedResponse({ inviteeId: INV_CLOSED, dateOptionId: `${D1}-c`, preference: 'available' });
+	await page.goto(`/r/${CLOSED_TOKEN}`);
+
+	await expect(page.getByText(m.closedBanner())).toBeVisible();
+	await expect(page.getByText(m.newDatesBanner())).toHaveCount(0);
+	await expect(page.getByText(m.newDateBadge())).toHaveCount(0);
+	// Original sort order kept.
+	const cards = page.locator('[data-testid^="date-card-"]');
+	await expect(cards.first()).toHaveAttribute('data-testid', `date-card-${D1}-c`);
 });

@@ -1,6 +1,7 @@
 import { fail } from '@sveltejs/kit';
 import { getProvider } from '$lib/data/provider';
 import { formatDateOption } from '$lib/date';
+import { orderForRespondent } from '$lib/participant-status';
 import { setRequestLocale } from '../../../hooks.server';
 import type { Preference } from '$lib/types';
 import type { ResponseInput } from '$lib/data/provider';
@@ -19,14 +20,22 @@ export const load: PageServerLoad = async ({ params, platform }) => {
 	const answers: Record<string, Preference> = {};
 	for (const r of ctx.responses) answers[r.dateOptionId] = r.preference;
 
+	// Returning respondents get dates added since their answer sorted first and
+	// flagged. Closed polls are read-only, so no flags/reorder there.
+	const answeredIds =
+		ctx.event.status === 'open'
+			? new Set(ctx.responses.map((r) => r.dateOptionId))
+			: new Set<string>();
+
 	return {
 		invalid: false as const,
 		closed: ctx.event.status === 'closed',
 		name: ctx.invitee.label,
 		title: ctx.event.title,
 		description: ctx.event.description,
-		dates: ctx.dateOptions.map((d) => ({
+		dates: orderForRespondent(ctx.dateOptions, answeredIds).map((d) => ({
 			id: d.id,
+			needsAnswer: d.needsAnswer,
 			...formatDateOption(d.startsAt, d.endsAt, ctx.event.locale)
 		})),
 		answers,

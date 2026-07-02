@@ -16,6 +16,9 @@
 		weekday: string;
 		dateLabel: string;
 		timeRange: string;
+		// Set by the /r load for returning respondents: dates added since they
+		// answered arrive first in the list and flagged. Absent on /s.
+		needsAnswer?: boolean;
 	}
 	// Assigned (/r): name/answers/note come from the load. Open (/s): submitter
 	// names themselves, so those are absent until the form is filled.
@@ -49,7 +52,11 @@
 	let name = $state(seed?.name ?? '');
 	let answers = $state<Record<string, Preference | undefined>>({ ...(seed?.answers ?? {}) });
 	let note = $state(seed?.note ?? '');
-	let submitted = $state(Object.keys(seed?.answers ?? {}).length > 0);
+	// Frozen from the seed so cards keep their badges/order while the user picks.
+	const hasNewDates =
+		Object.keys(seed?.answers ?? {}).length > 0 && (seed?.dates ?? []).some((d) => d.needsAnswer);
+	// Outstanding new dates land the returning respondent straight in edit mode.
+	let submitted = $state(Object.keys(seed?.answers ?? {}).length > 0 && !hasNewDates);
 	// Personal edit link handed back after an open submission (from the action).
 	let editUrl = $state<string | null>(null);
 	let toastOpen = $state(false);
@@ -141,6 +148,14 @@
 				<div class="text-[13px] font-bold uppercase tracking-[0.06em] text-ink-muted">
 					{m.datesQuestion()}
 				</div>
+				{#if hasNewDates && !view.closed}
+					<div
+						class="flex items-center gap-2.5 rounded-xl border border-primary bg-primary-tint px-4 py-3 text-sm font-semibold text-primary"
+					>
+						<span class="h-2 w-2 shrink-0 rounded-full bg-primary"></span>
+						{m.newDatesBanner()}
+					</div>
+				{/if}
 				{#each view.dates as d, i (d.id)}
 					<DateOptionCard
 						id={d.id}
@@ -150,6 +165,7 @@
 						index={i}
 						bind:value={answers[d.id]}
 						readOnly={view.closed}
+						isNew={d.needsAnswer ?? false}
 					/>
 				{/each}
 			</div>

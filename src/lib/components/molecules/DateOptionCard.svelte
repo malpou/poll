@@ -2,6 +2,7 @@
 	import { fly } from 'svelte/transition';
 	import { cubicOut } from 'svelte/easing';
 	import SegmentedControl from '$lib/components/atoms/SegmentedControl.svelte';
+	import { m } from '$lib/paraglide/messages';
 	import type { Preference } from '$lib/types';
 
 	let {
@@ -11,7 +12,8 @@
 		timeRange,
 		index,
 		value = $bindable(),
-		readOnly = false
+		readOnly = false,
+		isNew = false
 	}: {
 		id: string;
 		weekday: string;
@@ -20,6 +22,7 @@
 		index: number;
 		value: Preference | undefined;
 		readOnly?: boolean;
+		isNew?: boolean;
 	} = $props();
 
 	// Staggered list entrance: 40ms × index (DESIGN.md). fly honors
@@ -39,6 +42,13 @@
 	class="flex flex-col gap-3.5 rounded-2xl border border-border bg-card p-[18px] shadow-[0_1px_2px_var(--shadow-toast)]"
 >
 	<div class="flex flex-col gap-0.5">
+		{#if isNew}
+			<span
+				class="mb-1 w-fit whitespace-nowrap rounded-full bg-primary-tint px-2.5 py-1 text-[11px] font-bold text-primary"
+			>
+				{m.newDateBadge()}
+			</span>
+		{/if}
 		<div class="text-lg font-bold capitalize tracking-[-0.01em] text-ink">{weekday}</div>
 		<div class="text-sm text-ink-muted">{dateLabel}</div>
 		{#if timeRange}
