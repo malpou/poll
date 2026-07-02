@@ -77,5 +77,10 @@
 	"sortByDate": "Sortér efter dato",
 	"confirmDeleteOption": "Denne dato har svar. Slet den alligevel?",
 	"confirmDeleteInvitee": "Denne deltager har svaret. Fjern dem alligevel? Deres link holder op med at virke.",
-	"timeAt": "kl. "
+	"timeAt": "kl. ",
+	"newDateBadge": "Ny – mangler dit svar",
+	"newDatesBanner": "Der er tilføjet nye datoer, siden du svarede. Opdater dit svar.",
+	"partialAnswered": "Mangler nye datoer",
+	"needsUpdateTitle": "Nogle deltagere mangler at svare på de nye datoer",
+	"needsUpdateHint": "Send dem deres personlige link igen, så de kan svare på de nye datoer."
 }

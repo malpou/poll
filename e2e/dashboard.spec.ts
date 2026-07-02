@@ -308,24 +308,113 @@ test('with no responses at all, no date is highlighted as best', async ({ page }
 	await expect(page.getByText(m.bestDate())).toHaveCount(0);
 });
 
-test('pending invitees are listed as Mangler at svare', async ({ page }) => {
-	// Anna answers; Bo and Ced do not → two pending, one answered.
-	seedResults([resp('ri1', 'ra', 'preferred')]);
+test('invitee badges distinguish pending, partial, and fully answered', async ({ page }) => {
+	// Anna answers 1 of 3 dates (partial); Bo answers all 3; Ced answers nothing.
+	seedResults([
+		resp('ri1', 'ra', 'preferred'),
+		resp('ri2', 'ra', 'available'),
+		resp('ri2', 'rb', 'preferred'),
+		resp('ri2', 'rc', 'unavailable')
+	]);
 	await page.goto(`/e/${R_OTOK}`);
 	// Exact match: the summary "n af 3 har svaret" label also contains "har svaret".
-	await expect(page.getByText(m.pending(), { exact: true })).toHaveCount(2); // Bo + Ced
-	await expect(page.getByText(m.answered(), { exact: true })).toHaveCount(1); // Anna
+	await expect(page.getByText(m.pending(), { exact: true })).toHaveCount(1); // Ced
+	await expect(page.getByText(m.partialAnswered(), { exact: true })).toHaveCount(1); // Anna
+	await expect(page.getByText(m.answered(), { exact: true })).toHaveCount(1); // Bo
 });
 
 test('expanding a result shows which people chose each preference', async ({ page }) => {
 	seedResults([resp('ri1', 'ra', 'preferred'), resp('ri2', 'ra', 'unavailable')]);
 	await page.goto(`/e/${R_OTOK}`);
 
+	// Scoped to the results section: the chase-up callout above it also lists the
+	// partial responders by name.
+	const results = page.locator('section').filter({ hasText: m.resultsSection() });
 	// Names hidden until the card is expanded.
-	await expect(page.getByText('Anna', { exact: true })).toHaveCount(0);
-	await page.getByRole('button', { name: m.showWho() }).first().click();
-	await expect(page.getByText('Anna', { exact: true })).toBeVisible(); // preferred ra
-	await expect(page.getByText('Bo', { exact: true })).toBeVisible(); // unavailable ra
+	await expect(results.getByText('Anna', { exact: true })).toHaveCount(0);
+	await results.getByRole('button', { name: m.showWho() }).first().click();
+	await expect(results.getByText('Anna', { exact: true })).toBeVisible(); // preferred ra
+	await expect(results.getByText('Bo', { exact: true })).toBeVisible(); // unavailable ra
+});
+
+// --- Chase-up callout: partial responders surfaced with their /r/ links. ---
+
+function callout(page: Page) {
+	return page.locator('div.border-primary').filter({ has: page.getByText(m.needsUpdateTitle()) });
+}
+
+test('partial responders appear in a callout with their copyable link', async ({
+	page,
+	context
+}) => {
+	await context.grantPermissions(['clipboard-read', 'clipboard-write']);
+	// Anna answered before rb/rc were added; Bo and Ced never answered → only
+	// Anna needs a chase-up.
+	seedResults([resp('ri1', 'ra', 'preferred')]);
+	await page.goto(`/e/${R_OTOK}`);
+
+	await expect(callout(page)).toBeVisible();
+	await expect(callout(page).getByText('Anna', { exact: true })).toBeVisible();
+	await expect(callout(page).getByText('Bo', { exact: true })).toHaveCount(0);
+	await callout(page).getByRole('button', { name: m.copyLink() }).click();
+	const copied = await page.evaluate(() => navigator.clipboard.readText());
+	expect(copied).toMatch(/^https?:\/\/[^/]+\/r\//);
+	expect(copied.endsWith('/r/e2e-res-t1')).toBe(true);
+});
+
+test('no callout when nobody is partially answered', async ({ page }) => {
+	// Anna complete, Bo and Ced pending - neither state warrants a chase-up.
+	seedResults([
+		resp('ri1', 'ra', 'preferred'),
+		resp('ri1', 'rb', 'available'),
+		resp('ri1', 'rc', 'unavailable')
+	]);
+	await page.goto(`/e/${R_OTOK}`);
+	// Anna's "answered" pill proves the page rendered before we assert absence.
+	await expect(page.getByText(m.answered(), { exact: true })).toBeVisible();
+	await expect(page.getByText(m.needsUpdateTitle())).toHaveCount(0);
+});
+
+test('open mode: a partial responder link surfaces in the callout', async ({ page }) => {
+	wipeEvent('e2e-dashop-ev');
+	seedEvent({
+		id: 'e2e-dashop-ev',
+		title: 'Åben afstemning',
+		organizerToken: 'e2e-dashop-otok',
+		status: 'open',
+		pollMode: 'open',
+		shareToken: 'e2e-dashop-share'
+	});
+	seedDateOption({
+		id: 'e2e-dashop-a',
+		eventId: 'e2e-dashop-ev',
+		startsAt: '2026-09-12T08:00:00Z',
+		sortOrder: 0
+	});
+	seedDateOption({
+		id: 'e2e-dashop-b',
+		eventId: 'e2e-dashop-ev',
+		startsAt: '2026-09-20T08:00:00Z',
+		sortOrder: 1
+	});
+	// Mia submitted via the shared link while only one date existed.
+	seedInvitee({
+		id: 'e2e-dashop-inv',
+		eventId: 'e2e-dashop-ev',
+		label: 'Mia',
+		token: 'e2e-dashop-rtok'
+	});
+	seedResponse({
+		inviteeId: 'e2e-dashop-inv',
+		dateOptionId: 'e2e-dashop-a',
+		preference: 'preferred'
+	});
+
+	await page.goto('/e/e2e-dashop-otok');
+	// Open mode hides /r/ links in the participant list; the callout is where
+	// the organizer can grab Mia's personal link.
+	await expect(callout(page).getByText('Mia', { exact: true })).toBeVisible();
+	await expect(callout(page)).toContainText('/r/e2e-dashop-rtok');
 });
 
 test('an invitee note shows behind a comment toggle', async ({ page }) => {
