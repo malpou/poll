@@ -80,16 +80,23 @@ the event is open, and SHALL reject an empty title.
 ### Requirement: Formatted description
 
 The system SHALL let the organizer format the event description with bold,
-italic, bullet lists, and numbered lists — both at creation and when editing —
-and SHALL render that formatting on the dashboard and on invitee pages. The
-system SHALL strip any other markup from a submitted description. Descriptions
-saved before formatting existed SHALL keep their line breaks.
+italic, bullet lists, numbered lists, and toned-down (muted) text — both at
+creation and when editing — and SHALL render that formatting on the dashboard
+and on invitee pages. The system SHALL strip any other markup from a submitted
+description. Descriptions saved before formatting existed SHALL keep their
+line breaks.
 
 #### Scenario: Formatting renders for invitees
 
 - GIVEN an organizer saves a description with a bolded phrase
 - WHEN an invitee opens their response link
 - THEN the phrase renders bold
+
+#### Scenario: Muted text renders toned down for invitees
+
+- GIVEN an organizer saves a description with a phrase marked as muted
+- WHEN an invitee opens their response link
+- THEN the phrase renders visibly toned down relative to the rest
 
 #### Scenario: Disallowed markup is stripped
 

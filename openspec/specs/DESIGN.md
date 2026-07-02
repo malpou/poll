@@ -21,6 +21,9 @@ in markup.
   partial-answered pill.
 - **Semantic pair:** `good #5c8067` / `bad #a85b4e` (+ tints) for
   available/unavailable states, result bars, and destructive hover intent.
+- **Muted text** (the description editor's toned-down tool) is
+  reduced-opacity ink — `<small>` at 0.65 opacity, same size — never a
+  separate grey token, so it tones relative to any surrounding color.
 - Dark mode is deferred — the palette is light-only today. When it lands, it
   should feel like the cube lit at night: near-black blue ground, luminous
   blue accents.

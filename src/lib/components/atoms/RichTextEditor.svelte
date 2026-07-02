@@ -1,9 +1,17 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
-	import { Editor } from '@tiptap/core';
+	import { Editor, Mark } from '@tiptap/core';
 	import StarterKit from '@tiptap/starter-kit';
-	import { Bold, Italic, List, ListOrdered } from '@lucide/svelte';
+	import { Baseline, Bold, Italic, List, ListOrdered } from '@lucide/svelte';
 	import { m } from '$lib/paraglide/messages';
+
+	// Toned-down text. Serialized as attribute-free <small> (HTML's side-comment
+	// element) so it passes the exact-token sanitizer; styled via .rich-text.
+	const Muted = Mark.create({
+		name: 'muted',
+		parseHTML: () => [{ tag: 'small' }],
+		renderHTML: () => ['small', 0]
+	});
 
 	let {
 		label,
@@ -36,7 +44,8 @@
 					strike: false,
 					underline: false,
 					dropcursor: false
-				})
+				}),
+				Muted
 			],
 			content: value, // re-seeds after a {#key locale} recreation
 			editorProps: {
@@ -88,6 +97,12 @@
 			icon: ListOrdered,
 			active: 'orderedList',
 			cmd: (e) => e.chain().focus().toggleOrderedList().run()
+		},
+		{
+			label: m.rteMuted,
+			icon: Baseline,
+			active: 'muted',
+			cmd: (e) => e.chain().focus().toggleMark('muted').run()
 		}
 	];
 </script>

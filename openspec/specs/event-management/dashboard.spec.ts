@@ -96,6 +96,25 @@ test('bold formatting persists and renders for invitees', async ({ page }) => {
 	await expect(page.locator('strong', { hasText: 'Husk madkurv' })).toBeVisible();
 });
 
+test('muted text persists and renders toned down for invitees', async ({ page }) => {
+	seed();
+	await page.goto(`/e/${OTOK}`);
+	await page.getByRole('button', { name: m.edit() }).first().click();
+	const form = page.locator('form[action="?/saveDetails"]');
+	const desc = form.getByRole('textbox', { name: m.fieldDescription() });
+	await desc.fill('Kun hvis vejret holder');
+	await desc.press('ControlOrMeta+a');
+	await form.getByRole('button', { name: m.rteMuted() }).click();
+	await form.getByRole('button', { name: m.save() }).click();
+	await expect.poll(() => eventDetails(EV).description).toContain('<small>');
+
+	await page.goto(`/r/${RTOK}`);
+	const muted = page.locator('small', { hasText: 'Kun hvis vejret holder' });
+	await expect(muted).toBeVisible();
+	// Toned down = rendered at reduced opacity relative to the surrounding text.
+	await expect(muted).toHaveCSS('opacity', '0.65');
+});
+
 test('disallowed markup is stripped server-side', async ({ page }) => {
 	seed();
 	// Bypass the editor: a crafted POST is the case the server must defend.

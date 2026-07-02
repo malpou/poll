@@ -9,6 +9,7 @@
 	"rteItalic": "Italic",
 	"rteBulletList": "Bulleted list",
 	"rteOrderedList": "Numbered list",
+	"rteMuted": "Muted",
 	"fieldLanguage": "Language",
 	"fieldTimezone": "Timezone",
 	"fieldMode": "Who can respond",

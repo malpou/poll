@@ -19,6 +19,8 @@ const ALLOWED = [
 	'/ol',
 	'li',
 	'/li',
+	'small',
+	'/small',
 	'br'
 ];
 

@@ -59,3 +59,9 @@ body {
 	font-weight: 600;
 	color: var(--color-ink);
 }
+.rich-text small {
+	/* Muted text: tone relative to context (the description already renders in
+	   ink-muted on display pages), keep the size - it's a color tool. */
+	font-size: inherit;
+	opacity: 0.65;
+}

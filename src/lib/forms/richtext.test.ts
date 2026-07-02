@@ -7,7 +7,8 @@ import { sanitizeRichText, richTextIsEmpty, isRichText, toEditorHtml } from './r
 
 describe('sanitizeRichText', () => {
 	it('keeps every allowed tag', () => {
-		const html = '<p><strong>a</strong> <em>b</em><br></p><ul><li>c</li></ul><ol><li>d</li></ol>';
+		const html =
+			'<p><strong>a</strong> <em>b</em> <small>c</small><br></p><ul><li>d</li></ul><ol><li>e</li></ol>';
 		expect(sanitizeRichText(html)).toBe(html);
 	});
 
