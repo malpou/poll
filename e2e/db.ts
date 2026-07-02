@@ -47,7 +47,7 @@ export interface EventSeed {
 	title: string;
 	description?: string | null;
 	organizerToken: string;
-	status: 'open' | 'closed';
+	status: 'open' | 'closed' | 'cancelled';
 	locale?: Locale; // omit → column default 'da'
 	pollMode?: 'assigned' | 'open'; // omit → column default 'assigned'
 	shareToken?: string; // open-mode shared link token
@@ -60,6 +60,7 @@ export interface DateOptionSeed {
 	endsAt?: string | null;
 	label?: string | null;
 	sortOrder: number;
+	selected?: boolean; // chosen when the poll was closed; omit → not chosen
 }
 export interface InviteeSeed {
 	id: string;
@@ -85,8 +86,8 @@ export function seedEvent(e: EventSeed) {
 
 export function seedDateOption(o: DateOptionSeed) {
 	d1(
-		`INSERT INTO date_options (id, event_id, starts_at, ends_at, label, sort_order) VALUES
-		   (${lit(o.id)}, ${lit(o.eventId)}, ${lit(o.startsAt)}, ${lit(o.endsAt)}, ${lit(o.label)}, ${o.sortOrder});`
+		`INSERT INTO date_options (id, event_id, starts_at, ends_at, label, sort_order, selected) VALUES
+		   (${lit(o.id)}, ${lit(o.eventId)}, ${lit(o.startsAt)}, ${lit(o.endsAt)}, ${lit(o.label)}, ${o.sortOrder}, ${o.selected ? 1 : 0});`
 	);
 }
 
@@ -165,4 +166,15 @@ export function inviteesFor(eventId: string): { id: string; label: string; token
 export function countResponsesForOption(optionId: string): number {
 	return d1(`SELECT COUNT(*) AS n FROM responses WHERE date_option_id = ${lit(optionId)}`)
 		.results[0].n as number;
+}
+
+export function eventStatus(eventId: string): string {
+	return d1(`SELECT status FROM events WHERE id = ${lit(eventId)}`).results[0].status as string;
+}
+
+// The options recorded as the closing decision - empty while open/cancelled.
+export function selectedOptionIds(eventId: string): string[] {
+	return d1(
+		`SELECT id FROM date_options WHERE event_id = ${lit(eventId)} AND selected = 1 ORDER BY sort_order`
+	).results.map((r) => r.id as string);
 }

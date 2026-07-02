@@ -10,6 +10,7 @@ import {
 	seedEvent,
 	seedInvitee,
 	seedResponse,
+	selectedOptionIds,
 	setNote,
 	wipeEvent,
 	type ResponseSeed
@@ -211,22 +212,26 @@ test('close stops response edits; reopen restores them', async ({ page }) => {
 	seed();
 	await page.goto(`/e/${OTOK}`);
 
-	// Close from the dashboard.
+	// Closing means deciding: pick the (only) date, then confirm.
 	await page.getByRole('button', { name: m.closePoll() }).click();
-	await expect(page.getByText(m.closedBanner())).toBeVisible();
+	await page.getByRole('checkbox', { name: m.selectDateLabel() }).check();
+	await page.getByRole('button', { name: m.confirmClose() }).click();
+	await expect(page.getByText(m.chosenDateHeading())).toBeVisible();
+	await expect.poll(() => selectedOptionIds(EV)).toEqual([OPT]);
 
-	// The invitee link is now read-only (iteration-4 path).
+	// The invitee link is now read-only and shows the outcome instead of a form.
 	await page.goto(`/r/${RTOK}`);
-	await expect(page.getByText(m.closedBanner())).toBeVisible();
+	await expect(page.getByText(m.chosenDateHeading())).toBeVisible();
 	await expect(page.getByRole('button', { name: m.sendAnswer() })).toHaveCount(0);
 
-	// Reopen → the invitee can edit again. Anna was seeded with an answer, so the
-	// response bar shows the "saved / Rediger" affordance (not a fresh "Send svar")
-	// - that Rediger button only renders when the event is open, so its presence is
-	// exactly the "edits restored" signal. Clicking it reveals the submit button.
+	// Reopen → the decision is discarded and the invitee can edit again. Anna was
+	// seeded with an answer, so the response bar shows the "saved / Rediger"
+	// affordance (not a fresh "Send svar") - that Rediger button only renders when
+	// the event is open, so its presence is exactly the "edits restored" signal.
 	await page.goto(`/e/${OTOK}`);
 	await page.getByRole('button', { name: m.reopenPoll() }).click();
-	await expect(page.getByText(m.closedBanner())).toHaveCount(0);
+	await expect(page.getByText(m.chosenDateHeading())).toHaveCount(0);
+	await expect.poll(() => selectedOptionIds(EV)).toEqual([]);
 	await page.goto(`/r/${RTOK}`);
 	await expect(page.getByText(m.closedBanner())).toHaveCount(0);
 	await page.getByRole('button', { name: m.editAnswer() }).click();
