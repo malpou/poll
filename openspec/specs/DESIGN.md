@@ -27,9 +27,9 @@ theme token instead.
 - **Paper grain:** a subtle noise overlay (inline-SVG `feTurbulence` data URI
   on a `body::before` pseudo-element, ~5% opacity, `pointer-events: none`)
   sits over the whole page. No image assets, no JS.
-- **Highlighter accent — a poll setting, not a fixed token.** Four options:
+- **Highlighter accent — a poll setting, not a fixed token.** Five options:
   yellow `#f7e36b` (default), pink `#ffc9d4`, green `#c9e6a5`, blue
-  `#bfdcf3`. The organizer picks it at creation and can change it when
+  `#bfdcf3`, purple `#d9c9f0`. The organizer picks it at creation and can change it when
   editing the poll; every page of that poll renders with it. The event page
   root carries `data-accent="<name>"`; `layout.css` maps each name to the
   `--hl` custom property, and every highlighter-tinted style references
@@ -102,6 +102,9 @@ theme token instead.
   `border-strong` border, ink border + ring when active); the artwork is the
   MIT-licensed circle-flags SVG set, inlined — no external requests. Each
   language's native name stays as the radio's accessible label and tooltip.
+  On the create page both swatch rows are legend-less and sit in the sheet's
+  top corners — accent top-left, language top-right — collapsing to a
+  centered vertical stack on phones.
 - **Buttons** (the `Button` atom's three variants): primary ink-filled
   (52px, full-width, hover lift, the arrow icon trailing the label), dashed
   add-row, ghost ink-bordered (36px, inverts to ink on hover, with an

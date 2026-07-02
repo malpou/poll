@@ -83,6 +83,9 @@
 [data-accent='blue'] {
 	--hl: #bfdcf3;
 }
+[data-accent='purple'] {
+	--hl: #d9c9f0;
+}
 
 body {
 	@apply bg-paper text-ink min-h-screen font-sans;

@@ -76,14 +76,18 @@
 	class="mx-auto max-w-160 px-4 pb-18 pt-7"
 >
 	<div class="paper-sheet">
-		<!-- Language row: circular flag swatches (native names stay as the
-	     accessible labels). Sits outside {#key} so switching keeps focus. -->
-		<LanguagePicker
-			bind:value={locale}
-			onpick={pickLocale}
-			showLegend={false}
-			class="mb-6 items-end"
-		/>
+		<!-- Corner pickers: accent top-left, language top-right; stacked and
+	     centered on phones. Both are legend-less swatch rows. The accent
+	     picker keeps its own {#key} so its swatch labels re-translate on a
+	     language switch (the language picker owns the key and stays put). -->
+		<div
+			class="mb-6 flex flex-col items-center gap-4 sm:flex-row sm:items-start sm:justify-between"
+		>
+			{#key locale}
+				<AccentPicker bind:value={accent} showLegend={false} />
+			{/key}
+			<LanguagePicker bind:value={locale} onpick={pickLocale} showLegend={false} />
+		</div>
 
 		<!-- Re-render every m.*() under the newly picked locale. Form state (title,
 	     dates, participants) lives in $state above the block, so it survives. -->
@@ -172,10 +176,6 @@
 				<p class="text-caption leading-relaxed text-ink-muted">{m.choicesHint()}</p>
 				<input type="hidden" name="allowPreferred" value={allowPreferred ? '1' : '0'} />
 				<input type="hidden" name="allowUnsure" value={allowUnsure ? '1' : '0'} />
-			</div>
-
-			<div class="mb-9">
-				<AccentPicker bind:value={accent} />
 			</div>
 
 			{#if pollMode === 'assigned'}

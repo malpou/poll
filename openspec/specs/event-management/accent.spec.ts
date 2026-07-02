@@ -14,7 +14,7 @@ const OTOK = 'e2e-accent-otok';
 const RTOK = 'e2e-accent-rtok';
 const TITLE = 'Accent poll';
 
-function seed(accent?: 'yellow' | 'pink' | 'green' | 'blue') {
+function seed(accent?: 'yellow' | 'pink' | 'green' | 'blue' | 'purple') {
 	wipeEvent(EV);
 	seedEvent({ id: EV, title: TITLE, organizerToken: OTOK, status: 'open', accent });
 	seedDateOption({ id: 'e2e-accent-opt', eventId: EV, sortOrder: 0 });

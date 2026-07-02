@@ -22,7 +22,7 @@ export interface Participant {
 export type PollMode = 'assigned' | 'open';
 
 // The poll's highlighter accent; validated at the form boundary (no SQL CHECK).
-export const ACCENTS = ['yellow', 'pink', 'green', 'blue'] as const;
+export const ACCENTS = ['yellow', 'pink', 'green', 'blue', 'purple'] as const;
 export type Accent = (typeof ACCENTS)[number];
 
 export interface EventDraft {
