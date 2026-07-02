@@ -157,7 +157,7 @@ async function resolve(platform: App.Platform | undefined, token: string) {
 
 /**
  * Reports whether a poll is not open. A closed or cancelled poll is immutable
- * except for reopening (specs/poll-closing) - the UI hides the edit
+ * except for reopening (openspec/specs/poll-closing) - the UI hides the edit
  * affordances, but the recorded decision must also survive a crafted POST.
  */
 function notOpen(event: { status: string }) {
@@ -299,7 +299,7 @@ export const actions = {
 		const { provider, event } = await resolve(platform, params.token);
 		if (!event) return fail(404);
 		if (notOpen(event)) return fail(409);
-		// Open mode has no hand-managed roster (specs/invitee-links) - the UI hides
+		// Open mode has no hand-managed roster (openspec/specs/invitee-links) - the UI hides
 		// these forms, but a crafted POST must be rejected too.
 		if (event.pollMode === 'open') return fail(409);
 		const label = field(await request.formData(), 'label');
@@ -341,7 +341,7 @@ export const actions = {
 		if (!event) return fail(404);
 		if (notOpen(event)) return fail(409);
 		// Closing means deciding: at least one chosen option, every id belonging
-		// to this event (specs/poll-closing).
+		// to this event (openspec/specs/poll-closing).
 		const form = await request.formData();
 		const ids = [
 			...new Set(form.getAll('selectedOptionIds').filter((v): v is string => typeof v === 'string'))

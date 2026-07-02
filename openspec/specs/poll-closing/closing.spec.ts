@@ -1,5 +1,5 @@
 import { test, expect, type Page } from '@playwright/test';
-import { m } from '../../src/lib/paraglide/messages';
+import { m } from '../../../src/lib/paraglide/messages';
 import {
 	eventStatus,
 	optionIds,

@@ -1,6 +1,6 @@
 import { test, expect, type Page } from '@playwright/test';
-import { m } from '../../src/lib/paraglide/messages';
-import type { Preference } from '../../src/lib/types';
+import { m } from '../../../src/lib/paraglide/messages';
+import type { Preference } from '../../../src/lib/types';
 import {
 	seedDateOption,
 	seedEvent,

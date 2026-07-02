@@ -21,7 +21,7 @@ export default defineConfig({
 					filename.split(/[/\\]/).includes('node_modules') ? undefined : true
 			},
 
-			// Cloudflare Workers + D1, served at poll.malpou.io. See specs/PROJECT.md.
+			// Cloudflare Workers + D1, served at poll.malpou.io. See openspec/specs/PROJECT.md.
 			adapter: adapter()
 		})
 	]

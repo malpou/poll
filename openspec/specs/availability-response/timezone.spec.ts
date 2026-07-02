@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { m } from '../../src/lib/paraglide/messages';
+import { m } from '../../../src/lib/paraglide/messages';
 import { seedDateOption, seedEvent, seedInvitee, wipeEvent } from '../support/db';
 
 // Times shown in the event's timezone (specs/availability-response): the

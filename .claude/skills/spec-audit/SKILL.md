@@ -1,6 +1,6 @@
 ---
 name: spec-audit
-description: Audit spec.md ↔ .spec.ts ↔ src drift across all spec areas, plus PROJECT.md vs reality. Reports scenarios without tests, tests without scenarios, and spec claims contradicted by code.
+description: Audit spec.md ↔ .spec.ts ↔ src drift across all openspec/specs capabilities, plus PROJECT.md vs reality and stale openspec/changes. Reports scenarios without tests, tests without scenarios, and spec claims contradicted by code.
 disable-model-invocation: true
 ---
 
@@ -12,10 +12,14 @@ write nothing to disk.
 
 ## Procedure
 
-1. Enumerate areas at runtime: `ls specs/*/spec.md`. Never assume the list —
-   new areas must be picked up automatically.
-2. Fan out with the Workflow tool: one agent per area plus one for
-   `specs/PROJECT.md` and one for `specs/DESIGN.md`, all in parallel. Inline
+1. Enumerate capabilities at runtime: `ls openspec/specs/*/spec.md` (skip
+   `support/` - shared e2e helpers, not a capability). Never assume the
+   list — new capabilities must be picked up automatically. Also list
+   in-flight changes: `openspec list` (anything under `openspec/changes/`
+   that is fully implemented but not archived/synced is a finding).
+2. Fan out with the Workflow tool: one agent per capability plus one for
+   `openspec/specs/PROJECT.md` and one for `openspec/specs/DESIGN.md`, all
+   in parallel. Inline
    the just-enumerated area list as a literal in the script (don't rely on
    `args` reaching it). Use this findings schema for every agent:
 
@@ -57,7 +61,7 @@ write nothing to disk.
 
 3. Area-agent prompt template:
 
-   > Read `specs/<area>/spec.md`, every `specs/<area>/*.spec.ts`, and the src
+   > Read `openspec/specs/<area>/spec.md`, every `openspec/specs/<area>/*.spec.ts`, and the src
    > files implementing the behavior (grep from `src/routes/` and `src/lib/`).
    > Match scenarios to test titles by semantic traceability, NOT string
    > equality — "Scenario: A tie" ↔ "a tie highlights both options" is a
@@ -78,7 +82,7 @@ write nothing to disk.
    animation pattern) that DESIGN.md doesn't document yet.
 
 4. Aggregate one markdown report in chat: grouped by area, worst-first, one
-   line per finding, ending with a one-paragraph verdict (is specs/ currently
-   trustworthy as the source of truth?).
+   line per finding, ending with a one-paragraph verdict (is openspec/specs/
+   currently trustworthy as the source of truth?).
 5. Optional runtime leg — only when the user asks: `bun run test:e2e` to
    confirm the suites are green.

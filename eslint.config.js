@@ -100,9 +100,9 @@ export default defineConfig(
 		extends: [ts.configs.disableTypeChecked]
 	},
 	{
-		// Playwright specs (specs/**/*.spec.ts + their support helpers) and the
+		// Playwright specs (openspec/specs/**/*.spec.ts + their support helpers) and the
 		// config skip type-aware rules rather than wiring a separate project.
-		files: ['specs/**/*.ts', 'playwright.config.ts'],
+		files: ['openspec/specs/**/*.ts', 'playwright.config.ts'],
 		extends: [ts.configs.disableTypeChecked]
 	}
 );

@@ -1,5 +1,5 @@
 import { test, expect, type Page } from '@playwright/test';
-import { m } from '../../src/lib/paraglide/messages';
+import { m } from '../../../src/lib/paraglide/messages';
 import { inviteesFor, responsesFor, seedDateOption, seedEvent, wipeEvent } from '../support/db';
 
 // Open mode: one shared /s/{share_token} link. Anyone opening it names themselves

@@ -1,15 +1,16 @@
 ---
 name: spec-feature
-description: Spec-first change procedure for this repo. Use whenever adding a feature, changing or removing behavior, fixing a bug that alters observable behavior, or adding a UI flow — BEFORE writing src code. Covers updating specs/<area>/spec.md, writing the colocated Playwright test, and the e2e seeding conventions.
+description: Spec-first change procedure for this repo. Use whenever adding a feature, changing or removing behavior, fixing a bug that alters observable behavior, or adding a UI flow — BEFORE writing src code. Covers updating openspec/specs/<capability>/spec.md, writing the colocated Playwright test, and the e2e seeding conventions.
 ---
 
 # Spec-first change procedure
 
 ## Steps
 
-1. **Locate the area.** `ls specs/*/spec.md`; pick the matching directory or
-   create a new `specs/<area>/` with a `spec.md` and a `<area>.spec.ts`
-   together.
+1. **Locate the capability.** `openspec list --specs` (or
+   `ls openspec/specs/*/spec.md`); pick the matching directory or create a
+   new `openspec/specs/<capability>/` with a `spec.md` and a
+   `<capability>.spec.ts` together.
 2. **Spec first.** Add or edit the requirement and scenario before any code:
 
    ```markdown
@@ -31,16 +32,26 @@ description: Spec-first change procedure for this repo. Use whenever adding a fe
 3. **Test second.** Write the colocated `.spec.ts` test; derive the title
    from the scenario name so it's recognizably traceable.
 4. **Implement** in `src/` until green.
-5. **Design rules.** If the change touches UI, follow `specs/DESIGN.md`
+5. **Design rules.** If the change touches UI, follow `openspec/specs/DESIGN.md`
    (palette, type, icons, motion). Introducing or altering a design rule —
    a new color, icon convention, animation, spacing pattern — updates
    DESIGN.md in the same change; conforming to existing rules does not.
 6. **Verify:** `bun run check && bun run test && bun run test:e2e`.
 
+## OpenSpec workflow (larger changes)
+
+For multi-step features, prefer the OpenSpec change flow: `/opsx:propose`
+creates `openspec/changes/<name>/` (proposal, delta specs, design, tasks),
+`/opsx:apply` implements, `/opsx:archive` folds the delta into the main
+spec. The invariant is unchanged either way: the main
+`openspec/specs/<capability>/spec.md` AND its colocated `.spec.ts` are
+updated by the time the change lands - a synced delta without a matching
+test is drift.
+
 ## Test conventions
 
 - Assert Paraglide strings, never literals:
-  `import { m } from '../../src/lib/paraglide/messages'` →
+  `import { m } from '../../../src/lib/paraglide/messages'` →
   `page.getByText(m.bestDate())`.
 - Seed via `../support/db` helpers (`seedEvent`, `seedDateOption`,
   `seedInvitee`, `seedResponse`, `wipeEvent`). Call your `seed()` inside each

@@ -23,7 +23,7 @@
 		"src/**/*.js",
 		"src/**/*.ts",
 		"src/**/*.svelte",
-		"specs/**/*.ts"
+		"openspec/specs/**/*.ts"
 	],
 	// Paraglide's generated server.js trips checkJs against Cloudflare's Request
 	// type; we don't import it (locale is resolved in hooks.server.ts). The typed

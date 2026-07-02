@@ -1,7 +1,7 @@
 import Database from 'better-sqlite3';
 import { readdirSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
-import type { Locale, Preference } from '../../src/lib/types';
+import type { Locale, Preference } from '../../../src/lib/types';
 
 // The single home for e2e DB access. Specs seed/read the local D1 through these
 // typed builders and never write SQL themselves - mirroring how src/lib/data/d1.ts
@@ -19,7 +19,7 @@ function conn(): Database.Database {
 	// globalSetup runs d1:migrate before the server boots, so the file exists by
 	// the first seed. Name is a content hash; metadata.sqlite is miniflare's own.
 	const dir = fileURLToPath(
-		new URL('../../.wrangler/state/v3/d1/miniflare-D1DatabaseObject', import.meta.url)
+		new URL('../../../.wrangler/state/v3/d1/miniflare-D1DatabaseObject', import.meta.url)
 	);
 	const file = readdirSync(dir).find((f) => f.endsWith('.sqlite') && f !== 'metadata.sqlite');
 	if (!file) throw new Error(`no local D1 sqlite under ${dir} - did globalSetup migrate?`);

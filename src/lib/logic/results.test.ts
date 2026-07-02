@@ -3,7 +3,7 @@ import { buildOutcome, markBest } from './results';
 import type { DateOptionResult } from '../types';
 
 // buildOutcome drives the participant-facing outcome view on a decided poll
-// (specs/poll-closing): per-option counts + percentages, chosen flags, and the
+// (openspec/specs/poll-closing): per-option counts + percentages, chosen flags, and the
 // legacy null for polls closed before decisions existed.
 
 const counts = (rows: DateOptionResult[]) => new Map(rows.map((r) => [r.dateOptionId, r]));
@@ -64,7 +64,7 @@ describe('buildOutcome', () => {
 });
 
 // markBest ranks options by weighted net score preferred*1.2 + available -
-// unavailable (specs/results Best-option highlight), flagging every row that
+// unavailable (openspec/specs/results Best-option highlight), flagging every row that
 // ties the top score.
 describe('markBest', () => {
 	it('flags the single highest-scoring option', () => {

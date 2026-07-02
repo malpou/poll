@@ -2,7 +2,7 @@ import type { DataProvider } from '$lib/data/provider';
 import type { DateOptionResult, DateOptionRow, EventRow } from '$lib/types';
 
 /**
- * Ranks options by weighted net score (specs/results/spec.md):
+ * Ranks options by weighted net score (openspec/specs/results/spec.md):
  * `preferred*1.2 + available - unavailable`, highest wins. Counting available
  * stops a thinly-answered date from tying well-attended ones. Ties on the same
  * score flag every matching row as best, leaving the final call to the organizer.
@@ -22,7 +22,7 @@ export function markBest<T extends { preferred: number; available: number; unava
 	}));
 }
 
-// Outcome view for a decided poll (specs/poll-closing): per-option counts and
+// Outcome view for a decided poll (openspec/specs/poll-closing): per-option counts and
 // percentages shown to participants after close. Null when no option is
 // selected - polls closed before decisions existed render as plain closed.
 // Percentage denominator is that option's full roster (answered + not), the

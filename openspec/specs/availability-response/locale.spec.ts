@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { m } from '../../src/lib/paraglide/messages';
+import { m } from '../../../src/lib/paraglide/messages';
 import { seedDateOption, seedEvent, seedInvitee, wipeEvent } from '../support/db';
 
 // A poll stores one locale (same for every consumer, resolved server-side from

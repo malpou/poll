@@ -29,7 +29,7 @@ export const load: PageServerLoad = async ({ params, platform, url }) => {
 				: new Set<string>();
 
 		// Decided poll → chosen dates + count distribution (counts only, never
-		// names); null on a poll closed before decisions existed (specs/poll-closing).
+		// names); null on a poll closed before decisions existed (openspec/specs/poll-closing).
 		const outcome = await outcomeFor(provider, ctx.event, ctx.dateOptions);
 
 		return {

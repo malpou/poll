@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { m } from '../../src/lib/paraglide/messages';
+import { m } from '../../../src/lib/paraglide/messages';
 import {
 	countResponsesForOption,
 	eventDetails,
