@@ -24,7 +24,7 @@ function seed(accent?: 'yellow' | 'pink' | 'green' | 'blue' | 'purple') {
 // Fill the minimum valid create form. Dates are picked from the month
 // calendar; the poll title is the only other required field.
 async function fillCreateForm(page: Page) {
-	await page.goto('/');
+	await page.goto('/create');
 	await page.getByLabel(m.fieldTitle()).fill(TITLE);
 	await page.getByRole('button', { name: '12', exact: true }).click();
 }

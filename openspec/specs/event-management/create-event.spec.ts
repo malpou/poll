@@ -2,9 +2,10 @@ import { test, expect, type Page } from '@playwright/test';
 import { m } from '../../../src/lib/paraglide/messages';
 import { d1 } from '../support/db';
 
-// The create page renders in the browser's preferred locale (Accept-Language).
-// Pin an English browser so bare m.*() assertions (baseLocale = en) match the
-// page. The browser timezone is pinned too, for the tz-picker default test.
+// The bare /create URL renders in English (language-specific URLs carry the
+// other locales). Pin an English browser so bare m.*() assertions (baseLocale =
+// en) match the page. The browser timezone is pinned too, for the tz-picker
+// default test.
 test.use({ locale: 'en-US', timezoneId: 'America/New_York' });
 
 // Candidate dates are toggled in a month calendar that opens on the current
@@ -28,7 +29,7 @@ async function addDate(page: Page, day: number, startTime = '', endTime = '') {
 }
 
 test('valid submit creates an event and redirects to /e/{token}', async ({ page }) => {
-	await page.goto('/');
+	await page.goto('/create');
 	await page.getByLabel(m.fieldTitle()).fill('Sommerfest');
 	await addDate(page, 12);
 	await expect(page.locator('input[name="dates.0.value"]')).toHaveValue(isoFor(12));
@@ -38,7 +39,7 @@ test('valid submit creates an event and redirects to /e/{token}', async ({ page 
 });
 
 test('days are picked from the calendar; toggling again deselects', async ({ page }) => {
-	await page.goto('/');
+	await page.goto('/create');
 	// Two toggled days → two selected date options.
 	await addDate(page, 12);
 	await page.getByRole('button', { name: '14', exact: true }).click();
@@ -51,7 +52,7 @@ test('days are picked from the calendar; toggling again deselects', async ({ pag
 });
 
 test('several time slots on one day yield one date option per slot', async ({ page }) => {
-	await page.goto('/');
+	await page.goto('/create');
 	await page.getByLabel(m.fieldTitle()).fill('To tider samme dag');
 	await addDate(page, 12, '10:00', '11:00');
 	// A second slot on the same day posts as its own dates.{i}.* row.
@@ -74,35 +75,35 @@ test('several time slots on one day yield one date option per slot', async ({ pa
 });
 
 test('zero date options is rejected with a validation message, no redirect', async ({ page }) => {
-	await page.goto('/');
+	await page.goto('/create');
 	await page.getByLabel(m.fieldTitle()).fill('Sommerfest');
 	// Toggle no days → zero options server-side.
 	await page.getByRole('button', { name: m.create() }).click();
 	// exact - the dates hint copy also contains this phrase as a substring.
 	await expect(page.getByText(m.errorNoDates(), { exact: true })).toBeVisible();
-	await expect(page).toHaveURL(/\/$/);
+	await expect(page).toHaveURL(/\/create$/);
 });
 
 test('end time without a start time is rejected server-side', async ({ page }) => {
-	await page.goto('/');
+	await page.goto('/create');
 	await page.getByLabel(m.fieldTitle()).fill('Sommerfest');
 	await addDate(page, 12, '', '11:00');
 	await page.getByRole('button', { name: m.create() }).click();
 	await expect(page.getByText(m.errorEndNeedsStart())).toBeVisible();
-	await expect(page).toHaveURL(/\/$/);
+	await expect(page).toHaveURL(/\/create$/);
 });
 
 test('end time before start time is rejected server-side', async ({ page }) => {
-	await page.goto('/');
+	await page.goto('/create');
 	await page.getByLabel(m.fieldTitle()).fill('Sommerfest');
 	await addDate(page, 12, '12:00', '10:00');
 	await page.getByRole('button', { name: m.create() }).click();
 	await expect(page.getByText(m.errorEndBeforeStart())).toBeVisible();
-	await expect(page).toHaveURL(/\/$/);
+	await expect(page).toHaveURL(/\/create$/);
 });
 
 test('language picker switches the whole form live, no reload', async ({ page }) => {
-	await page.goto('/');
+	await page.goto('/create');
 	// en-US browser (see test.use above) → English create page.
 	await expect(
 		page.getByRole('heading', { name: m.createTitle({}, { locale: 'en' }) })
@@ -118,18 +119,27 @@ test('language picker switches the whole form live, no reload', async ({ page })
 	await expect(page.getByRole('button', { name: m.create({}, { locale: 'es' }) })).toBeVisible();
 	await expect(page.locator('html')).toHaveAttribute('lang', 'es');
 
-	// And on to German, still no navigation (URL stays "/").
+	// And on to German: still no reload, but the URL follows shallowly.
 	await page.getByRole('radio', { name: 'Deutsch' }).check();
 	await expect(
 		page.getByRole('heading', { name: m.createTitle({}, { locale: 'de' }) })
 	).toBeVisible();
-	await expect(page).toHaveURL(/\/$/);
+	await expect(page).toHaveURL(/\/de\/create$/);
+});
+
+test('picking a language moves the create URL to that language', async ({ page }) => {
+	await page.goto('/create');
+	await page.getByRole('radio', { name: 'Dansk' }).check();
+	await expect(
+		page.getByRole('heading', { name: m.createTitle({}, { locale: 'da' }) })
+	).toBeVisible();
+	await expect(page).toHaveURL(/\/da\/create$/);
 });
 
 test('timezone picker defaults to the visitor timezone and persists on create', async ({
 	page
 }) => {
-	await page.goto('/');
+	await page.goto('/create');
 	// The combo box shows the browser's own zone (pinned above); the hidden
 	// input carries the IANA id the form will post.
 	await expect(page.getByRole('combobox', { name: m.fieldTimezone() })).toHaveValue(
@@ -146,7 +156,7 @@ test('timezone picker defaults to the visitor timezone and persists on create', 
 });
 
 test('timezone picker labels follow the picked language', async ({ page }) => {
-	await page.goto('/');
+	await page.goto('/create');
 	// English browser first: the selected zone shows identifier plus English
 	// generic zone name.
 	await expect(page.getByRole('combobox', { name: m.fieldTimezone() })).toHaveValue(
@@ -160,7 +170,7 @@ test('timezone picker labels follow the picked language', async ({ page }) => {
 });
 
 test('choosing a timezone by typing creates the event in that zone', async ({ page }) => {
-	await page.goto('/');
+	await page.goto('/create');
 	await page.getByLabel(m.fieldTitle()).fill('CPH brunch');
 	await addDate(page, 12);
 
@@ -177,11 +187,43 @@ test('choosing a timezone by typing creates the event in that zone', async ({ pa
 });
 
 test('text matching no timezone reverts to the previous selection', async ({ page }) => {
-	await page.goto('/');
+	await page.goto('/create');
 	const combo = page.getByRole('combobox', { name: m.fieldTimezone() });
 	await combo.fill('not a real zone');
 	// No suggestion matches, so leaving the field falls back to the default.
 	await page.keyboard.press('Tab');
 	await expect(combo).toHaveValue('America/New_York (Eastern Time)');
 	await expect(page.locator('input[name="timezone"]')).toHaveValue('America/New_York');
+});
+
+// --- Requirement: Create page language ---
+
+test('create page follows the site language from the URL', async ({ page }) => {
+	// Browser is pinned en-US (see test.use above): the URL segment wins.
+	await page.goto('/da/create');
+	await expect(page.locator('html')).toHaveAttribute('lang', 'da');
+	await expect(
+		page.getByRole('heading', { name: m.createTitle({}, { locale: 'da' }) })
+	).toBeVisible();
+	// The poll-language picker defaults to the page language.
+	await expect(page.getByRole('radio', { name: 'Dansk' })).toBeChecked();
+});
+
+test('bare create URL is English', async ({ page }) => {
+	await page.goto('/create');
+	await expect(page.locator('html')).toHaveAttribute('lang', 'en');
+	await expect(page.getByRole('heading', { name: m.createTitle() })).toBeVisible();
+	await expect(page.getByRole('radio', { name: 'English' })).toBeChecked();
+});
+
+// --- Requirement: Create page highlighter hand-off ---
+
+test('landing highlighter seeds the create form and stays in the URL', async ({ page }) => {
+	// The ?accent= carried over from the landing page seeds the picker.
+	await page.goto('/create?accent=pink');
+	await expect(page.getByRole('radio', { name: m.accentPink() })).toBeChecked();
+	await expect(page.locator('form[data-accent="pink"]')).toBeVisible();
+	// Picking another keeps the URL in sync, so a reload keeps the choice.
+	await page.getByRole('radio', { name: m.accentGreen() }).check();
+	await expect(page).toHaveURL(/\/create\?accent=green$/);
 });

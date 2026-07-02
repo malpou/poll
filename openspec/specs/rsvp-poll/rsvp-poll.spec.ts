@@ -62,7 +62,7 @@ function resultsSection(page: Page) {
 // --- Requirement: Create an RSVP poll ---
 
 test('creating an RSVP event with one date lands on the dashboard', async ({ page }) => {
-	await page.goto('/');
+	await page.goto('/create');
 	await page.getByRole('radio', { name: m.pollTypeRsvp() }).check();
 	await page.getByLabel(m.fieldTitle()).fill('Garden party');
 	await page.getByRole('button', { name: '12', exact: true }).click();
@@ -81,7 +81,7 @@ test('creating an RSVP event with one date lands on the dashboard', async ({ pag
 test('a crafted RSVP creation with two dates is rejected', async ({ page }) => {
 	const base = test.info().project.use.baseURL ?? '';
 	// The single-select calendar can't post two dates - only a crafted request can.
-	await page.request.post('/?/create', {
+	await page.request.post('/create?/create', {
 		headers: { origin: base },
 		form: {
 			title: 'Two dates (e2e-rsvp)',
@@ -102,7 +102,7 @@ test('a crafted RSVP creation with two dates is rejected', async ({ page }) => {
 });
 
 test('the RSVP create form offers no choice toggles', async ({ page }) => {
-	await page.goto('/');
+	await page.goto('/create');
 	// Dates type shows the answer-choice toggles...
 	await expect(page.getByText(m.fieldChoices())).toBeVisible();
 	await page.getByRole('radio', { name: m.pollTypeRsvp() }).check();

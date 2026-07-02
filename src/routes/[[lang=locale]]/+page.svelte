@@ -1,0 +1,108 @@
+<script lang="ts">
+	import { browser } from '$app/environment';
+	import { replaceState } from '$app/navigation';
+	import AccentPicker from '$lib/components/atoms/AccentPicker.svelte';
+	import HreflangLinks from '$lib/components/atoms/HreflangLinks.svelte';
+	import LanguagePicker from '$lib/components/atoms/LanguagePicker.svelte';
+	import SectionHeading from '$lib/components/atoms/SectionHeading.svelte';
+	import LandingExamples from '$lib/components/organisms/LandingExamples.svelte';
+	import { m } from '$lib/paraglide/messages';
+	import { langLabel } from '$lib/logic/locales';
+	import { createUrl, landingUrl } from '$lib/logic/site-urls';
+	import { ArrowRight, X } from '@lucide/svelte';
+	import type { Accent, Locale } from '$lib/types';
+	import type { PageData } from './$types';
+
+	let { data }: { data: PageData } = $props();
+
+	// The landing highlighter previews live (data-accent below) and rides the
+	// ?accent= query into the URL, language switches, and the create
+	// call-to-action.
+	// svelte-ignore state_referenced_locally
+	let accent = $state<Accent>(data.accent);
+
+	// Language switch is a plain navigation: the server re-renders the whole
+	// page in the picked language (marketing pages take locale from the URL).
+	const pickLocale = (next: Locale) => {
+		location.href = landingUrl(next, accent);
+	};
+
+	// The hint is dismissible for the session (sessionStorage). It is hidden
+	// during SSR and appears after hydration, so a dismissal never flashes.
+	let hintDismissed = $derived(!browser || sessionStorage.getItem('langHintDismissed') === '1');
+	function dismissHint() {
+		sessionStorage.setItem('langHintDismissed', '1');
+		hintDismissed = true;
+	}
+</script>
+
+<svelte:head>
+	<title>{m.appName()} · {m.landingTitle()}</title>
+</svelte:head>
+<HreflangLinks />
+
+<div data-accent={accent} data-testid="landing-root" class="mx-auto max-w-160 px-4 pb-18 pt-7">
+	{#if data.hintLocale && !hintDismissed}
+		<div
+			data-testid="lang-hint"
+			class="mb-4 flex items-center gap-2.5 rounded-card border-2 border-border bg-card-alt px-4 py-3 text-sm font-semibold text-ink"
+		>
+			<span class="h-2 w-2 shrink-0 rounded-full bg-ink"></span>
+			<!-- Full page load: the server stamps <html lang> and re-renders every
+			     string in the new language (client-side nav would keep the old). -->
+			<a
+				href={landingUrl(data.hintLocale, data.accent)}
+				data-sveltekit-reload
+				class="underline hover:no-underline"
+			>
+				{m.landingHintLink(
+					{ language: langLabel(data.hintLocale, data.hintLocale) },
+					{ locale: data.hintLocale }
+				)}
+			</a>
+			<button
+				type="button"
+				onclick={dismissHint}
+				aria-label={m.landingHintDismiss({}, { locale: data.hintLocale })}
+				class="ml-auto cursor-pointer text-ink-muted transition-colors duration-150 hover:text-ink"
+			>
+				<X size={16} aria-hidden="true" />
+			</button>
+		</div>
+	{/if}
+
+	<div class="paper-sheet">
+		<!-- Corner pickers, mirroring the create page: accent top-left previews
+		     this page live (and syncs the ?accent= query), language top-right
+		     navigates to that language's URL. -->
+		<div class="mb-6 flex items-start justify-between gap-12">
+			<AccentPicker
+				bind:value={accent}
+				showLegend={false}
+				onpick={(a: Accent) => replaceState(landingUrl(data.pageLocale, a), {})}
+			/>
+			<LanguagePicker value={data.pageLocale} onpick={pickLocale} showLegend={false} alignEnd />
+		</div>
+
+		<h1 class="mb-3 text-title font-bold text-ink">
+			<span class="hl-swipe">{m.landingTitle()}</span>
+		</h1>
+		<p class="mb-3 max-w-prose text-body leading-relaxed text-ink-soft">{m.landingIntro()}</p>
+		<p class="mb-8 max-w-prose text-body leading-relaxed text-ink-soft">{m.landingIntroTypes()}</p>
+
+		<!-- Crawlable create call-to-action; mirrors the Button atom's primary look. -->
+		<a
+			href={createUrl(data.pageLocale, accent)}
+			class="inline-flex h-13 w-full cursor-pointer items-center justify-center gap-1.5 whitespace-nowrap rounded-cta bg-ink px-6 text-body font-bold tracking-wider text-card transition duration-150 hover:-translate-y-0.5 hover:bg-primary-hover"
+		>
+			{m.createTitle()}
+			<ArrowRight size={17} aria-hidden="true" />
+		</a>
+
+		<hr class="my-9 border-t-2 border-dashed border-border" />
+
+		<div class="mb-2"><SectionHeading text={m.landingExamplesTitle()} /></div>
+		<p class="mb-6 max-w-prose text-caption text-ink-muted">{m.landingExamplesHint()}</p>
+		<LandingExamples locale={data.pageLocale} samples={data.samples} />
+	</div>
+</div>

@@ -33,7 +33,7 @@
 	"editLinkHint": "Speichere ihn, um deine Antwort später zu ändern.",
 	"datesSection": "Mögliche Termine",
 	"datesHint": "Füge mindestens einen Termin hinzu. Uhrzeiten sind optional.",
-	"calendarEmptyHint": "Noch keine Termine gewählt — klicke oben in den Kalender.",
+	"calendarEmptyHint": "Noch keine Termine gewählt. Klicke oben in den Kalender.",
 	"addDate": "Termin hinzufügen",
 	"prevMonth": "Voriger Monat",
 	"nextMonth": "Nächster Monat",
@@ -160,5 +160,18 @@
 	"closeSelectHintRsvp": "Bestätige die Veranstaltung oder sage sie ab.",
 	"confirmCancelPollRsvp": "Die Veranstaltung absagen? Die Teilnehmer sehen sie als abgesagt.",
 	"confirmedHeadingRsvp": "Die Veranstaltung findet statt",
-	"cancelledMessageRsvp": "Der Organisator hat die Veranstaltung abgesagt."
+	"cancelledMessageRsvp": "Der Organisator hat die Veranstaltung abgesagt.",
+	"landingTitle": "Frag alle, entscheidet zusammen",
+	"landingIntro": "Ihr müsst euch einigen? Erstelle eine Umfrage, teile sie und sieh alle Antworten an einem Ort. Keine Konten, keine Apps: Alle antworten über einen einfachen Link.",
+	"landingIntroTypes": "Findet einen Termin, zählt wer zu einer Feier kommt, oder klärt jede Frage mit eigenen Antwortmöglichkeiten.",
+	"landingExamplesTitle": "Probier es hier aus",
+	"landingExamplesHint": "Das sind nur Beispiele. Tippe auf eine Antwort und die Zählung bewegt sich; nichts wird gespeichert.",
+	"landingSampleDatesTitle": "Sommeressen bei uns",
+	"landingSampleRsvpTitle": "Noras Geburtstagsfeier",
+	"landingSampleQuestionTitle": "Wohin soll der Familienausflug gehen?",
+	"landingSampleOptionA": "Das Strandhaus",
+	"landingSampleOptionB": "Die Berge",
+	"landingSampleOptionC": "Ein Wochenende in der Stadt",
+	"landingHintLink": "Diese Seite auf {language} lesen",
+	"landingHintDismiss": "Schließen"
 }

@@ -61,7 +61,7 @@ async function addTextOption(page: Page, text: string) {
 // --- Requirement: Poll type chosen at creation ---
 
 test('creating a question poll with two text options lands on the dashboard', async ({ page }) => {
-	await page.goto('/');
+	await page.goto('/create');
 	await pickQuestionType(page);
 	await page.getByLabel(m.fieldTitle()).fill('Team lunch spot');
 	await addTextOption(page, 'Pizza place');
@@ -79,7 +79,7 @@ test('creating a question poll with two text options lands on the dashboard', as
 });
 
 test('an untouched type choice creates a dates poll', async ({ page }) => {
-	await page.goto('/');
+	await page.goto('/create');
 	await page.getByLabel(m.fieldTitle()).fill('Plain dates poll');
 	// The dates-type calendar is the options UI - the type choice was never touched.
 	await page.getByRole('button', { name: '12', exact: true }).click();
@@ -91,20 +91,20 @@ test('an untouched type choice creates a dates poll', async ({ page }) => {
 });
 
 test('fewer than two non-blank options is rejected with a validation message', async ({ page }) => {
-	await page.goto('/');
+	await page.goto('/create');
 	await pickQuestionType(page);
 	await page.getByLabel(m.fieldTitle()).fill('Too few');
 	await addTextOption(page, 'Only one');
 	await page.getByRole('button', { name: m.create() }).click();
 	await expect(page.getByText(m.errorTooFewOptions(), { exact: true })).toBeVisible();
-	await expect(page).toHaveURL(/\/$/);
+	await expect(page).toHaveURL(/\/create$/);
 
 	// A second option that is only whitespace doesn't count toward the minimum.
 	await addTextOption(page, 'Real second');
 	await page.getByPlaceholder(m.optionPlaceholder()).nth(1).fill('   ');
 	await page.getByRole('button', { name: m.create() }).click();
 	await expect(page.getByText(m.errorTooFewOptions(), { exact: true })).toBeVisible();
-	await expect(page).toHaveURL(/\/$/);
+	await expect(page).toHaveURL(/\/create$/);
 });
 
 // --- Requirement: Poll type is immutable ---
@@ -215,7 +215,7 @@ test('moving an option up reorders it for everyone', async ({ page }) => {
 test('picking the question type swaps the calendar and timezone for text entry', async ({
 	page
 }) => {
-	await page.goto('/');
+	await page.goto('/create');
 	// Dates type first: calendar + timezone picker are there.
 	await expect(page.getByRole('button', { name: m.nextMonth() })).toBeVisible();
 	await expect(page.getByRole('combobox', { name: m.fieldTimezone() })).toBeVisible();

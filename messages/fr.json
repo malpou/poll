@@ -33,7 +33,7 @@
 	"editLinkHint": "Enregistrez-le pour modifier votre réponse plus tard.",
 	"datesSection": "Dates possibles",
 	"datesHint": "Ajoutez au moins une date. Les horaires sont facultatifs.",
-	"calendarEmptyHint": "Aucune date choisie pour l'instant — cliquez sur le calendrier ci-dessus.",
+	"calendarEmptyHint": "Aucune date choisie pour l'instant. Cliquez sur le calendrier ci-dessus.",
 	"addDate": "Ajouter une date",
 	"prevMonth": "Mois précédent",
 	"nextMonth": "Mois suivant",
@@ -160,5 +160,18 @@
 	"closeSelectHintRsvp": "Confirmez l'événement ou annulez-le.",
 	"confirmCancelPollRsvp": "Annuler l'événement ? Les participants le verront comme annulé.",
 	"confirmedHeadingRsvp": "L'événement a lieu",
-	"cancelledMessageRsvp": "L'organisateur a annulé l'événement."
+	"cancelledMessageRsvp": "L'organisateur a annulé l'événement.",
+	"landingTitle": "Demandez à tous, décidez ensemble",
+	"landingIntro": "Besoin de vous mettre d'accord ? Créez un sondage, partagez-le et retrouvez toutes les réponses au même endroit. Pas de compte, pas d'application : chacun répond par un simple lien.",
+	"landingIntroTypes": "Trouvez une date, comptez qui vient à un événement, ou tranchez n'importe quelle question avec vos propres options.",
+	"landingExamplesTitle": "Essayez ici",
+	"landingExamplesHint": "Ce ne sont que des exemples. Touchez une réponse et le décompte bouge ; rien n'est enregistré.",
+	"landingSampleDatesTitle": "Dîner d'été à la maison",
+	"landingSampleRsvpTitle": "Anniversaire de Nora",
+	"landingSampleQuestionTitle": "Où partir en voyage en famille ?",
+	"landingSampleOptionA": "La maison de plage",
+	"landingSampleOptionB": "La montagne",
+	"landingSampleOptionC": "Un week-end en ville",
+	"landingHintLink": "Lire cette page en {language}",
+	"landingHintDismiss": "Fermer"
 }

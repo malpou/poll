@@ -50,7 +50,7 @@ async function openEdit(page: Page) {
 test('creating without touching the choice settings offers Preferred but not "I don\'t know"', async ({
 	page
 }) => {
-	await page.goto('/');
+	await page.goto('/create');
 	await page.getByLabel(m.fieldTitle()).fill('Standardvalg');
 	await addDate(page);
 	await page.getByRole('button', { name: m.create() }).click();
@@ -61,7 +61,7 @@ test('creating without touching the choice settings offers Preferred but not "I 
 });
 
 test('enabling "I don\'t know" at creation offers all four choices', async ({ page }) => {
-	await page.goto('/');
+	await page.goto('/create');
 	await page.getByLabel(m.fieldTitle()).fill('Med ved-ikke');
 	await addDate(page);
 	await page.getByRole('checkbox', { name: m.prefUnsure() }).check();

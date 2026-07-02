@@ -74,7 +74,13 @@ for this write volume.
 
 ## Routes
 
-- `/` create a new event (title, description, language, poll type, mode;
+- `/` landing page: explains the product, interactive per-poll-type examples
+  (client-only, nothing persisted), create call-to-action. Per-language URLs:
+  `/` is English, `/da`, `/de`, `/es`, `/fr` the others (same scheme for
+  `/create`); language switcher + hreflang alternates; no browser-language
+  redirect, only a dismissible hint. Marketing pages are indexable; token
+  pages (`/e`, `/r`, `/s`) declare noindex
+- `/create` create a new event (title, description, language, poll type, mode;
   dates and timezone or 2+ text options per type; participants in assigned
   mode)
 - `/e/{organizer_token}` organizer dashboard: options, people/results, mode +

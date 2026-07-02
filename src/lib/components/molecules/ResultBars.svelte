@@ -17,6 +17,9 @@
 		unavailablePct: number;
 		showPreferred?: boolean;
 		unsure?: number;
+		// Per-poll-type wording for the count row (RSVP yes/no, question
+		// works-for-me); defaults to the date-poll preference labels.
+		labels?: { preferred?: string; available?: string; unavailable?: string };
 		names?: {
 			preferred: string[];
 			available: string[];
@@ -34,6 +37,7 @@
 		unavailablePct,
 		showPreferred = true,
 		unsure = undefined,
+		labels = undefined,
 		names = null
 	}: Props = $props();
 
@@ -46,9 +50,11 @@
 	});
 
 	const counts = $derived([
-		...(showPreferred ? [{ icon: Star, label: m.prefPreferred(), count: preferred }] : []),
-		{ icon: Check, label: m.prefAvailable(), count: available },
-		{ icon: X, label: m.prefUnavailable(), count: unavailable },
+		...(showPreferred
+			? [{ icon: Star, label: labels?.preferred ?? m.prefPreferred(), count: preferred }]
+			: []),
+		{ icon: Check, label: labels?.available ?? m.prefAvailable(), count: available },
+		{ icon: X, label: labels?.unavailable ?? m.prefUnavailable(), count: unavailable },
 		...(unsure !== undefined
 			? [{ icon: CircleQuestionMark, label: m.prefUnsure(), count: unsure }]
 			: [])

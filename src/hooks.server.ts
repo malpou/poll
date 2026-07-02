@@ -4,11 +4,13 @@ import { overwriteGetLocale, getTextDirection, baseLocale, isLocale } from '$lib
 import type { Locale } from '$lib/types';
 import type { Handle } from '@sveltejs/kit';
 
-// Locale is per-poll (stored in D1), the same for every consumer - not derived
-// from the visitor's browser. So instead of Paraglide's url/cookie strategy we
-// run each request inside an AsyncLocalStorage whose `locale` the load functions
-// set from the resolved event. Bare m.*() calls in components then render in
-// that locale via the overwritten getLocale().
+// Locale is never derived from the visitor's browser. Token pages render in the
+// poll's locale (stored in D1, the same for every consumer); marketing pages
+// (landing, create) in the URL's language segment. So instead of Paraglide's
+// url/cookie strategy we run each request inside an AsyncLocalStorage seeded
+// from the URL segment, which token-page load functions then overwrite from the
+// resolved event. Bare m.*() calls in components render in that locale via the
+// overwritten getLocale().
 const store = new AsyncLocalStorage<{ locale: Locale }>();
 
 const currentLocale = (): Locale => store.getStore()?.locale ?? baseLocale;
@@ -28,7 +30,10 @@ export function setRequestLocale(locale: string): void {
 }
 
 export const handle: Handle = ({ event, resolve }) =>
-	store.run({ locale: baseLocale }, () =>
+	// Marketing routes carry an optional [[lang]] segment that seeds the request
+	// locale; token routes have no such param and keep overwriting from the poll
+	// row in their loads.
+	store.run({ locale: isLocale(event.params.lang) ? event.params.lang : baseLocale }, () =>
 		resolve(event, {
 			// Stamp <html lang>/<dir> from the resolved locale (app.html has the
 			// %lang%/%dir% placeholders). Runs after load has set the store, so the

@@ -19,10 +19,13 @@ three poll types.
 - Event creation moves from `/` to `/create`. No creation behavior changes;
   existing specs already say "the create page" without naming a URL.
 - The landing page gets language-specific URLs (`/` = English base, `/da`,
-  `/de`, `/es`, `/fr`) with a language switcher (native-language names, no
-  flags) and hreflang alternates. No automatic redirect by browser language;
+  `/de`, `/es`, `/fr`) with a language switcher (the create form's flag-swatch
+  selector) and hreflang alternates. No automatic redirect by browser language;
   when the browser prefers another supported language a dismissible hint links
   to it. The selected language carries into the create page (`/{lang}/create`).
+- The landing page also carries the create form's highlighter picker: picking
+  a color restyles the landing page live and carries into the create form via
+  a `?accent=` query both pages keep in sync.
 - Landing and create pages are indexable; token pages (`/e`, `/r`, `/s`)
   explicitly are not.
 - Copywriting rule: no em-dashes in user-facing copy, in any locale. Recorded

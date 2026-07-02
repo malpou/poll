@@ -60,12 +60,24 @@ Each version lives on its own URL, all versions cross-reference via
 language differs from the page's, a dismissible hint links to the matching
 version. Dismissal is remembered for the session.
 
-### Language switcher: five links, native names, no flags
+### Language switcher: the create form's flag-swatch selector
 
-Rendered as plain anchors (crawlable), labeled in each language's own name
-(Dansk, Deutsch, English, Español, Français). Flags are rejected: they encode
-countries, not languages. The names still live in Paraglide messages (same
-value in every locale file) so the no-hardcoded-strings rule holds.
+The landing page reuses the create form's circular flag-swatch language
+selector (native-name accessible labels via the existing Intl.DisplayNames
+utility), pinned to the sheet's top-right corner exactly like the create
+page; picking a flag navigates (full load) to that language's URL. Crawlers
+discover the versions through the hreflang alternates, not the switcher.
+(Supersedes an earlier plain-text-links decision: consistency with the
+create form won.)
+
+### Highlighter picker on the landing page
+
+The landing page carries the accent picker in the sheet's top-left corner,
+mirroring the create page. Picking restyles the landing page live (the same
+data-accent → --hl mechanism as everywhere else) and rides a `?accent=`
+query through language switches and into the create form, whose picker
+starts on it. The default (yellow) keeps URLs clean. The create form keeps
+the query in sync too, so a reload keeps the choice.
 
 ### Interactive examples are presentational reuses of the real widgets
 

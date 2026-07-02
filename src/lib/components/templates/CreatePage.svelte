@@ -12,6 +12,8 @@
 	import { createToast } from '$lib/components/atoms/create-toast.svelte';
 	import { enhance } from '$app/forms';
 	import { browser } from '$app/environment';
+	import { replaceState } from '$app/navigation';
+	import { createUrl } from '$lib/logic/site-urls';
 	import { m } from '$lib/paraglide/messages';
 	import { helpers } from '$lib/data/shared';
 	import AccentPicker from '$lib/components/atoms/AccentPicker.svelte';
@@ -19,9 +21,17 @@
 	import type { Accent, DateOption, Locale, Participant, PollMode, PollType } from '$lib/types';
 
 	// The create action's fail() payload; null on first render / success.
-	// suggestedLocale seeds the picker from the visitor's Accept-Language.
-	let { form, suggestedLocale }: { form: { error?: string } | null; suggestedLocale: Locale } =
-		$props();
+	// suggestedLocale/suggestedAccent seed the pickers from the page URL (the
+	// language segment and the ?accent= the landing page carried over).
+	let {
+		form,
+		suggestedLocale,
+		suggestedAccent = 'yellow'
+	}: {
+		form: { error?: string } | null;
+		suggestedLocale: Locale;
+		suggestedAccent?: Accent;
+	} = $props();
 
 	// Start empty; dates and participants are added via the same fill-then-add
 	// cards the dashboard uses.
@@ -37,7 +47,8 @@
 	let allowPreferred = $state(true);
 	let allowUnsure = $state(false);
 	// The poll's highlighter; data-accent on the form previews it live.
-	let accent = $state<Accent>('yellow');
+	// svelte-ignore state_referenced_locally
+	let accent = $state<Accent>(suggestedAccent);
 	// Immutable after creation: dates polls pick candidate dates, question polls
 	// carry free-form text options, RSVP polls carry exactly one date. Each list
 	// survives a type switch pre-submit; only the picked type's rows are
@@ -71,8 +82,19 @@
 	 * it - so the whole form re-renders in the new language with no page refresh.
 	 */
 	function pickLocale(next: Locale) {
-		if (browser) document.documentElement.lang = next;
+		if (browser) {
+			document.documentElement.lang = next;
+			// Keep the URL on the picked language's create route (shallow - no
+			// reload, the {#key locale} re-render does the work).
+			replaceState(createUrl(next, accent), {});
+		}
 		locale = next;
+	}
+
+	// The highlighter pick syncs the ?accent= query the same way, so the
+	// landing-page choice and a reload both keep it.
+	function pickAccent(next: Accent) {
+		if (browser) replaceState(createUrl(locale, next), {});
 	}
 </script>
 
@@ -91,7 +113,7 @@
 	     a language switch (the language picker owns the key and stays put). -->
 		<div class="mb-6 flex items-start justify-between gap-12">
 			{#key locale}
-				<AccentPicker bind:value={accent} showLegend={false} />
+				<AccentPicker bind:value={accent} showLegend={false} onpick={pickAccent} />
 			{/key}
 			<LanguagePicker bind:value={locale} onpick={pickLocale} showLegend={false} alignEnd />
 		</div>

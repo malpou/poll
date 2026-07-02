@@ -24,9 +24,10 @@ its own create page and behave exactly as specified in event-management.
 The landing page SHALL show one interactive example per poll type: a date
 poll, an RSVP, and a question poll. Each example SHALL be answerable in place,
 and answering SHALL immediately update that example's small results tally.
-Examples SHALL be visibly labeled as examples, SHALL persist nothing, and
-SHALL render their sample content in the page's language with sample dates in
-the near future.
+Each example SHALL name its poll type, the surrounding section SHALL make
+clear the cards are examples, the examples SHALL persist nothing, and SHALL
+render their sample content in the page's language with sample dates in the
+near future.
 
 #### Scenario: Date poll example reacts to a tap
 
@@ -57,10 +58,11 @@ the near future.
 
 Each supported language SHALL have its own landing page URL, with English at
 the bare root and the other languages under a language segment. A language
-switcher SHALL list all five languages as links, each labeled with the
-language's name in that language, without flags. Each language version SHALL
-declare the other versions as alternates for search engines. An unsupported
-language segment SHALL yield the not-found page.
+switcher SHALL offer all five languages using the same selector as the create
+form (each option labeled with the language's native name); picking one SHALL
+move to that language's URL. Each language version SHALL declare the other
+versions as alternates for search engines. An unsupported language segment
+SHALL yield the not-found page.
 
 #### Scenario: Switch language
 
@@ -85,6 +87,27 @@ language segment SHALL yield the not-found page.
 - GIVEN a visitor opening the landing URL with an unsupported language segment
 - WHEN the request resolves
 - THEN the not-found page is shown
+
+### Requirement: Landing page highlighter
+
+The landing page SHALL offer the same highlighter picker as the create form.
+Picking a highlighter SHALL restyle the landing page immediately and SHALL be
+reflected in the page's URL, so it survives a language switch and a reload.
+The create call-to-action SHALL carry the picked highlighter into the create
+page.
+
+#### Scenario: Highlighter restyles the landing page live
+
+- GIVEN a visitor on the landing page
+- WHEN they pick another highlighter color
+- THEN the page's highlighted elements restyle immediately
+- AND the page URL reflects the pick
+
+#### Scenario: Highlighter carries into the create page
+
+- GIVEN a visitor who picked pink on the landing page
+- WHEN they follow the create call-to-action
+- THEN the create form's highlighter picker starts on pink
 
 ### Requirement: Browser language hint without redirect
 

@@ -33,7 +33,7 @@
 	"editLinkHint": "Gem det for at ændre dit svar senere.",
 	"datesSection": "Mulige datoer",
 	"datesHint": "Tilføj mindst én dato. Tidspunkter er valgfri.",
-	"calendarEmptyHint": "Ingen datoer valgt endnu — klik på kalenderen ovenfor.",
+	"calendarEmptyHint": "Ingen datoer valgt endnu. Klik på kalenderen ovenfor.",
 	"addDate": "Tilføj dato",
 	"prevMonth": "Forrige måned",
 	"nextMonth": "Næste måned",
@@ -160,5 +160,18 @@
 	"closeSelectHintRsvp": "Bekræft begivenheden, eller aflys den helt.",
 	"confirmCancelPollRsvp": "Aflys begivenheden? Deltagerne ser den som aflyst.",
 	"confirmedHeadingRsvp": "Begivenheden finder sted",
-	"cancelledMessageRsvp": "Arrangøren har aflyst begivenheden."
+	"cancelledMessageRsvp": "Arrangøren har aflyst begivenheden.",
+	"landingTitle": "Spørg alle, beslut sammen",
+	"landingIntro": "Skal I blive enige om noget? Opret en afstemning, del den, og se alle svar ét sted. Ingen konti, ingen apps: alle svarer gennem et simpelt link.",
+	"landingIntroTypes": "Find en dato, tæl hvem der kommer til en begivenhed, eller afgør et hvilket som helst spørgsmål med dine egne svarmuligheder.",
+	"landingExamplesTitle": "Prøv det her",
+	"landingExamplesHint": "Det her er kun eksempler. Tryk på et svar, så flytter optællingen sig; intet bliver gemt.",
+	"landingSampleDatesTitle": "Sommermiddag hos os",
+	"landingSampleRsvpTitle": "Noras fødselsdagsfest",
+	"landingSampleQuestionTitle": "Hvor skal familieturen gå hen?",
+	"landingSampleOptionA": "Sommerhuset ved stranden",
+	"landingSampleOptionB": "Bjergene",
+	"landingSampleOptionC": "En weekend i byen",
+	"landingHintLink": "Læs denne side på {language}",
+	"landingHintDismiss": "Luk"
 }

@@ -33,7 +33,7 @@
 	"editLinkHint": "Save this to change your answer later.",
 	"datesSection": "Possible dates",
 	"datesHint": "Add at least one date. Times are optional.",
-	"calendarEmptyHint": "No dates picked yet — click the calendar above.",
+	"calendarEmptyHint": "No dates picked yet. Click the calendar above.",
 	"addDate": "Add date",
 	"prevMonth": "Previous month",
 	"nextMonth": "Next month",
@@ -160,5 +160,18 @@
 	"closeSelectHintRsvp": "Confirm the event, or cancel it entirely.",
 	"confirmCancelPollRsvp": "Call the event off? Participants will see it as cancelled.",
 	"confirmedHeadingRsvp": "The event is happening",
-	"cancelledMessageRsvp": "The organizer called off this event."
+	"cancelledMessageRsvp": "The organizer called off this event.",
+	"landingTitle": "Ask everyone, decide together",
+	"landingIntro": "Trying to get everyone to agree? Create a poll, share it, and see every answer in one place. No accounts, no apps: everyone answers through a simple link.",
+	"landingIntroTypes": "Find a date, count who's coming to an event, or settle any question with your own options.",
+	"landingExamplesTitle": "Try it here",
+	"landingExamplesHint": "These are just examples. Tap an answer and the tally moves; nothing is saved.",
+	"landingSampleDatesTitle": "Summer dinner at ours",
+	"landingSampleRsvpTitle": "Nora's birthday party",
+	"landingSampleQuestionTitle": "Where should the family trip go?",
+	"landingSampleOptionA": "The beach house",
+	"landingSampleOptionB": "The mountains",
+	"landingSampleOptionC": "A city weekend",
+	"landingHintLink": "Read this page in {language}",
+	"landingHintDismiss": "Dismiss"
 }

@@ -2,8 +2,7 @@ import { fail, redirect } from '@sveltejs/kit';
 import { getProvider } from '$lib/data/provider';
 import { newToken } from '$lib/data/shared';
 import { m } from '$lib/paraglide/messages';
-import { baseLocale, extractLocaleFromHeader, isLocale } from '$lib/paraglide/runtime';
-import { setRequestLocale } from '../hooks.server';
+import { baseLocale, isLocale } from '$lib/paraglide/runtime';
 import { field, parseIndexed, validateTimes } from '$lib/forms/forms';
 import { richTextIsEmpty, sanitizeRichText } from '$lib/forms/richtext';
 import type { Accent, DateOption, Locale, Participant, PollMode, PollType } from '$lib/types';
@@ -11,14 +10,18 @@ import { ACCENTS, POLL_TYPES } from '$lib/types';
 import type { Actions, PageServerLoad } from './$types';
 
 /**
- * Loads the create page, which is the organizer's own, pre-submit: renders it in
- * the browser's preferred locale and pre-selects that in the language picker.
- * Falls back to baseLocale (en) when Accept-Language matches no supported locale.
+ * Loads the create page. The page chrome renders in the URL's language segment
+ * (bare /create is English; the server hook seeds the request locale from the
+ * segment) and the poll-language picker defaults to that same language. The
+ * highlighter picker defaults to the ?accent= the landing page carried over.
  */
-export const load: PageServerLoad = ({ request }) => {
-	const suggestedLocale: Locale = extractLocaleFromHeader(request) ?? baseLocale;
-	setRequestLocale(suggestedLocale);
-	return { suggestedLocale };
+export const load: PageServerLoad = ({ params, url }) => {
+	const suggestedLocale: Locale = isLocale(params.lang) ? params.lang : baseLocale;
+	const accentParam = url.searchParams.get('accent') ?? '';
+	const suggestedAccent: Accent = (ACCENTS as readonly string[]).includes(accentParam)
+		? (accentParam as Accent)
+		: 'yellow';
+	return { suggestedLocale, suggestedAccent };
 };
 
 export const actions = {

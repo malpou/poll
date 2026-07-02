@@ -102,10 +102,12 @@ theme token instead.
   `border-strong` border, ink border + ring when active); the artwork is the
   MIT-licensed circle-flags SVG set, inlined — no external requests. Each
   language's native name stays as the radio's accessible label and tooltip.
-  On the create page both swatch rows are legend-less and sit in the sheet's
-  top corners — accent top-left, language top-right — pinned to the edges at
-  every width; on narrow phones each row wraps onto multiple lines rather than
-  the two pickers stacking.
+  On the create and landing pages both swatch rows are legend-less and sit in
+  the sheet's top corners — accent top-left, language top-right — pinned to
+  the edges at every width; on narrow phones each row wraps onto multiple
+  lines rather than the two pickers stacking. On the landing page the accent
+  swatch restyles the page live and the flag swatch navigates to that
+  language's URL.
 - **Buttons** (the `Button` atom's three variants): primary ink-filled
   (52px, full-width, hover lift, the arrow icon trailing the label), dashed
   add-row, ghost ink-bordered (36px, inverts to ink on hover, with an
@@ -202,6 +204,13 @@ decorative. Animate transform and opacity only — the result bar grows with a
 - Don't animate anything seen dozens of times per session (no per-keystroke
   animation, no looping effects). Stay within CSS transitions / Svelte
   transitions / Motion — nothing that needs a heavy 3D or canvas library.
+
+## Voice
+
+- **No em-dashes in user-facing copy, any locale.** Rephrase with a period,
+  comma, colon, or parentheses instead. Applies to every string in
+  `messages/{da,de,en,es,fr}.json`; enforced by a unit test scanning the
+  message catalogs. (Docs and code comments are exempt.)
 
 ## Not in this file
 
