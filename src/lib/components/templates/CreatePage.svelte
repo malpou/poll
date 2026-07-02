@@ -81,7 +81,7 @@
 	     narrow phones rather than the two stacking. Both are legend-less. The
 	     accent picker keeps its own {#key} so its swatch labels re-translate on
 	     a language switch (the language picker owns the key and stays put). -->
-		<div class="mb-6 flex items-start justify-between gap-4">
+		<div class="mb-6 flex items-start justify-between gap-12">
 			{#key locale}
 				<AccentPicker bind:value={accent} showLegend={false} />
 			{/key}
