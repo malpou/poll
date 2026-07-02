@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { fly } from 'svelte/transition';
-	import { cubicOut } from 'svelte/easing';
+	import { flyIn } from '$lib/motion';
 	import Callout from '$lib/components/molecules/Callout.svelte';
 	import ResultBars from '$lib/components/molecules/ResultBars.svelte';
 	import SectionHeading from '$lib/components/atoms/SectionHeading.svelte';
@@ -31,7 +31,7 @@
 	</Callout>
 {:else}
 	<!-- The outcome, front and center: the chosen date(s)... -->
-	<div in:fly={{ y: 8, duration: 240, easing: cubicOut }}>
+	<div in:fly={flyIn()}>
 		<Callout
 			tone="primary"
 			title={chosenDates.length > 1 ? m.chosenDatesHeading() : m.chosenDateHeading()}
@@ -56,7 +56,7 @@
 			{@const o = outcomeById.get(d.id)}
 			{#if o}
 				<div
-					in:fly={{ y: 8, duration: 240, delay: i * 40, easing: cubicOut }}
+					in:fly={flyIn(i)}
 					class="rounded-xl border bg-card p-4 {o.chosen ? 'border-primary' : 'border-border'}"
 				>
 					<div class="flex flex-wrap items-center gap-2.5">

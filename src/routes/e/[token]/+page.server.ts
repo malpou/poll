@@ -253,6 +253,7 @@ export const actions = {
 	moveOption: async ({ params, request, platform, url }) => {
 		const { provider, event } = await resolve(platform, params.token);
 		if (!event) return fail(404);
+		if (notOpen(event)) return fail(409);
 		const form = await request.formData();
 		const optionId = field(form, 'optionId');
 		const direction = field(form, 'direction');
@@ -272,6 +273,7 @@ export const actions = {
 	sortOptions: async ({ params, platform, url }) => {
 		const { provider, event } = await resolve(platform, params.token);
 		if (!event) return fail(404);
+		if (notOpen(event)) return fail(409);
 		// Chronological ascending. UTC ISO strings compare lexically; a malformed
 		// option with no starts_at sinks to the end. Sort is stable, so ties keep
 		// their current order.
@@ -287,6 +289,9 @@ export const actions = {
 		const { provider, event } = await resolve(platform, params.token);
 		if (!event) return fail(404);
 		if (notOpen(event)) return fail(409);
+		// Open mode has no hand-managed roster (specs/invitee-links) - the UI hides
+		// these forms, but a crafted POST must be rejected too.
+		if (event.pollMode === 'open') return fail(409);
 		const label = field(await request.formData(), 'label');
 		if (!label) return fail(400, { error: 'label' });
 		await provider.addInvitee(event.id, label);
@@ -298,6 +303,7 @@ export const actions = {
 		const { provider, event } = await resolve(platform, params.token);
 		if (!event) return fail(404);
 		if (notOpen(event)) return fail(409);
+		if (event.pollMode === 'open') return fail(409);
 		const form = await request.formData();
 		const inviteeId = field(form, 'inviteeId');
 		const label = field(form, 'label');
@@ -312,6 +318,7 @@ export const actions = {
 		const { provider, event } = await resolve(platform, params.token);
 		if (!event) return fail(404);
 		if (notOpen(event)) return fail(409);
+		if (event.pollMode === 'open') return fail(409);
 		const inviteeId = field(await request.formData(), 'inviteeId');
 		if (!event.invitees.some((i) => i.id === inviteeId)) return fail(404);
 		await provider.removeInvitee(inviteeId);

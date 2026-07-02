@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { fly } from 'svelte/transition';
-	import { cubicOut } from 'svelte/easing';
+	import { flip } from 'svelte/animate';
+	import { flyIn, flipParams } from '$lib/motion';
 	import { enhance } from '$app/forms';
 	import Button from '$lib/components/atoms/Button.svelte';
 	import IconButton from '$lib/components/atoms/IconButton.svelte';
@@ -50,7 +51,8 @@
 			<div class="flex flex-col gap-3">
 				{#each results as r, i (r.id)}
 					<div
-						in:fly={{ y: 8, duration: 240, delay: i * 40, easing: cubicOut }}
+						in:fly={flyIn(i)}
+						animate:flip={flipParams()}
 						class="rounded-xl border bg-card p-4 transition-colors duration-150 {selecting &&
 						picked[r.id]
 							? 'border-primary'

@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { fly } from 'svelte/transition';
-	import { cubicOut } from 'svelte/easing';
+	import { flyIn } from '$lib/motion';
 	import SegmentedControl from '$lib/components/atoms/SegmentedControl.svelte';
 	import { m } from '$lib/paraglide/messages';
 	import type { Preference } from '$lib/types';
@@ -24,21 +24,11 @@
 		readOnly?: boolean;
 		isNew?: boolean;
 	} = $props();
-
-	// Staggered list entrance: 40ms × index (DESIGN.md). fly honors
-	// prefers-reduced-motion via the media query below.
-	const reduced =
-		typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 </script>
 
 <div
 	data-testid="date-card-{id}"
-	in:fly={{
-		y: reduced ? 0 : 8,
-		duration: reduced ? 120 : 240,
-		delay: index * 40,
-		easing: cubicOut
-	}}
+	in:fly={flyIn(index)}
 	class="flex flex-col gap-3.5 rounded-2xl border border-border bg-card p-4.5 shadow-[0_1px_2px_var(--shadow-toast)]"
 >
 	<div class="flex flex-col gap-0.5">

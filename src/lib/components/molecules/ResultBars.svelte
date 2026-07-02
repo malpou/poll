@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { prefersReducedMotion } from '$lib/motion';
 	import { onMount } from 'svelte';
 	import { m } from '$lib/paraglide/messages';
 
@@ -30,8 +31,7 @@
 
 	// Bars grow from 0 to their width once mounted (DESIGN.md: animate width on
 	// mount, ~450ms ease-out). Reduced-motion → straight to full width.
-	const reduced =
-		typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+	const reduced = prefersReducedMotion();
 	let revealed = $state(reduced);
 	onMount(() => {
 		if (!revealed) requestAnimationFrame(() => (revealed = true));

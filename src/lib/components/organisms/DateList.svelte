@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { fly } from 'svelte/transition';
-	import { cubicOut } from 'svelte/easing';
+	import { flyIn } from '$lib/motion';
 	import DateRow from '$lib/components/molecules/DateRow.svelte';
 	import AddDateForm from '$lib/components/molecules/AddDateForm.svelte';
 	import SectionHeading from '$lib/components/atoms/SectionHeading.svelte';
@@ -23,7 +23,7 @@
 	<p class="mb-3.5 text-caption text-ink-muted">{m.datesHint()}</p>
 	<div class="flex flex-col gap-2.5">
 		{#each dates as date, i (date.id)}
-			<div in:fly={{ y: 8, duration: 240, delay: i * 40, easing: cubicOut }}>
+			<div in:fly={flyIn(i)}>
 				<DateRow
 					bind:date={dates[i]}
 					index={i}

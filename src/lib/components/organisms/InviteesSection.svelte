@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { fly } from 'svelte/transition';
-	import { cubicOut } from 'svelte/easing';
+	import { flyIn } from '$lib/motion';
 	import { enhance } from '$app/forms';
 	import TextField from '$lib/components/atoms/TextField.svelte';
 	import Button from '$lib/components/atoms/Button.svelte';
@@ -74,10 +74,7 @@
 			{#if invitees.length > 0}
 				<div class="flex flex-col gap-2.5">
 					{#each invitees as inv, i (inv.id)}
-						<div
-							in:fly={{ y: 8, duration: 240, delay: i * 40, easing: cubicOut }}
-							class="rounded-xl border border-border bg-card p-3"
-						>
+						<div in:fly={flyIn(i)} class="rounded-xl border border-border bg-card p-3">
 							<div class="flex items-center gap-2.5">
 								<div class="flex-1 text-body font-semibold text-ink">{inv.label}</div>
 								{@render noteToggle(inv)}
@@ -92,10 +89,7 @@
 		{:else}
 			<div class="flex flex-col gap-2.5">
 				{#each invitees as inv, i (inv.id)}
-					<div
-						in:fly={{ y: 8, duration: 240, delay: i * 40, easing: cubicOut }}
-						class="rounded-xl border border-border bg-card p-3"
-					>
+					<div in:fly={flyIn(i)} class="rounded-xl border border-border bg-card p-3">
 						<div class="flex items-center gap-2.5">
 							{#if closed}
 								<div class="flex-1 text-body font-semibold text-ink">{inv.label}</div>

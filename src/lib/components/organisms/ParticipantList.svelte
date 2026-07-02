@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { fly } from 'svelte/transition';
-	import { cubicOut } from 'svelte/easing';
+	import { flyIn } from '$lib/motion';
 	import ParticipantRow from '$lib/components/molecules/ParticipantRow.svelte';
 	import AddParticipantForm from '$lib/components/molecules/AddParticipantForm.svelte';
 	import SectionHeading from '$lib/components/atoms/SectionHeading.svelte';
@@ -25,7 +25,7 @@
 	<p class="mb-3.5 text-caption text-ink-muted">{m.participantsHint()}</p>
 	<div class="flex flex-col gap-2.5">
 		{#each participants as p, i (p.id)}
-			<div in:fly={{ y: 8, duration: 240, delay: i * 40, easing: cubicOut }}>
+			<div in:fly={flyIn(i)}>
 				<ParticipantRow
 					bind:participant={participants[i]}
 					index={i}

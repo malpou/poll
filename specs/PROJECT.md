@@ -71,9 +71,10 @@ for this write volume.
 - Language: polls render in Danish, English, or French, chosen per poll (the
   `locale` column) at creation and changeable on the dashboard. User-facing
   strings live in `messages/{da,en,fr}.json`, compiled to typed `m.*()` via
-  Paraglide. Weekdays/months render in the poll's language, lowercase.
+  Paraglide. Weekdays/months render in the poll's language with that
+  language's conventional casing (Danish lowercase; en/fr keep Intl's default).
 - Timezone: store `starts_at`/`ends_at` as UTC ISO; render in Europe/Copenhagen.
 - Motion: user-facing UI follows the animations.dev principles (ease-out enter/exit,
   ease-in-out for on-screen movement, spring for the state selector, staggered list
-  entrance, transform/opacity only) and honors `prefers-reduced-motion`. See the
-  Claude Design brief for exact easing and timing values.
+  entrance, transform/opacity only) and honors `prefers-reduced-motion`. See
+  specs/DESIGN.md for exact easing and timing values.

@@ -156,6 +156,74 @@ test('cancelling closes without a decision; dismissing the warning keeps it open
 	await expect(page.getByRole('button', { name: m.sendAnswer() })).toHaveCount(0);
 });
 
+test('close stops response edits; reopen restores them', async ({ page }) => {
+	await enterSelectionMode(page);
+	await checkboxFor(page, 'søndag').check();
+	await page.getByRole('button', { name: m.confirmClose() }).click();
+	await expect(page.getByText(m.chosenDateHeading())).toBeVisible();
+	await expect.poll(() => selectedOptionIds(EV)).toEqual([DB]);
+
+	// The invitee link is now read-only and shows the outcome instead of a form.
+	await page.goto(`/r/${RTOK}`);
+	await expect(page.getByText(m.chosenDateHeading())).toBeVisible();
+	await expect(page.getByRole('button', { name: m.sendAnswer() })).toHaveCount(0);
+
+	// Reopen → the decision is discarded and the invitee can edit again. Anna
+	// answered only one of the two dates, so her page opens straight into
+	// editing (the unanswered-dates flow) - the visible submit button is
+	// exactly the "edits restored" signal.
+	await page.goto(`/e/${OTOK}`);
+	await page.getByRole('button', { name: m.reopenPoll() }).click();
+	await expect(page.getByText(m.chosenDateHeading())).toHaveCount(0);
+	await expect.poll(() => selectedOptionIds(EV)).toEqual([]);
+	await page.goto(`/r/${RTOK}`);
+	await expect(page.getByText(m.closedBanner())).toHaveCount(0);
+	await expect(page.getByRole('button', { name: m.sendAnswer() })).toBeVisible();
+});
+
+test('closing with an option from another poll is rejected', async ({ request }) => {
+	// A second poll's option id must not be acceptable as this poll's decision.
+	wipeEvent('e2e-close-fev');
+	seedEvent({
+		id: 'e2e-close-fev',
+		title: 'Anden',
+		organizerToken: 'e2e-close-fotok',
+		status: 'open'
+	});
+	seedDateOption({
+		id: 'e2e-close-fopt',
+		eventId: 'e2e-close-fev',
+		startsAt: '2026-09-25T08:00:00Z',
+		sortOrder: 0
+	});
+	const res = await request.post(`/e/${OTOK}?/close`, {
+		form: { selectedOptionIds: 'e2e-close-fopt' },
+		headers: { origin: 'http://localhost:8787' }
+	});
+	expect(await res.json()).toMatchObject({ type: 'failure', status: 400 });
+	expect(eventStatus(EV)).toBe('open');
+	expect(selectedOptionIds(EV)).toEqual([]);
+});
+
+test('reopening a cancelled poll behaves like a reopened closed poll', async ({ page }) => {
+	// Re-seed as already cancelled: no chosen dates, responses locked.
+	wipeEvent(EV);
+	seedEvent({ id: EV, title: 'Lukning (e2e)', organizerToken: OTOK, status: 'cancelled' });
+	seedDateOption({ id: DA, eventId: EV, startsAt: '2026-09-12T08:00:00Z', sortOrder: 0 });
+	seedDateOption({ id: DB, eventId: EV, startsAt: '2026-09-20T08:00:00Z', sortOrder: 1 });
+	seedInvitee({ id: 'e2e-close-inv', eventId: EV, label: 'Anna', token: RTOK });
+
+	await page.goto(`/e/${OTOK}`);
+	await page.getByRole('button', { name: m.reopenPoll() }).click();
+	await expect.poll(() => eventStatus(EV)).toBe('open');
+	expect(selectedOptionIds(EV)).toEqual([]);
+
+	// The invitee can answer again.
+	await page.goto(`/r/${RTOK}`);
+	await expect(page.getByText(m.cancelledMessage())).toHaveCount(0);
+	await expect(page.getByRole('button', { name: m.sendAnswer() })).toBeVisible();
+});
+
 test('reopening clears the decision and closing again starts fresh', async ({ page }) => {
 	seedDecided();
 	await page.goto(`/e/${OTOK}`);
@@ -182,4 +250,21 @@ test('a closed poll rejects option deletion server-side', async ({ request }) =>
 	expect(await res.json()).toMatchObject({ type: 'failure', status: 409 });
 	expect(optionIds(EV)).toEqual([DA, DB]);
 	expect(selectedOptionIds(EV)).toEqual([DB]);
+});
+
+test('a closed poll rejects option reorder server-side', async ({ request }) => {
+	seedDecided();
+	// Reordering is a mutation too - move and sort must both bounce off a
+	// closed poll, leaving the recorded order intact.
+	const move = await request.post(`/e/${OTOK}?/moveOption`, {
+		form: { optionId: DA, direction: 'down' },
+		headers: { origin: 'http://localhost:8787' }
+	});
+	expect(await move.json()).toMatchObject({ type: 'failure', status: 409 });
+	const sort = await request.post(`/e/${OTOK}?/sortOptions`, {
+		form: {},
+		headers: { origin: 'http://localhost:8787' }
+	});
+	expect(await sort.json()).toMatchObject({ type: 'failure', status: 409 });
+	expect(optionIds(EV)).toEqual([DA, DB]);
 });

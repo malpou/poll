@@ -54,9 +54,22 @@ In assigned mode the system SHALL let the organizer rename or remove an invitee
 while the event is open. In open mode the roster is read-only (submitters name
 themselves), so there is no rename/remove.
 
+#### Scenario: Rename an invitee
+
+- GIVEN an invitee labeled "Anna"
+- WHEN the organizer renames them to "Anna B."
+- THEN the new label persists and shows everywhere the invitee is listed
+
 #### Scenario: Remove an invitee
 
 - GIVEN an invitee with recorded responses
 - WHEN the organizer removes them
 - THEN the invitee, their token, and their responses are deleted
 - AND their link stops working
+
+#### Scenario: Open mode rejects roster changes server-side
+
+- GIVEN an open-mode event
+- WHEN a request tries to add, rename, or remove an invitee directly
+  (bypassing the UI)
+- THEN the system rejects it and the roster is unchanged

@@ -29,6 +29,12 @@ link for it.
 - WHEN they submit with zero date options
 - THEN the system rejects the submission with a validation message
 
+#### Scenario: Language picker previews the create form live
+
+- GIVEN a visitor on the create page
+- WHEN they pick another language
+- THEN the whole form re-renders in that language without a reload
+
 ### Requirement: Organizer access control
 
 The system SHALL grant management access to an event only when a valid organizer
@@ -45,6 +51,30 @@ token is presented.
 - GIVEN no event has organizer token X
 - WHEN a request loads `/e/X`
 - THEN the system responds with a not-found page and reveals no event data
+
+#### Scenario: Organizer link surfaced with a save warning
+
+- GIVEN an organizer on the dashboard
+- WHEN the page renders
+- THEN a banner shows the copyable `/e` organizer link and warns them to save
+  it, since it is the only way back in
+
+### Requirement: Edit title and description
+
+The system SHALL let the organizer edit the event's title and description while
+the event is open, and SHALL reject an empty title.
+
+#### Scenario: Edit persists
+
+- GIVEN an organizer on the dashboard
+- WHEN they change the title and description and save
+- THEN the new details persist and render everywhere
+
+#### Scenario: Empty title rejected
+
+- GIVEN an organizer editing the details
+- WHEN they save with an empty title
+- THEN the system rejects it and the old title is kept
 
 ### Requirement: Manage date options
 

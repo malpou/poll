@@ -33,3 +33,7 @@ Thumbs.db
 # Vite
 vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
+
+# Claude Code (skills are committed; local state is not)
+.claude/settings.local.json
+.claude/worktrees/

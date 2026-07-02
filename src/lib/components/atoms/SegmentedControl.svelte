@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { prefersReducedMotion } from '$lib/motion';
 	import { Spring } from 'svelte/motion';
 	import { m } from '$lib/paraglide/messages';
 	import type { Preference } from '$lib/types';
@@ -20,8 +21,7 @@
 		{ pref: 'unavailable', label: m.prefUnavailable(), color: 'var(--color-bad)' }
 	];
 
-	const reduced =
-		typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+	const reduced = prefersReducedMotion();
 
 	const activeIndex = $derived(options.findIndex((o) => o.pref === value));
 	const initialIndex = options.findIndex((o) => o.pref === value);

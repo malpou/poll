@@ -62,7 +62,7 @@ function mark(page: Page, dateId: string, label: string) {
 	return page.getByTestId(`date-card-${dateId}`).getByRole('button', { name: label }).click();
 }
 
-// The submit button is disabled until every date is answered (mockup rule), so
+// The submit button is disabled until every date is answered (spec'd rule), so
 // tests that intentionally leave a date blank submit the form element directly.
 function submitForm(page: Page) {
 	return page.locator('form').evaluate((f: HTMLFormElement) => f.requestSubmit());
@@ -102,6 +102,9 @@ test('leaving a date unmarked writes no row for it', async ({ page }) => {
 	seed();
 	await page.goto(`/r/${OPEN_TOKEN}`);
 	await mark(page, D1, m.prefAvailable()); // D2 left unmarked
+	// The UI refuses a partial submit - the button stays disabled...
+	await expect(page.getByRole('button', { name: m.sendAnswer() })).toBeDisabled();
+	// ...so bypass it like a crafted request would.
 	await submitForm(page);
 	await expect(page.getByText(m.savedSub())).toBeVisible();
 
@@ -139,8 +142,11 @@ test('editing while open replaces the choice in place (still one row)', async ({
 });
 
 test('closed event renders read-only with the closed banner and no submit', async ({ page }) => {
+	// Closed with no chosen dates (a poll closed before decisions existed) - the
+	// plain closed rendering, with no outcome block (specs/poll-closing).
 	await page.goto(`/r/${CLOSED_TOKEN}`);
 	await expect(page.getByText(m.closedBanner())).toBeVisible();
+	await expect(page.getByText(m.chosenDateHeading())).toHaveCount(0);
 	await expect(page.getByRole('button', { name: m.sendAnswer() })).toHaveCount(0);
 	await expect(page.getByRole('button', { name: m.prefPreferred() }).first()).toBeDisabled();
 });

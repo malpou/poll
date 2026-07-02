@@ -1,24 +1,21 @@
-import { test, expect, type Page } from '@playwright/test';
+import { test, expect } from '@playwright/test';
 import { m } from '../../src/lib/paraglide/messages';
-import type { Preference } from '../../src/lib/types';
 import {
 	countResponsesForOption,
 	eventDetails,
-	inviteeLabels,
+	inviteesFor,
 	optionIds,
+	responsesFor,
 	seedDateOption,
 	seedEvent,
 	seedInvitee,
 	seedResponse,
-	selectedOptionIds,
-	setNote,
-	wipeEvent,
-	type ResponseSeed
+	wipeEvent
 } from '../support/db';
 
 // Organizer dashboard at /e/{organizer_token}. Seeds local D1 through the shared
-// e2e/db.ts helper; fixed tokens so re-runs are deterministic; seeding is
-// delete-then-insert so it's idempotent.
+// specs/support/db.ts helper; fixed tokens so re-runs are deterministic; seeding
+// is delete-then-insert so it's idempotent.
 
 const OTOK = 'e2e-dash-otok'; // organizer token under test
 const RTOK = 'e2e-dash-rtok'; // invitee token, for the close/reopen round-trip
@@ -44,9 +41,6 @@ function seed() {
 function optionRows() {
 	return optionIds(EV);
 }
-function inviteeRows() {
-	return inviteeLabels(EV).map((label) => ({ label }));
-}
 
 test.beforeAll(seed);
 
@@ -56,31 +50,15 @@ test('unknown organizer token shows not-found and leaks no event data', async ({
 	await expect(page.getByRole('heading', { name: TITLE })).toHaveCount(0);
 });
 
-test('add an option and an invitee persists to D1', async ({ page }) => {
+test('add a date option persists to D1', async ({ page }) => {
 	seed();
 	await page.goto(`/e/${OTOK}`);
 	await expect(page.getByRole('heading', { name: TITLE })).toBeVisible();
 
-	// Add a date option.
 	const addOption = page.locator('form[action="?/addOption"]');
 	await addOption.locator('input[name="value"]').fill('2026-09-20');
 	await addOption.getByRole('button', { name: m.addDate() }).click();
 	await expect.poll(() => optionRows().length).toBe(2);
-
-	// Add an invitee.
-	const addInvitee = page.locator('form[action="?/addInvitee"]');
-	await addInvitee.locator('input[name="label"]').fill('Bo');
-	await addInvitee.getByRole('button', { name: m.addParticipant() }).click();
-	await expect.poll(() => inviteeRows().length).toBe(2);
-});
-
-test('rename an invitee persists', async ({ page }) => {
-	seed();
-	await page.goto(`/e/${OTOK}`);
-	const row = page.locator('form[action="?/renameInvitee"]');
-	await row.locator('input[name="label"]').fill('Anna B.');
-	await row.getByRole('button', { name: m.save() }).click();
-	await expect.poll(() => inviteeRows().map((r) => r.label)).toEqual(['Anna B.']);
 });
 
 test('editing the title and description persists', async ({ page }) => {
@@ -171,28 +149,6 @@ test('sort by date orders the options chronologically', async ({ page }) => {
 	await expect.poll(() => optionIds(O_EV)).toEqual(['ob', 'oc', 'oa']);
 });
 
-// Scope to the invitees section - the organizer-link banner also has a copy
-// button (it copies the /e URL), so an unscoped .first() would grab that one.
-function inviteesSection(page: Page) {
-	return page.locator('section', { has: page.getByText(m.participantsSection()) });
-}
-
-async function copiedUrl(page: Page): Promise<string> {
-	await inviteesSection(page).getByRole('button', { name: m.copyLink() }).first().click();
-	return page.evaluate(() => navigator.clipboard.readText());
-}
-
-test('copy link puts the full absolute invitee URL on the clipboard', async ({ page, context }) => {
-	await context.grantPermissions(['clipboard-read', 'clipboard-write']);
-	seed();
-	await page.goto(`/e/${OTOK}`);
-	// URLs follow the request host the server saw (a custom-domain route can
-	// rewrite it), so assert shape - absolute + correct path - not a fixed host.
-	const copied = await copiedUrl(page);
-	expect(copied).toMatch(/^https?:\/\/[^/]+\/r\//);
-	expect(copied.endsWith(`/r/${RTOK}`)).toBe(true);
-});
-
 test('organizer-link banner copies the /e URL and warns to save it', async ({ page, context }) => {
 	await context.grantPermissions(['clipboard-read', 'clipboard-write']);
 	seed();
@@ -208,228 +164,33 @@ test('organizer-link banner copies the /e URL and warns to save it', async ({ pa
 	expect(copied.endsWith(`/e/${OTOK}`)).toBe(true);
 });
 
-test('close stops response edits; reopen restores them', async ({ page }) => {
-	seed();
-	await page.goto(`/e/${OTOK}`);
-
-	// Closing means deciding: pick the (only) date, then confirm.
-	await page.getByRole('button', { name: m.closePoll() }).click();
-	await page.getByRole('checkbox', { name: m.selectDateLabel() }).check();
-	await page.getByRole('button', { name: m.confirmClose() }).click();
-	await expect(page.getByText(m.chosenDateHeading())).toBeVisible();
-	await expect.poll(() => selectedOptionIds(EV)).toEqual([OPT]);
-
-	// The invitee link is now read-only and shows the outcome instead of a form.
-	await page.goto(`/r/${RTOK}`);
-	await expect(page.getByText(m.chosenDateHeading())).toBeVisible();
-	await expect(page.getByRole('button', { name: m.sendAnswer() })).toHaveCount(0);
-
-	// Reopen → the decision is discarded and the invitee can edit again. Anna was
-	// seeded with an answer, so the response bar shows the "saved / Rediger"
-	// affordance (not a fresh "Send svar") - that Rediger button only renders when
-	// the event is open, so its presence is exactly the "edits restored" signal.
-	await page.goto(`/e/${OTOK}`);
-	await page.getByRole('button', { name: m.reopenPoll() }).click();
-	await expect(page.getByText(m.chosenDateHeading())).toHaveCount(0);
-	await expect.poll(() => selectedOptionIds(EV)).toEqual([]);
-	await page.goto(`/r/${RTOK}`);
-	await expect(page.getByText(m.closedBanner())).toHaveCount(0);
-	await page.getByRole('button', { name: m.editAnswer() }).click();
-	await expect(page.getByRole('button', { name: m.sendAnswer() })).toBeVisible();
-});
-
-// --- Results view (iteration 6): counts, pending, best-option highlight. ---
-// Separate event/tokens from the mutation tests above so seeds don't collide.
-
-const R_OTOK = 'e2e-res-otok';
-const R_EV = 'e2e-res-ev';
-
-// Fresh event with 3 invitees + 3 options, then whatever responses are given.
-function seedResults(responses: ResponseSeed[] = []) {
-	wipeEvent(R_EV);
-	seedEvent({ id: R_EV, title: 'Resultater', organizerToken: R_OTOK, status: 'open' });
-	seedDateOption({ id: 'ra', eventId: R_EV, startsAt: '2026-09-12T08:00:00Z', sortOrder: 0 });
-	seedDateOption({ id: 'rb', eventId: R_EV, startsAt: '2026-09-20T08:00:00Z', sortOrder: 1 });
-	seedDateOption({ id: 'rc', eventId: R_EV, startsAt: '2026-10-03T08:00:00Z', sortOrder: 2 });
-	seedInvitee({ id: 'ri1', eventId: R_EV, label: 'Anna', token: 'e2e-res-t1' });
-	seedInvitee({ id: 'ri2', eventId: R_EV, label: 'Bo', token: 'e2e-res-t2' });
-	seedInvitee({ id: 'ri3', eventId: R_EV, label: 'Ced', token: 'e2e-res-t3' });
-	for (const r of responses) seedResponse(r);
-}
-
-const resp = (inviteeId: string, dateOptionId: string, preference: Preference): ResponseSeed => ({
-	inviteeId,
-	dateOptionId,
-	preference
-});
-
-// Locate a result card by the date weekday it renders (each option is a distinct
-// date), so we can assert on that specific card's contents.
-function cardByWeekday(page: Page, weekday: string) {
-	return page
-		.locator('section')
-		.filter({ hasText: m.resultsSection() })
-		.locator('div')
-		.filter({ hasText: weekday })
-		.filter({ has: page.getByText(m.prefPreferred()) });
-}
-
-test('per-option counts and a clear winner is highlighted', async ({ page }) => {
-	// rb: 2×preferred, 1×available, 0×unavailable → fewest unavailable + most preferred.
-	// ra: 1×preferred, 2×unavailable. rc: 3×available, 0×unavailable (loses on preferred).
-	seedResults([
-		resp('ri1', 'rb', 'preferred'),
-		resp('ri2', 'rb', 'preferred'),
-		resp('ri3', 'rb', 'available'),
-		resp('ri1', 'ra', 'preferred'),
-		resp('ri2', 'ra', 'unavailable'),
-		resp('ri3', 'ra', 'unavailable'),
-		resp('ri1', 'rc', 'available'),
-		resp('ri2', 'rc', 'available'),
-		resp('ri3', 'rc', 'available')
-	]);
-	await page.goto(`/e/${R_OTOK}`);
-
-	// Winner rb (søndag 20 Sep) is the fully-answered option and carries the badge.
-	const winner = cardByWeekday(page, 'søndag');
-	await expect(winner.getByText(m.bestDate())).toBeVisible();
-
-	// Exactly one best-date badge → clear winner, not a tie.
-	await expect(page.getByText(m.bestDate())).toHaveCount(1);
-});
-
-test('a tie highlights both options', async ({ page }) => {
-	// ra and rb both: 1×preferred, 0×unavailable → identical (unavailable, preferred).
-	seedResults([resp('ri1', 'ra', 'preferred'), resp('ri2', 'rb', 'preferred')]);
-	await page.goto(`/e/${R_OTOK}`);
-	await expect(page.getByText(m.bestDate())).toHaveCount(2);
-});
-
-test('with no responses at all, no date is highlighted as best', async ({ page }) => {
-	seedResults();
-	await page.goto(`/e/${R_OTOK}`);
-	// Bars render (Foretrukket label present) but no date is crowned best.
-	await expect(page.getByText(m.prefPreferred()).first()).toBeVisible();
-	await expect(page.getByText(m.bestDate())).toHaveCount(0);
-});
-
-test('invitee badges distinguish pending, partial, and fully answered', async ({ page }) => {
-	// Anna answers 1 of 3 dates (partial); Bo answers all 3; Ced answers nothing.
-	seedResults([
-		resp('ri1', 'ra', 'preferred'),
-		resp('ri2', 'ra', 'available'),
-		resp('ri2', 'rb', 'preferred'),
-		resp('ri2', 'rc', 'unavailable')
-	]);
-	await page.goto(`/e/${R_OTOK}`);
-	// Exact match: the summary "n af 3 har svaret" label also contains "har svaret".
-	await expect(page.getByText(m.pending(), { exact: true })).toHaveCount(1); // Ced
-	await expect(page.getByText(m.partialAnswered(), { exact: true })).toHaveCount(1); // Anna
-	await expect(page.getByText(m.answered(), { exact: true })).toHaveCount(1); // Bo
-});
-
-test('expanding a result shows which people chose each preference', async ({ page }) => {
-	seedResults([resp('ri1', 'ra', 'preferred'), resp('ri2', 'ra', 'unavailable')]);
-	await page.goto(`/e/${R_OTOK}`);
-
-	// Scoped to the results section: the chase-up callout above it also lists the
-	// partial responders by name.
-	const results = page.locator('section').filter({ hasText: m.resultsSection() });
-	// Names hidden until the card is expanded.
-	await expect(results.getByText('Anna', { exact: true })).toHaveCount(0);
-	await results.getByRole('button', { name: m.showWho() }).first().click();
-	await expect(results.getByText('Anna', { exact: true })).toBeVisible(); // preferred ra
-	await expect(results.getByText('Bo', { exact: true })).toBeVisible(); // unavailable ra
-});
-
-// --- Chase-up callout: partial responders surfaced with their /r/ links. ---
-
-function callout(page: Page) {
-	return page.locator('div.border-primary').filter({ has: page.getByText(m.needsUpdateTitle()) });
-}
-
-test('partial responders appear in a callout with their copyable link', async ({
-	page,
-	context
+test('switching an assigned event to open keeps existing invitees and responses', async ({
+	page
 }) => {
-	await context.grantPermissions(['clipboard-read', 'clipboard-write']);
-	// Anna answered before rb/rc were added; Bo and Ced never answered → only
-	// Anna needs a chase-up.
-	seedResults([resp('ri1', 'ra', 'preferred')]);
-	await page.goto(`/e/${R_OTOK}`);
+	// Seed an ASSIGNED event with one answered invitee.
+	const AEV = 'e2e-ev-switch';
+	const AOTOK = 'e2e-otok-switch';
+	const AINV = 'e2e-inv-switch';
+	wipeEvent(AEV);
+	seedEvent({ id: AEV, title: 'Skift (e2e)', organizerToken: AOTOK, status: 'open' });
+	seedDateOption({ id: `${AEV}-d`, eventId: AEV, startsAt: '2026-09-12T08:00:00Z', sortOrder: 0 });
+	seedInvitee({ id: AINV, eventId: AEV, label: 'Existing', token: 'e2e-tok-switch' });
+	seedResponse({ inviteeId: AINV, dateOptionId: `${AEV}-d`, preference: 'preferred' });
 
-	await expect(callout(page)).toBeVisible();
-	await expect(callout(page).getByText('Anna', { exact: true })).toBeVisible();
-	await expect(callout(page).getByText('Bo', { exact: true })).toHaveCount(0);
-	await callout(page).getByRole('button', { name: m.copyLink() }).click();
-	const copied = await page.evaluate(() => navigator.clipboard.readText());
-	expect(copied).toMatch(/^https?:\/\/[^/]+\/r\//);
-	expect(copied.endsWith('/r/e2e-res-t1')).toBe(true);
-});
+	await page.goto(`/e/${AOTOK}`);
+	// The header details-edit button (the date-option list has its own "Edit").
+	await page.getByRole('button', { name: m.edit() }).first().click();
+	await page.getByLabel(m.fieldMode()).selectOption('open');
+	// The header details form's Save (invitee rows have their own "Save").
+	await page.getByRole('button', { name: m.save() }).first().click();
 
-test('no callout when nobody is partially answered', async ({ page }) => {
-	// Anna complete, Bo and Ced pending - neither state warrants a chase-up.
-	seedResults([
-		resp('ri1', 'ra', 'preferred'),
-		resp('ri1', 'rb', 'available'),
-		resp('ri1', 'rc', 'unavailable')
-	]);
-	await page.goto(`/e/${R_OTOK}`);
-	// Anna's "answered" pill proves the page rendered before we assert absence.
-	await expect(page.getByText(m.answered(), { exact: true })).toBeVisible();
-	await expect(page.getByText(m.needsUpdateTitle())).toHaveCount(0);
-});
+	// Mode flipped, but the existing invitee + its response are untouched.
+	await expect(page.getByText(m.shareLinkTitle())).toBeVisible();
+	const invitees = inviteesFor(AEV);
+	expect(invitees.map((i) => i.label)).toContain('Existing');
+	expect(responsesFor(AINV)).toEqual([{ date_option_id: `${AEV}-d`, preference: 'preferred' }]);
 
-test('open mode: a partial responder link surfaces in the callout', async ({ page }) => {
-	wipeEvent('e2e-dashop-ev');
-	seedEvent({
-		id: 'e2e-dashop-ev',
-		title: 'Åben afstemning',
-		organizerToken: 'e2e-dashop-otok',
-		status: 'open',
-		pollMode: 'open',
-		shareToken: 'e2e-dashop-share'
-	});
-	seedDateOption({
-		id: 'e2e-dashop-a',
-		eventId: 'e2e-dashop-ev',
-		startsAt: '2026-09-12T08:00:00Z',
-		sortOrder: 0
-	});
-	seedDateOption({
-		id: 'e2e-dashop-b',
-		eventId: 'e2e-dashop-ev',
-		startsAt: '2026-09-20T08:00:00Z',
-		sortOrder: 1
-	});
-	// Mia submitted via the shared link while only one date existed.
-	seedInvitee({
-		id: 'e2e-dashop-inv',
-		eventId: 'e2e-dashop-ev',
-		label: 'Mia',
-		token: 'e2e-dashop-rtok'
-	});
-	seedResponse({
-		inviteeId: 'e2e-dashop-inv',
-		dateOptionId: 'e2e-dashop-a',
-		preference: 'preferred'
-	});
-
-	await page.goto('/e/e2e-dashop-otok');
-	// Open mode hides /r/ links in the participant list; the callout is where
-	// the organizer can grab Mia's personal link.
-	await expect(callout(page).getByText('Mia', { exact: true })).toBeVisible();
-	await expect(callout(page)).toContainText('/r/e2e-dashop-rtok');
-});
-
-test('an invitee note shows behind a comment toggle', async ({ page }) => {
-	seedResults([resp('ri1', 'ra', 'preferred')]);
-	setNote('ri1', 'Jeg kan ikke om morgenen');
-	await page.goto(`/e/${R_OTOK}`);
-
-	await expect(page.getByText('Jeg kan ikke om morgenen')).toHaveCount(0);
-	await page.getByRole('button', { name: m.showNote() }).click();
-	await expect(page.getByText('Jeg kan ikke om morgenen')).toBeVisible();
+	wipeEvent(AEV);
 });
 
 test('language picker previews the dashboard live, cancel rolls back', async ({ page }) => {

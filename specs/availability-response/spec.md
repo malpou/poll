@@ -54,10 +54,17 @@ Unavailable, and SHALL persist the choices.
 - THEN each choice is saved against their invitee record
 - AND a confirmation is shown
 
-#### Scenario: Leave an option unmarked
+#### Scenario: Submit requires answering every date
 
 - GIVEN an invitee who marks some dates but leaves others unmarked
-- WHEN they submit
+- WHEN they view the submit button
+- THEN it is disabled until every date has an answer
+
+#### Scenario: A partial submission saves only the marked dates
+
+- GIVEN a submission that reaches the server with some dates unmarked (e.g. a
+  crafted or scripted request)
+- WHEN it is processed
 - THEN only the marked dates are saved
 - AND unmarked dates remain "no answer" (shown to the organizer as not-yet-answered
   for that date), never silently defaulted to "unavailable"
@@ -78,6 +85,39 @@ is closed.
 - GIVEN an event that has been closed
 - WHEN the invitee reopens their link
 - THEN their responses are shown read-only
+
+### Requirement: Dates added after answering
+
+When date options are added after an invitee answered, the system SHALL flag the
+unanswered dates on the invitee's response page, sort them first, and open the
+page straight into editing. Answering them SHALL clear the flag. A closed or
+cancelled poll SHALL never flag or reorder unanswered dates.
+
+#### Scenario: A new date is flagged and sorted first
+
+- GIVEN an invitee who answered when fewer dates existed
+- WHEN they reopen their link
+- THEN a banner notes the new dates and the page is directly editable
+- AND only the unanswered dates carry a "new" badge and render first
+- AND after answering them, a revisit shows no banner and the original order
+
+#### Scenario: No flagging on a closed poll
+
+- GIVEN a closed poll where an invitee left dates unanswered
+- WHEN they open their link
+- THEN no new-date banner or badge is shown and the original order is kept
+
+### Requirement: Rendered in the poll's language
+
+The system SHALL render response pages in the poll's stored language - copy,
+date labels, and the page's `lang` attribute - regardless of the visitor's
+browser language.
+
+#### Scenario: Poll language wins over browser language
+
+- GIVEN a French-language poll and a visitor with a non-French browser
+- WHEN they open a response link
+- THEN the page copy and date labels render in French
 
 ### Requirement: Optional note
 
