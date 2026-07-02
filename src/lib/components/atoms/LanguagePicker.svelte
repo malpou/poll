@@ -31,12 +31,19 @@
 			<label class="relative cursor-pointer" title={langLabel(l, l)}>
 				<!-- The input overlays the swatch invisibly so it stays clickable and
 				     focusable (same trick as the accent picker). -->
+				<!-- onpick runs BEFORE the value updates: pickers that flip the page
+				     language set <html lang> in onpick, and the {#key locale}
+				     re-render (triggered by the value change, flushed synchronously)
+				     must read the new lang. bind:group would update value first. -->
 				<input
 					type="radio"
 					{name}
 					value={l}
-					bind:group={value}
-					onchange={() => onpick?.(l)}
+					checked={value === l}
+					onchange={() => {
+						onpick?.(l);
+						value = l;
+					}}
 					class="peer absolute inset-0 z-10 h-full w-full cursor-pointer opacity-0"
 				/>
 				<span
