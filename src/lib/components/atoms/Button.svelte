@@ -7,6 +7,7 @@
 		onclick,
 		label,
 		iconOnly = false,
+		disabled = false,
 		children
 	}: {
 		variant?: 'primary' | 'dashed' | 'ghost';
@@ -15,6 +16,7 @@
 		// aria-label, required when iconOnly (the visible text is gone).
 		label?: string;
 		iconOnly?: boolean;
+		disabled?: boolean;
 		children: Snippet;
 	} = $props();
 
@@ -34,9 +36,10 @@
 <button
 	{type}
 	{onclick}
+	{disabled}
 	aria-label={label}
 	title={iconOnly ? label : undefined}
-	class="inline-flex cursor-pointer items-center justify-center gap-1.5 whitespace-nowrap text-[15px] transition-colors duration-150 {variants[
+	class="inline-flex cursor-pointer items-center justify-center gap-1.5 whitespace-nowrap text-[15px] transition-colors duration-150 disabled:pointer-events-none disabled:opacity-35 {variants[
 		variant
 	]} {pad}"
 >

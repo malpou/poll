@@ -72,6 +72,9 @@
 	"statusClosed": "Lukket",
 	"save": "Gem",
 	"edit": "Rediger",
+	"moveUp": "Flyt op",
+	"moveDown": "Flyt ned",
+	"sortByDate": "Sortér efter dato",
 	"confirmDeleteOption": "Denne dato har svar. Slet den alligevel?",
 	"confirmDeleteInvitee": "Denne deltager har svaret. Fjern dem alligevel? Deres link holder op med at virke.",
 	"timeAt": "kl. "

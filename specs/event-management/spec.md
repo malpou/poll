@@ -65,6 +65,25 @@ event is open.
 - THEN the option and its responses are deleted
 - AND the organizer is warned before the deletion is confirmed
 
+### Requirement: Reorder date options
+
+The system SHALL let the organizer change the display order of date options while
+the event is open, by moving a single option one step up or down and by sorting
+all options ascending by date. The chosen order SHALL apply everywhere the
+options are listed, including response pages and results.
+
+#### Scenario: Move an option up
+
+- GIVEN an open event with options in the order A, B, C
+- WHEN the organizer moves B up
+- THEN the options are listed in the order B, A, C for everyone
+
+#### Scenario: Sort options ascending by date
+
+- GIVEN an open event whose options are not in chronological order
+- WHEN the organizer sorts the options by date
+- THEN the options are listed earliest-first for everyone
+
 ### Requirement: Optional start and end time on a date option
 
 A date option MAY have a start time and an end time; both are optional. An end

@@ -137,6 +137,39 @@ test('accepting the warning deletes the option and its responses', async ({ page
 	expect(countResponsesForOption(OPT)).toBe(0);
 });
 
+// --- Option ordering: move up/down + sort ascending. Own event so the
+// single-option seeds above stay untouched. ---
+
+const O_OTOK = 'e2e-ord-otok';
+const O_EV = 'e2e-ord-ev';
+
+function seedOrdering() {
+	wipeEvent(O_EV);
+	seedEvent({ id: O_EV, title: 'Rækkefølge', organizerToken: O_OTOK, status: 'open' });
+	// Deliberately not chronological: sort_order runs [oct, sep 12, sep 20].
+	seedDateOption({ id: 'oa', eventId: O_EV, startsAt: '2026-10-03T08:00:00Z', sortOrder: 0 });
+	seedDateOption({ id: 'ob', eventId: O_EV, startsAt: '2026-09-12T08:00:00Z', sortOrder: 1 });
+	seedDateOption({ id: 'oc', eventId: O_EV, startsAt: '2026-09-20T08:00:00Z', sortOrder: 2 });
+}
+
+test('move up and move down swap an option with its neighbour', async ({ page }) => {
+	seedOrdering();
+	await page.goto(`/e/${O_OTOK}`);
+	// Every option renders both arrows (edges disabled), so nth(1) = second option.
+	await page.getByRole('button', { name: m.moveUp() }).nth(1).click();
+	await expect.poll(() => optionIds(O_EV)).toEqual(['ob', 'oa', 'oc']);
+	// Move the (new) first option down again → original order restored.
+	await page.getByRole('button', { name: m.moveDown() }).first().click();
+	await expect.poll(() => optionIds(O_EV)).toEqual(['oa', 'ob', 'oc']);
+});
+
+test('sort by date orders the options chronologically', async ({ page }) => {
+	seedOrdering();
+	await page.goto(`/e/${O_OTOK}`);
+	await page.getByRole('button', { name: m.sortByDate() }).click();
+	await expect.poll(() => optionIds(O_EV)).toEqual(['ob', 'oc', 'oa']);
+});
+
 // Scope to the invitees section - the organizer-link banner also has a copy
 // button (it copies the /e URL), so an unscoped .first() would grab that one.
 function inviteesSection(page: Page) {

@@ -53,6 +53,8 @@ export const mockProvider: DataProvider = {
 
 	async removeDateOption() {},
 
+	async reorderDateOptions() {},
+
 	async addInvitee() {
 		return { token: newToken() };
 	},

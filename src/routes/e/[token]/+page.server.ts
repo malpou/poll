@@ -187,6 +187,37 @@ export const actions = {
 		return { ok: true };
 	},
 
+	moveOption: async ({ params, request, platform }) => {
+		const { provider, event } = await resolve(platform, params.token);
+		if (!event) return fail(404);
+		const form = await request.formData();
+		const optionId = field(form, 'optionId');
+		const direction = field(form, 'direction');
+		if (direction !== 'up' && direction !== 'down') return fail(400);
+		// dateOptions arrive ordered by sort_order; swap with the neighbour.
+		const ids = event.dateOptions.map((d) => d.id);
+		const from = ids.indexOf(optionId);
+		if (from === -1) return fail(404);
+		const to = direction === 'up' ? from - 1 : from + 1;
+		if (to < 0 || to >= ids.length) return { ok: true }; // already at the edge
+		[ids[from], ids[to]] = [ids[to], ids[from]];
+		await provider.reorderDateOptions(event.id, ids);
+		return { ok: true };
+	},
+
+	sortOptions: async ({ params, platform }) => {
+		const { provider, event } = await resolve(platform, params.token);
+		if (!event) return fail(404);
+		// Chronological ascending. UTC ISO strings compare lexically; a malformed
+		// option with no starts_at sinks to the end. Sort is stable, so ties keep
+		// their current order.
+		const ids = [...event.dateOptions]
+			.sort((a, b) => (a.startsAt ?? '\uffff').localeCompare(b.startsAt ?? '\uffff'))
+			.map((d) => d.id);
+		await provider.reorderDateOptions(event.id, ids);
+		return { ok: true };
+	},
+
 	addInvitee: async ({ params, request, platform }) => {
 		const { provider, event } = await resolve(platform, params.token);
 		if (!event) return fail(404);
