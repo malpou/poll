@@ -103,8 +103,9 @@ theme token instead.
   MIT-licensed circle-flags SVG set, inlined — no external requests. Each
   language's native name stays as the radio's accessible label and tooltip.
   On the create page both swatch rows are legend-less and sit in the sheet's
-  top corners — accent top-left, language top-right — collapsing to a
-  centered vertical stack on phones.
+  top corners — accent top-left, language top-right — pinned to the edges at
+  every width; on narrow phones each row wraps onto multiple lines rather than
+  the two pickers stacking.
 - **Buttons** (the `Button` atom's three variants): primary ink-filled
   (52px, full-width, hover lift, the arrow icon trailing the label), dashed
   add-row, ghost ink-bordered (36px, inverts to ink on hover, with an

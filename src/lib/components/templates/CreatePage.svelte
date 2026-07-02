@@ -76,13 +76,12 @@
 	class="mx-auto max-w-160 px-4 pb-18 pt-7"
 >
 	<div class="paper-sheet">
-		<!-- Corner pickers: accent top-left, language top-right; stacked and
-	     centered on phones. Both are legend-less swatch rows. The accent
-	     picker keeps its own {#key} so its swatch labels re-translate on a
-	     language switch (the language picker owns the key and stays put). -->
-		<div
-			class="mb-6 flex flex-col items-center gap-4 sm:flex-row sm:items-start sm:justify-between"
-		>
+		<!-- Corner pickers: accent top-left, language top-right, pinned to the
+	     edges at every width; each swatch row wraps onto multiple rows on
+	     narrow phones rather than the two stacking. Both are legend-less. The
+	     accent picker keeps its own {#key} so its swatch labels re-translate on
+	     a language switch (the language picker owns the key and stays put). -->
+		<div class="mb-6 flex items-start justify-between gap-4">
 			{#key locale}
 				<AccentPicker bind:value={accent} showLegend={false} />
 			{/key}
