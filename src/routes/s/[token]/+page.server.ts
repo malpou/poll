@@ -1,5 +1,6 @@
 import { fail, redirect } from '@sveltejs/kit';
 import { getProvider } from '$lib/data/provider';
+import { enabledPreferences } from '$lib/logic/choices';
 import { formatDateOption } from '$lib/logic/date';
 import { outcomeFor } from '$lib/logic/results';
 import { cachedLoad, invalidateCache } from '$lib/server/cache';
@@ -7,9 +8,6 @@ import { setRequestLocale } from '../../../hooks.server';
 import type { Preference } from '$lib/types';
 import type { ResponseInput } from '$lib/data/provider';
 import type { Actions, PageServerLoad } from './$types';
-
-const PREFERENCES: readonly string[] = ['preferred', 'available', 'unavailable'];
-const isPreference = (v: string): v is Preference => PREFERENCES.includes(v);
 
 /**
  * Builds the cookie name that holds the invitee token of this browser's own
@@ -40,6 +38,7 @@ export const load: PageServerLoad = async ({ params, platform, cookies, url }) =
 				title: ctx.event.title,
 				description: ctx.event.description,
 				timezone: ctx.event.timezone,
+				choices: enabledPreferences(ctx.event),
 				dates: ctx.dateOptions.map((d) => ({
 					id: d.id,
 					...formatDateOption(d.startsAt, d.endsAt, ctx.event.locale, ctx.event.timezone)
@@ -73,11 +72,13 @@ export const actions = {
 		if (!name) return fail(400, { error: 'name' });
 
 		const optionIds = new Set(ctx.dateOptions.map((d) => d.id));
+		// Trust boundary: only the event's enabled choices are accepted (as on /r).
+		const enabled: ReadonlySet<string> = new Set(enabledPreferences(ctx.event));
 		const answers: ResponseInput[] = [];
 		for (const id of optionIds) {
 			const v = form.get(`pref.${id}`);
-			if (typeof v === 'string' && isPreference(v)) {
-				answers.push({ dateOptionId: id, preference: v });
+			if (typeof v === 'string' && enabled.has(v)) {
+				answers.push({ dateOptionId: id, preference: v as Preference });
 			}
 		}
 		const noteVal = form.get('note');

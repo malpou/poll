@@ -5,9 +5,10 @@
 ### Requirement: Per-option summary
 
 The system SHALL show, for each date option, the count of invitees choosing
-each of the event's enabled choices, plus any disabled choice that still has
-recorded answers, and SHALL show one overall "who answered" summary under
-the results heading. An "I don't know" answer counts as having answered.
+each of the event's enabled choices, and SHALL show one overall "who
+answered" summary under the results heading. An "I don't know" answer counts
+as having answered. Only enabled choices appear — disabling a choice folds
+its recorded answers into Available or Unavailable (see event-management).
 
 #### Scenario: View the summary
 
@@ -26,12 +27,12 @@ the results heading. An "I don't know" answer counts as having answered.
 - THEN that invitee is counted as answered and carries the fully-answered
   badge, not pending or partial
 
-#### Scenario: A since-disabled choice with answers stays visible
+#### Scenario: Disabling a choice folds its counts into the fixed pair
 
 - GIVEN an event where a date was marked Preferred before the organizer
   disabled the Preferred choice
 - WHEN the organizer opens the results view
-- THEN that date still shows its Preferred count
+- THEN no Preferred count is shown and that answer counts as Available
 
 ### Requirement: Per-preference breakdown
 

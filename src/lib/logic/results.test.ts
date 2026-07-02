@@ -13,8 +13,9 @@ const result = (
 	preferred: number,
 	available: number,
 	unavailable: number,
-	notAnswered: number
-): DateOptionResult => ({ dateOptionId, preferred, available, unavailable, notAnswered });
+	notAnswered: number,
+	unsure = 0
+): DateOptionResult => ({ dateOptionId, preferred, available, unavailable, unsure, notAnswered });
 
 describe('buildOutcome', () => {
 	it('returns null when no option is selected (legacy closed poll)', () => {
@@ -48,6 +49,15 @@ describe('buildOutcome', () => {
 			availablePct: 25,
 			unavailablePct: 0
 		});
+	});
+
+	it('keeps unsure answers in the percentage denominator', () => {
+		// 4 invitees: 2 preferred, 1 unsure, 1 silent - preferred is 50%, not 66%.
+		const [row] = buildOutcome(
+			[{ id: 'a', selected: true }],
+			counts([result('a', 2, 0, 0, 1, 1)])
+		)!;
+		expect(row.preferredPct).toBe(50);
 	});
 
 	it('a date with no responses at all renders as zeros, not NaN', () => {
@@ -97,6 +107,28 @@ describe('markBest', () => {
 		]);
 		expect(rows.find((r) => r.id === 'mardi15')?.isBest).toBe(false);
 		expect(rows.filter((r) => r.isBest)).toHaveLength(3);
+	});
+
+	it('unsure carries no weight and does not sway the ranking', () => {
+		// Identical preferred/available/unavailable; b also has unsure answers.
+		const rows = markBest([
+			{ id: 'a', preferred: 1, available: 2, unavailable: 0, unsure: 0 },
+			{ id: 'b', preferred: 1, available: 2, unavailable: 0, unsure: 3 }
+		]);
+		expect(
+			rows
+				.filter((r) => r.isBest)
+				.map((r) => r.id)
+				.sort()
+		).toEqual(['a', 'b']);
+	});
+
+	it('an all-unsure board still yields no highlight', () => {
+		const rows = markBest([
+			{ id: 'a', preferred: 0, available: 0, unavailable: 0, unsure: 2 },
+			{ id: 'b', preferred: 0, available: 0, unavailable: 0, unsure: 1 }
+		]);
+		expect(rows.every((r) => !r.isBest)).toBe(true);
 	});
 
 	it('flags nothing on an all-zero board or empty list', () => {

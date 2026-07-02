@@ -30,6 +30,8 @@ export const mockProvider: DataProvider = {
 
 	async setPollMode() {},
 
+	async setResponseChoices() {},
+
 	async saveResponses() {},
 
 	async saveNote() {},

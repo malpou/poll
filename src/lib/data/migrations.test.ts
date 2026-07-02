@@ -114,6 +114,29 @@ describe('migration stack', () => {
 		expect(() => db.exec(`UPDATE events SET locale = 'xx' WHERE id = 'e1'`)).toThrow(/CHECK/);
 	});
 
+	it('0006 adds choice flags with legacy-preserving defaults and widens preference to unsure', () => {
+		const legacy = db
+			.prepare(`SELECT allow_preferred, allow_unsure FROM events WHERE id = 'e1'`)
+			.get() as { allow_preferred: number; allow_unsure: number };
+		expect(legacy).toEqual({ allow_preferred: 1, allow_unsure: 0 });
+		expect(() => db.exec(`UPDATE events SET allow_unsure = 2 WHERE id = 'e1'`)).toThrow(/CHECK/);
+
+		db.exec(
+			`UPDATE responses SET preference = 'unsure' WHERE invitee_id = 'i1' AND date_option_id = 'd1'`
+		);
+		expect(() =>
+			db.exec(
+				`UPDATE responses SET preference = 'bogus' WHERE invitee_id = 'i1' AND date_option_id = 'd1'`
+			)
+		).toThrow(/CHECK/);
+		// The (invitee_id, date_option_id) PK survives the rebuild - the save
+		// upsert depends on it.
+		expect(() =>
+			db.exec(`INSERT INTO responses (invitee_id, date_option_id, preference, updated_at)
+			         VALUES ('i1', 'd1', 'available', '2026-07-02T00:00:00Z')`)
+		).toThrow(/UNIQUE|PRIMARY/);
+	});
+
 	it('the rebuild drops no rows from events or any child table', () => {
 		const count = (t: string) =>
 			(db.prepare(`SELECT COUNT(*) AS n FROM ${t}`).get() as { n: number }).n;

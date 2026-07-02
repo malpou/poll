@@ -25,6 +25,8 @@ function mapEvent(r: Record<string, unknown>): EventRow {
 		organizerToken: r.organizer_token as string,
 		shareToken: r.share_token as string,
 		status: r.status as EventRow['status'],
+		allowPreferred: r.allow_preferred === 1,
+		allowUnsure: r.allow_unsure === 1,
 		createdAt: r.created_at as string
 	};
 }
@@ -79,8 +81,8 @@ export function d1Provider(db: D1Database): DataProvider {
 			const statements: D1PreparedStatement[] = [
 				db
 					.prepare(
-						`INSERT INTO events (id, title, description, locale, timezone, poll_mode, organizer_token, share_token, status, created_at)
-						 VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'open', ?)`
+						`INSERT INTO events (id, title, description, locale, timezone, poll_mode, allow_preferred, allow_unsure, organizer_token, share_token, status, created_at)
+						 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'open', ?)`
 					)
 					.bind(
 						eventId,
@@ -89,6 +91,8 @@ export function d1Provider(db: D1Database): DataProvider {
 						draft.locale,
 						draft.timezone,
 						draft.pollMode,
+						draft.allowPreferred ? 1 : 0,
+						draft.allowUnsure ? 1 : 0,
 						organizerToken,
 						shareToken,
 						now
@@ -214,6 +218,28 @@ export function d1Provider(db: D1Database): DataProvider {
 			await db.prepare(`UPDATE events SET poll_mode = ? WHERE id = ?`).bind(mode, eventId).run();
 		},
 
+		async setResponseChoices(eventId, allowPreferred, allowUnsure) {
+			// Disabling folds recorded answers into the fixed pair (preferred →
+			// available, unsure → unavailable) in the same batch as the flag write,
+			// so results never show a choice the event no longer offers.
+			const fold = (from: string, to: string) =>
+				db
+					.prepare(
+						`UPDATE responses SET preference = ?
+						 WHERE preference = ?
+						   AND invitee_id IN (SELECT id FROM invitees WHERE event_id = ?)`
+					)
+					.bind(to, from, eventId);
+			const statements = [
+				db
+					.prepare(`UPDATE events SET allow_preferred = ?, allow_unsure = ? WHERE id = ?`)
+					.bind(allowPreferred ? 1 : 0, allowUnsure ? 1 : 0, eventId)
+			];
+			if (!allowPreferred) statements.push(fold('preferred', 'available'));
+			if (!allowUnsure) statements.push(fold('unsure', 'unavailable'));
+			await db.batch(statements);
+		},
+
 		async saveResponses(inviteeId, answers) {
 			if (answers.length === 0) return;
 			const now = new Date().toISOString();
@@ -244,18 +270,23 @@ export function d1Provider(db: D1Database): DataProvider {
 				.first<{ n: number }>();
 			const totalInvitees = invitee?.n ?? 0;
 
-			const rows = await db
-				.prepare(RESULTS_SQL)
-				.bind(eventId)
-				.all<{ id: string; preferred: number; available: number; unavailable: number }>();
+			const rows = await db.prepare(RESULTS_SQL).bind(eventId).all<{
+				id: string;
+				preferred: number;
+				available: number;
+				unavailable: number;
+				unsure: number;
+			}>();
 
 			return rows.results.map((r) => ({
 				dateOptionId: r.id,
 				preferred: r.preferred,
 				available: r.available,
 				unavailable: r.unavailable,
+				unsure: r.unsure,
 				// missing responses row => counted here, never as unavailable.
-				notAnswered: totalInvitees - (r.preferred + r.available + r.unavailable)
+				// unsure is a recorded answer, so it never lands here either.
+				notAnswered: totalInvitees - (r.preferred + r.available + r.unavailable + r.unsure)
 			}));
 		},
 

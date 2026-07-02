@@ -17,6 +17,8 @@
 		title,
 		description,
 		pollMode,
+		allowPreferred,
+		allowUnsure,
 		eventLocale,
 		locale,
 		timezone,
@@ -27,6 +29,8 @@
 		title: string;
 		description: string | null;
 		pollMode: PollMode;
+		allowPreferred: boolean;
+		allowUnsure: boolean;
 		// The poll's saved language (shown/edited) vs the page's current preview
 		// language (drives the {#key} re-render below).
 		eventLocale: Locale;
@@ -51,12 +55,16 @@
 	let draftTitle = $state('');
 	let draftDescription = $state('');
 	let draftMode = $state<PollMode>('assigned'); // re-seeded by startEdit()
+	let draftAllowPreferred = $state(true);
+	let draftAllowUnsure = $state(false);
 
 	function startEdit() {
 		draftTitle = title;
 		// Legacy plain-text descriptions become paragraphs so line breaks survive.
 		draftDescription = toEditorHtml(description ?? '');
 		draftMode = pollMode;
+		draftAllowPreferred = allowPreferred;
+		draftAllowUnsure = allowUnsure;
 		editingDetails = true;
 	}
 	function cancelEdit() {
@@ -89,6 +97,30 @@
 					<option value="assigned">{m.modeAssigned()}</option>
 					<option value="open">{m.modeOpen()}</option>
 				</SelectField>
+				<!-- Yes/No are never toggles - every event always offers both. Hidden
+				     inputs carry explicit values (see the create page). -->
+				<div class="flex flex-col gap-2">
+					<span class="text-sm font-semibold text-ink">{m.fieldChoices()}</span>
+					<label class="flex items-center gap-2 text-body text-ink">
+						<input
+							type="checkbox"
+							bind:checked={draftAllowPreferred}
+							class="h-5 w-5 cursor-pointer accent-[var(--color-primary,#1B3A7B)]"
+						/>
+						{m.prefPreferred()}
+					</label>
+					<label class="flex items-center gap-2 text-body text-ink">
+						<input
+							type="checkbox"
+							bind:checked={draftAllowUnsure}
+							class="h-5 w-5 cursor-pointer accent-[var(--color-primary,#1B3A7B)]"
+						/>
+						{m.prefUnsure()}
+					</label>
+					<p class="text-caption leading-relaxed text-ink-muted">{m.choicesHint()}</p>
+					<input type="hidden" name="allowPreferred" value={draftAllowPreferred ? '1' : '0'} />
+					<input type="hidden" name="allowUnsure" value={draftAllowUnsure ? '1' : '0'} />
+				</div>
 				<!-- Picking a language previews the whole dashboard immediately; saving
 				     persists it, cancelling rolls it back. Same live switch as /. -->
 				<SelectField

@@ -1,21 +1,23 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import Database from 'better-sqlite3';
-import { readFileSync } from 'node:fs';
+import { readFileSync, readdirSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { RESULTS_SQL } from './shared';
 
-// D1 is SQLite, so we exercise the real 0001_init.sql + the real RESULTS_SQL
+// D1 is SQLite, so we exercise the real migration stack + the real RESULTS_SQL
 // against in-memory better-sqlite3 - test and prod schema can't drift.
-const migration = readFileSync(
-	fileURLToPath(new URL('../../../migrations/0001_init.sql', import.meta.url)),
-	'utf8'
-);
+const dir = fileURLToPath(new URL('../../../migrations', import.meta.url));
+const migrations = readdirSync(dir)
+	.filter((f) => f.endsWith('.sql'))
+	.sort()
+	.map((f) => readFileSync(`${dir}/${f}`, 'utf8'));
 
 interface Row {
 	id: string;
 	preferred: number;
 	available: number;
 	unavailable: number;
+	unsure: number;
 }
 
 let db: Database.Database;
@@ -30,13 +32,13 @@ function results(eventId: string) {
 	const rows = db.prepare(RESULTS_SQL).all(eventId) as Row[];
 	return rows.map((r) => ({
 		...r,
-		notAnswered: total - (r.preferred + r.available + r.unavailable)
+		notAnswered: total - (r.preferred + r.available + r.unavailable + r.unsure)
 	}));
 }
 
 beforeEach(() => {
 	db = new Database(':memory:');
-	db.exec(migration);
+	for (const m of migrations) db.exec(`BEGIN;\n${m}\nCOMMIT;`);
 	// One event, 3 dates, 3 invitees.
 	db.exec(`INSERT INTO events (id, title, organizer_token, created_at)
 	         VALUES ('e1', 'Test', 'otok', '2026-07-01T00:00:00Z')`);
@@ -69,6 +71,13 @@ describe('results aggregation', () => {
 		respond('i3', 'd1', 'unavailable');
 		const d1 = results('e1').find((r) => r.id === 'd1')!;
 		expect(d1).toMatchObject({ preferred: 1, available: 1, unavailable: 1, notAnswered: 0 });
+	});
+
+	it('counts unsure per date and treats it as answered', () => {
+		respond('i1', 'd1', 'unsure');
+		respond('i2', 'd1', 'available');
+		const d1 = results('e1').find((r) => r.id === 'd1')!;
+		expect(d1).toMatchObject({ unsure: 1, available: 1, notAnswered: 1 });
 	});
 
 	// The Acceptance criterion: missing responses row = "no answer", never "unavailable".

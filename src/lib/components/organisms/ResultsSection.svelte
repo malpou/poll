@@ -15,12 +15,16 @@
 	let {
 		results,
 		respondedLabel,
+		allowPreferred,
+		allowUnsure,
 		closed,
 		selecting = $bindable(),
 		locale
 	}: {
 		results: ResultView[];
 		respondedLabel: string;
+		allowPreferred: boolean;
+		allowUnsure: boolean;
 		closed: boolean;
 		selecting: boolean;
 		locale: Locale;
@@ -93,7 +97,7 @@
 								{/if}
 							</div>
 							<div class="flex items-center gap-2">
-								{#if r.preferred + r.available + r.unavailable > 0}
+								{#if r.preferred + r.available + r.unavailable + r.unsure > 0}
 									<IconButton
 										label={expandedResults[r.id] ? m.hideWho() : m.showWho()}
 										onclick={() => (expandedResults[r.id] = !expandedResults[r.id])}
@@ -114,10 +118,14 @@
 								preferredPct={r.preferredPct}
 								availablePct={r.availablePct}
 								unavailablePct={r.unavailablePct}
+								showPreferred={allowPreferred}
+								unsure={allowUnsure ? r.unsure : undefined}
+								unsurePct={r.unsurePct}
 								names={{
 									preferred: r.preferredNames,
 									available: r.availableNames,
-									unavailable: r.unavailableNames
+									unavailable: r.unavailableNames,
+									unsure: r.unsureNames
 								}}
 								expanded={expandedResults[r.id] ?? false}
 							/>

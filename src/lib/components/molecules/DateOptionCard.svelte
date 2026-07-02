@@ -12,6 +12,7 @@
 		timeRange,
 		index,
 		value = $bindable(),
+		choices,
 		readOnly = false,
 		isNew = false
 	}: {
@@ -21,6 +22,7 @@
 		timeRange: string;
 		index: number;
 		value: Preference | undefined;
+		choices?: Preference[];
 		readOnly?: boolean;
 		isNew?: boolean;
 	} = $props();
@@ -45,7 +47,7 @@
 			<div class="text-caption font-semibold text-ink-muted">{timeRange}</div>
 		{/if}
 	</div>
-	<SegmentedControl bind:value {readOnly} />
+	<SegmentedControl bind:value {choices} {readOnly} />
 	<!-- Only submits a row when marked; unmarked = no field = no response row. -->
 	{#if value}
 		<input type="hidden" name="pref.{id}" {value} />

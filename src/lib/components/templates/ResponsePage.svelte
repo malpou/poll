@@ -28,6 +28,8 @@
 		title: string;
 		description: string | null;
 		timezone: string;
+		// The event's enabled choices, in display order.
+		choices: Preference[];
 		dates: ResponseDateView[];
 		answers?: Record<string, Preference>;
 		note?: string;
@@ -163,6 +165,7 @@
 							timeRange={d.timeRange}
 							index={i}
 							bind:value={answers[d.id]}
+							choices={view.choices}
 							readOnly={closed || submitted}
 							isNew={d.needsAnswer ?? false}
 						/>

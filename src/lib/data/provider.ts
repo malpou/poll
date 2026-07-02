@@ -54,6 +54,8 @@ export interface DataProvider {
 		note: string
 	): Promise<{ token: string }>;
 	setPollMode(eventId: string, mode: PollMode): Promise<void>;
+	/** The per-event choice toggles; Available/Unavailable are always offered. */
+	setResponseChoices(eventId: string, allowPreferred: boolean, allowUnsure: boolean): Promise<void>;
 	saveResponses(inviteeId: string, answers: ResponseInput[]): Promise<void>;
 	saveNote(inviteeId: string, note: string): Promise<void>;
 	getResults(eventId: string): Promise<DateOptionResult[]>;

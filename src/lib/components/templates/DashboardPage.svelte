@@ -29,6 +29,8 @@
 		locale: Locale;
 		timezone: string;
 		pollMode: PollMode;
+		allowPreferred: boolean;
+		allowUnsure: boolean;
 		status: EventStatus;
 		chosenDates: { weekday: string; dateLabel: string; timeRange: string }[];
 		respondedLabel: string;
@@ -79,6 +81,8 @@
 			title={view.title}
 			description={view.description}
 			pollMode={view.pollMode}
+			allowPreferred={view.allowPreferred}
+			allowUnsure={view.allowUnsure}
 			eventLocale={view.locale}
 			locale={uiLocale}
 			timezone={view.timezone}
@@ -101,6 +105,8 @@
 		<ResultsSection
 			results={view.results}
 			respondedLabel={view.respondedLabel}
+			allowPreferred={view.allowPreferred}
+			allowUnsure={view.allowUnsure}
 			{closed}
 			bind:selecting
 			locale={uiLocale}

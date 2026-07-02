@@ -21,6 +21,11 @@ in markup.
   partial-answered pill.
 - **Semantic pair:** `good #5c8067` / `bad #a85b4e` (+ tints) for
   available/unavailable states, result bars, and destructive hover intent.
+- **Neutral fourth state** — the "I don't know" (unsure) answer: muted ink
+  `#63697a` on the shared `card-alt` track, no dedicated token. Its icon is
+  the Lucide question-mark family (stroke, like all icons). Deliberately
+  quieter than the amber/good/bad trio: stated ignorance carries no color
+  temperature.
 - **Muted text** (the description editor's toned-down tool) is
   reduced-opacity ink — `<small>` at 0.65 opacity, same size — never a
   separate grey token, so it tones relative to any surrounding color.

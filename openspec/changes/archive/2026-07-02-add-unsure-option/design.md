@@ -41,12 +41,16 @@ configuration.
 - **Migration: rebuild `responses` to widen the CHECK** — SQLite can't alter
   an inline CHECK; copy the 0004 table-rebuild pattern. Existing rows copy
   unchanged.
-- **Disabling a choice never rewrites data.** Recorded answers with a
-  since-disabled choice stay stored, keep counting as answered, and keep
-  showing in results while their count is nonzero. The choice simply stops
-  being offered for new or changed answers, and the server rejects it on
-  write (validate the submitted value against the event's enabled set —
-  trust-boundary check, not just hidden UI).
+- **Disabling a choice folds its recorded answers into the fixed pair.**
+  Preferred answers become Available (yes); unsure answers become
+  Unavailable (no). One UPDATE at toggle time, so results only ever show
+  the enabled choice set — no mixed since-disabled leftovers. Re-enabling
+  does not restore: the original answer is gone, and that's accepted (the
+  organizer chose to simplify the poll). The folded answers still count as
+  answered. The server also rejects a disabled choice on write (validate
+  the submitted value against the event's enabled set — trust-boundary
+  check, not just hidden UI). Note the score shifts with the fold: a folded
+  Preferred drops from ×1.2 to ×1, a folded unsure from 0 to −1.
 - **Toggles editable while open** alongside title/mode/language — same
   editing surface and rules as poll mode, no special casing.
 - **Scoring weight 0 for unsure.** Stated ignorance; counting it either way
@@ -58,9 +62,10 @@ configuration.
 
 ## Risks / Trade-offs
 
-- [Organizer disables preferred mid-poll; mixed old preferred + new plain
-  answers] → Accepted: results show the recorded truth; the score formula
-  still handles it.
+- [Organizer disables preferred mid-poll; recorded preferred votes fold to
+  available and lose their 1.2 weight] → Accepted: the organizer chose a
+  plain yes/no poll; the fold keeps results consistent with the offered
+  choices. Re-enabling cannot restore folded answers.
 - [Everyone picks unsure, no option wins] → Acceptable; all-zero scores
   already yield no highlight, ties are the organizer's call.
 - [Table rebuild migration on live D1] → Same pattern already shipped in

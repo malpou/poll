@@ -52,6 +52,9 @@ export const actions = {
 			? tzField
 			: 'Europe/Copenhagen';
 		const pollMode: PollMode = field(form, 'pollMode') === 'open' ? 'open' : 'assigned';
+		// Hidden inputs carry explicit '1'/'0'; absence falls back to the defaults.
+		const allowPreferred = field(form, 'allowPreferred') !== '0';
+		const allowUnsure = field(form, 'allowUnsure') === '1';
 
 		// Drop rows the user added but never filled with a date.
 		const dates: DateOption[] = parseIndexed(form, 'dates')
@@ -76,7 +79,17 @@ export const actions = {
 						}))
 						.filter((p) => p.name !== '');
 
-		const draft = { title, description, locale, timezone, pollMode, dates, participants };
+		const draft = {
+			title,
+			description,
+			locale,
+			timezone,
+			pollMode,
+			allowPreferred,
+			allowUnsure,
+			dates,
+			participants
+		};
 
 		let error: string | null = null;
 		if (!title) error = m.errorNoTitle();

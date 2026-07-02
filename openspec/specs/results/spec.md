@@ -9,18 +9,35 @@ option.
 
 ### Requirement: Per-option summary
 
-The system SHALL show, for each date option, the count of invitees marking it
-Preferred, Available, and Unavailable, and SHALL show one overall "who answered"
-summary under the results heading.
+The system SHALL show, for each date option, the count of invitees choosing
+each of the event's enabled choices, and SHALL show one overall "who
+answered" summary under the results heading. An "I don't know" answer counts
+as having answered. Only enabled choices appear — disabling a choice folds
+its recorded answers into Available or Unavailable (see event-management).
 
 #### Scenario: View the summary
 
 - GIVEN an event with several responses
 - WHEN the organizer opens the results view
-- THEN each date option shows its Preferred / Available / Unavailable counts
+- THEN each date option shows a count per enabled choice
 - AND a single summary under the heading shows how many have answered:
   "X of Y answered" in assigned mode, and "X answered" in open mode (no fixed
   roster, so no denominator)
+
+#### Scenario: An all-unsure respondent counts as answered
+
+- GIVEN an event with "I don't know" enabled and an invitee who marked every
+  date "I don't know"
+- WHEN the organizer opens the results view
+- THEN that invitee is counted as answered and carries the fully-answered
+  badge, not pending or partial
+
+#### Scenario: Disabling a choice folds its counts into the fixed pair
+
+- GIVEN an event where a date was marked Preferred before the organizer
+  disabled the Preferred choice
+- WHEN the organizer opens the results view
+- THEN no Preferred count is shown and that answer counts as Available
 
 ### Requirement: Response status
 
@@ -52,9 +69,10 @@ named people chose each preference. Names SHALL stay hidden until expanded.
 
 #### Scenario: Expand a result
 
-- GIVEN a date option with recorded responses
+- GIVEN a date option with recorded responses, including "I don't know"
 - WHEN the organizer expands that option's result
-- THEN the names behind each Preferred / Available / Unavailable count are shown
+- THEN the names behind each shown choice's count are listed, "I don't know"
+  included
 
 ### Requirement: Invitee notes
 
@@ -99,7 +117,8 @@ appear in the callout, and a closed or cancelled poll shows no callout.
 
 While the poll is open, the system SHALL highlight the option(s) with the
 strongest availability, ranking by a weighted net score of
-`Preferred×1.2 + Available − Unavailable` (highest wins). Ties on the same score
+`Preferred×1.2 + Available − Unavailable` (highest wins). "I don't know"
+answers carry no weight and SHALL NOT affect the score. Ties on the same score
 highlight every matching option. With no responses at all, no option is
 highlighted. Once the poll is closed or cancelled, the highlight gives way to
 the recorded outcome (see specs/poll-closing).
@@ -109,6 +128,13 @@ the recorded outcome (see specs/poll-closing).
 - GIVEN one date has zero Unavailable and the most Preferred
 - WHEN the organizer opens the results view
 - THEN that date is visually highlighted as the recommended choice
+
+#### Scenario: "I don't know" does not sway the ranking
+
+- GIVEN two dates with identical Preferred / Available / Unavailable counts,
+  where one also has several "I don't know" answers
+- WHEN the organizer opens the results view
+- THEN both dates score equally and both are highlighted
 
 #### Scenario: A tie
 

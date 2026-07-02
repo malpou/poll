@@ -31,7 +31,7 @@ for this write volume.
 
 ## Data model (D1)
 
-- `events(id, title, description, locale, timezone, poll_mode, organizer_token, share_token, status, created_at)`
+- `events(id, title, description, locale, timezone, poll_mode, allow_preferred, allow_unsure, organizer_token, share_token, status, created_at)`
   - status ∈ {open, closed, cancelled}. `closed` means the organizer picked the
     final date(s); `cancelled` means they closed without picking (abandoned).
     Reopening returns to `open` and clears any chosen dates
@@ -43,6 +43,10 @@ for this write volume.
     anyone can submit through, naming themselves
   - share_token - unique; the open-mode shared link. Minted for every event so a
     poll can switch to open later without a migration
+  - allow_preferred ∈ {0, 1}, default 1; allow_unsure ∈ {0, 1}, default 0 - the
+    per-event choice toggles. Available/unavailable are always offered.
+    Disabling a choice folds its recorded answers into the fixed pair
+    (preferred → available, unsure → unavailable); re-enabling never restores
 - `date_options(id, event_id, starts_at, ends_at, label, sort_order, selected)`
   - `starts_at` and `ends_at` are both optional (nullable); `ends_at` requires `starts_at`
   - `selected` ∈ {0, 1} - flagged on the option(s) the organizer picked when
@@ -52,9 +56,10 @@ for this write volume.
     submitter typed), so open submitters are ordinary invitees - results and
     aggregation are identical to assigned mode
 - `responses(invitee_id, date_option_id, preference, updated_at)`
-  - preference ∈ {preferred, available, unavailable}
+  - preference ∈ {preferred, available, unavailable, unsure}
   - primary key (invitee_id, date_option_id)
-  - a missing row means "no answer yet" for that date - distinct from "unavailable"
+  - a missing row means "no answer yet" for that date - distinct from
+    "unavailable"; `unsure` ("I don't know") is a deliberate recorded answer
 
 ## Routes
 

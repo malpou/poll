@@ -24,7 +24,8 @@ export const RESULTS_SQL = `
 	SELECT d.id AS id,
 		SUM(CASE WHEN r.preference = 'preferred'   THEN 1 ELSE 0 END) AS preferred,
 		SUM(CASE WHEN r.preference = 'available'   THEN 1 ELSE 0 END) AS available,
-		SUM(CASE WHEN r.preference = 'unavailable' THEN 1 ELSE 0 END) AS unavailable
+		SUM(CASE WHEN r.preference = 'unavailable' THEN 1 ELSE 0 END) AS unavailable,
+		SUM(CASE WHEN r.preference = 'unsure'      THEN 1 ELSE 0 END) AS unsure
 	FROM date_options d
 	LEFT JOIN responses r ON r.date_option_id = d.id
 	WHERE d.event_id = ?

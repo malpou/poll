@@ -3,9 +3,11 @@
 	import { onMount } from 'svelte';
 	import { m } from '$lib/paraglide/messages';
 
-	// The three-preference distribution for one date option. Used on the
+	// The per-preference distribution for one date option. Used on the
 	// organizer dashboard (with expandable respondent names) and on participant
-	// pages after close (counts only - names never leave the dashboard).
+	// pages after close (counts only - names never leave the dashboard). Only
+	// the event's enabled choices render: hide preferred via showPreferred,
+	// show the unsure bar by passing its count (omitted on the outcome view).
 	interface Props {
 		preferred: number;
 		available: number;
@@ -13,8 +15,16 @@
 		preferredPct: number;
 		availablePct: number;
 		unavailablePct: number;
+		showPreferred?: boolean;
+		unsure?: number;
+		unsurePct?: number;
 		// Dashboard only: who chose what, revealed by the card's expand toggle.
-		names?: { preferred: string[]; available: string[]; unavailable: string[] } | null;
+		names?: {
+			preferred: string[];
+			available: string[];
+			unavailable: string[];
+			unsure?: string[];
+		} | null;
 		expanded?: boolean;
 	}
 
@@ -25,6 +35,9 @@
 		preferredPct,
 		availablePct,
 		unavailablePct,
+		showPreferred = true,
+		unsure = undefined,
+		unsurePct = 0,
 		names = null,
 		expanded = false
 	}: Props = $props();
@@ -38,13 +51,17 @@
 	});
 
 	const bars = $derived([
-		{
-			label: m.prefPreferred(),
-			count: preferred,
-			pct: preferredPct,
-			color: 'bg-amber',
-			names: names?.preferred ?? []
-		},
+		...(showPreferred
+			? [
+					{
+						label: m.prefPreferred(),
+						count: preferred,
+						pct: preferredPct,
+						color: 'bg-amber',
+						names: names?.preferred ?? []
+					}
+				]
+			: []),
 		{
 			label: m.prefAvailable(),
 			count: available,
@@ -58,7 +75,19 @@
 			pct: unavailablePct,
 			color: 'bg-bad',
 			names: names?.unavailable ?? []
-		}
+		},
+		// The neutral state: muted ink on the shared card-alt track (DESIGN.md).
+		...(unsure !== undefined
+			? [
+					{
+						label: m.prefUnsure(),
+						count: unsure,
+						pct: unsurePct,
+						color: 'bg-ink-muted',
+						names: names?.unsure ?? []
+					}
+				]
+			: [])
 	]);
 </script>
 

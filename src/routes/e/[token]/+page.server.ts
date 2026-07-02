@@ -51,7 +51,7 @@ async function computeDashboard(platform: App.Platform | undefined, token: strin
 	for (const r of responses) {
 		let bucket = namesByOption.get(r.dateOptionId);
 		if (!bucket) {
-			bucket = { preferred: [], available: [], unavailable: [] };
+			bucket = { preferred: [], available: [], unavailable: [], unsure: [] };
 			namesByOption.set(r.dateOptionId, bucket);
 		}
 		bucket[r.preference].push(nameById.get(r.inviteeId) ?? '');
@@ -62,11 +62,12 @@ async function computeDashboard(platform: App.Platform | undefined, token: strin
 	const pct = (n: number) => (totalInvitees ? Math.round((n / totalInvitees) * 100) : 0);
 	const resultsView = markBest(
 		event.dateOptions.map((d) => {
-			const c = counts.get(d.id) ?? { preferred: 0, available: 0, unavailable: 0 };
+			const c = counts.get(d.id) ?? { preferred: 0, available: 0, unavailable: 0, unsure: 0 };
 			const names = namesByOption.get(d.id) ?? {
 				preferred: [],
 				available: [],
-				unavailable: []
+				unavailable: [],
+				unsure: []
 			};
 			return {
 				id: d.id,
@@ -74,12 +75,15 @@ async function computeDashboard(platform: App.Platform | undefined, token: strin
 				preferred: c.preferred,
 				available: c.available,
 				unavailable: c.unavailable,
+				unsure: c.unsure,
 				preferredPct: pct(c.preferred),
 				availablePct: pct(c.available),
 				unavailablePct: pct(c.unavailable),
+				unsurePct: pct(c.unsure),
 				preferredNames: names.preferred,
 				availableNames: names.available,
 				unavailableNames: names.unavailable,
+				unsureNames: names.unsure,
 				...formatDateOption(d.startsAt, d.endsAt, event.locale, event.timezone)
 			};
 		})
@@ -87,7 +91,7 @@ async function computeDashboard(platform: App.Platform | undefined, token: strin
 
 	// Same counts drive the delete-warning confirm on the options list.
 	const optionHasResponses = new Map(
-		results.map((r) => [r.dateOptionId, r.preferred + r.available + r.unavailable > 0])
+		results.map((r) => [r.dateOptionId, r.preferred + r.available + r.unavailable + r.unsure > 0])
 	);
 
 	return {
@@ -100,6 +104,8 @@ async function computeDashboard(platform: App.Platform | undefined, token: strin
 		locale: event.locale,
 		timezone: event.timezone,
 		pollMode: event.pollMode,
+		allowPreferred: event.allowPreferred,
+		allowUnsure: event.allowUnsure,
 		status: event.status,
 		// The decided dates for the closed banner - empty unless closed with a pick.
 		chosenDates: event.dateOptions
@@ -215,6 +221,14 @@ export const actions = {
 		if ((mode === 'assigned' || mode === 'open') && mode !== event.pollMode) {
 			await provider.setPollMode(event.id, mode);
 		}
+
+		// Choice toggles ride the same form. Disabling never rewrites recorded
+		// answers - they keep counting; the choice just stops being offered.
+		const allowPreferred = field(form, 'allowPreferred') !== '0';
+		const allowUnsure = field(form, 'allowUnsure') === '1';
+		if (allowPreferred !== event.allowPreferred || allowUnsure !== event.allowUnsure)
+			await provider.setResponseChoices(event.id, allowPreferred, allowUnsure);
+
 		await purgeEvent(platform, url.origin, params.token, event);
 		return { ok: true };
 	},

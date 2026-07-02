@@ -27,13 +27,16 @@ export interface EventDraft {
 	locale: Locale;
 	timezone: string; // IANA id; validated at the form boundary
 	pollMode: PollMode;
+	// Available/Unavailable are always offered; these two are the toggles.
+	allowPreferred: boolean;
+	allowUnsure: boolean;
 	dates: DateOption[];
 	participants: Participant[];
 }
 
 // --- Persisted row shapes (D1). Returned by the provider's query methods. ---
 
-export type Preference = 'preferred' | 'available' | 'unavailable';
+export type Preference = 'preferred' | 'available' | 'unavailable' | 'unsure';
 
 // closed = the organizer picked final date(s); cancelled = closed without a
 // pick (abandoned). Reopening returns to open and clears any selection.
@@ -49,6 +52,8 @@ export interface EventRow {
 	organizerToken: string;
 	shareToken: string;
 	status: EventStatus;
+	allowPreferred: boolean;
+	allowUnsure: boolean;
 	createdAt: string;
 }
 
@@ -128,12 +133,15 @@ export interface ResultView {
 	preferred: number;
 	available: number;
 	unavailable: number;
+	unsure: number;
 	preferredPct: number;
 	availablePct: number;
 	unavailablePct: number;
+	unsurePct: number;
 	preferredNames: string[];
 	availableNames: string[];
 	unavailableNames: string[];
+	unsureNames: string[];
 	isBest: boolean;
 	weekday: string;
 	dateLabel: string;
@@ -155,5 +163,6 @@ export interface DateOptionResult {
 	preferred: number;
 	available: number;
 	unavailable: number;
+	unsure: number;
 	notAnswered: number;
 }

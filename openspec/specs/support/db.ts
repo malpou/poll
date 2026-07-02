@@ -57,6 +57,8 @@ export interface EventSeed {
 	timezone?: string; // omit → 'Europe/Copenhagen'
 	pollMode?: 'assigned' | 'open'; // omit → column default 'assigned'
 	shareToken?: string; // open-mode shared link token
+	allowPreferred?: boolean; // omit → column default on
+	allowUnsure?: boolean; // omit → column default off
 	createdAt?: string;
 }
 export interface DateOptionSeed {
@@ -85,8 +87,8 @@ export interface ResponseSeed {
 
 export function seedEvent(e: EventSeed) {
 	d1(
-		`INSERT INTO events (id, title, description, organizer_token, status, locale, timezone, poll_mode, share_token, created_at) VALUES
-		   (${lit(e.id)}, ${lit(e.title)}, ${lit(e.description)}, ${lit(e.organizerToken)}, ${lit(e.status)}, ${lit(e.locale ?? 'en')}, ${lit(e.timezone ?? 'Europe/Copenhagen')}, ${lit(e.pollMode ?? 'assigned')}, ${lit(e.shareToken ?? null)}, ${lit(e.createdAt ?? NOW)});`
+		`INSERT INTO events (id, title, description, organizer_token, status, locale, timezone, poll_mode, allow_preferred, allow_unsure, share_token, created_at) VALUES
+		   (${lit(e.id)}, ${lit(e.title)}, ${lit(e.description)}, ${lit(e.organizerToken)}, ${lit(e.status)}, ${lit(e.locale ?? 'en')}, ${lit(e.timezone ?? 'Europe/Copenhagen')}, ${lit(e.pollMode ?? 'assigned')}, ${e.allowPreferred === false ? 0 : 1}, ${e.allowUnsure ? 1 : 0}, ${lit(e.shareToken ?? null)}, ${lit(e.createdAt ?? NOW)});`
 	);
 }
 
@@ -176,6 +178,13 @@ export function countResponsesForOption(optionId: string): number {
 
 export function eventStatus(eventId: string): string {
 	return d1(`SELECT status FROM events WHERE id = ${lit(eventId)}`).results[0].status as string;
+}
+
+// The per-event choice toggles (allow_preferred / allow_unsure).
+export function eventChoices(eventId: string): { allowPreferred: boolean; allowUnsure: boolean } {
+	const r = d1(`SELECT allow_preferred, allow_unsure FROM events WHERE id = ${lit(eventId)}`)
+		.results[0];
+	return { allowPreferred: r.allow_preferred === 1, allowUnsure: r.allow_unsure === 1 };
 }
 
 export function eventTimezone(eventId: string): string {

@@ -1,5 +1,6 @@
 import { fail } from '@sveltejs/kit';
 import { getProvider } from '$lib/data/provider';
+import { enabledPreferences } from '$lib/logic/choices';
 import { formatDateOption } from '$lib/logic/date';
 import { orderForRespondent } from '$lib/logic/participant-status';
 import { outcomeFor } from '$lib/logic/results';
@@ -8,9 +9,6 @@ import { setRequestLocale } from '../../../hooks.server';
 import type { Preference } from '$lib/types';
 import type { ResponseInput } from '$lib/data/provider';
 import type { Actions, PageServerLoad } from './$types';
-
-const PREFERENCES: readonly string[] = ['preferred', 'available', 'unavailable'];
-const isPreference = (v: string): v is Preference => PREFERENCES.includes(v);
 
 export const load: PageServerLoad = async ({ params, platform, url }) => {
 	const page = await cachedLoad(platform, url.origin, 'r', params.token, async () => {
@@ -42,6 +40,7 @@ export const load: PageServerLoad = async ({ params, platform, url }) => {
 			title: ctx.event.title,
 			description: ctx.event.description,
 			timezone: ctx.event.timezone,
+			choices: enabledPreferences(ctx.event),
 			dates: orderForRespondent(ctx.dateOptions, answeredIds).map((d) => ({
 				id: d.id,
 				needsAnswer: d.needsAnswer,
@@ -69,13 +68,16 @@ export const actions = {
 
 		const form = await request.formData();
 		const optionIds = new Set(ctx.dateOptions.map((d) => d.id));
+		// Trust boundary: only the event's enabled choices are accepted - a
+		// disabled choice in a crafted request is dropped, storing nothing.
+		const enabled: ReadonlySet<string> = new Set(enabledPreferences(ctx.event));
 
 		const answers: ResponseInput[] = [];
 		for (const id of optionIds) {
 			const v = form.get(`pref.${id}`);
 			// Unmarked = no field = no row (stays "no answer").
-			if (typeof v === 'string' && isPreference(v)) {
-				answers.push({ dateOptionId: id, preference: v });
+			if (typeof v === 'string' && enabled.has(v)) {
+				answers.push({ dateOptionId: id, preference: v as Preference });
 			}
 		}
 

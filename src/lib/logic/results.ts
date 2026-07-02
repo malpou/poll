@@ -6,6 +6,8 @@ import type { DateOptionResult, DateOptionRow, EventRow } from '$lib/types';
  * `preferred*1.2 + available - unavailable`, highest wins. Counting available
  * stops a thinly-answered date from tying well-attended ones. Ties on the same
  * score flag every matching row as best, leaving the final call to the organizer.
+ * Unsure ("I don't know") is deliberately absent: stated ignorance carries
+ * weight 0, so it can never sway the highlight either way.
  */
 export function markBest<T extends { preferred: number; available: number; unavailable: number }>(
 	rows: T[]
@@ -44,8 +46,16 @@ export function buildOutcome(
 ): OutcomeRow[] | null {
 	if (!options.some((o) => o.selected)) return null;
 	return options.map((o) => {
-		const c = counts.get(o.id) ?? { preferred: 0, available: 0, unavailable: 0, notAnswered: 0 };
-		const total = c.preferred + c.available + c.unavailable + c.notAnswered;
+		const c = counts.get(o.id) ?? {
+			preferred: 0,
+			available: 0,
+			unavailable: 0,
+			unsure: 0,
+			notAnswered: 0
+		};
+		// unsure answers are part of the roster, so they stay in the denominator
+		// even though the outcome view has no unsure bar.
+		const total = c.preferred + c.available + c.unavailable + c.unsure + c.notAnswered;
 		const pct = (n: number) => (total ? Math.round((n / total) * 100) : 0);
 		return {
 			id: o.id,

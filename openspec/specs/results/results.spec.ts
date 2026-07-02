@@ -20,9 +20,12 @@ const R_OTOK = 'e2e-res-otok';
 const R_EV = 'e2e-res-ev';
 
 // Fresh event with 3 invitees + 3 options, then whatever responses are given.
-function seedResults(responses: ResponseSeed[] = []) {
+function seedResults(
+	responses: ResponseSeed[] = [],
+	flags: { allowPreferred?: boolean; allowUnsure?: boolean } = {}
+) {
 	wipeEvent(R_EV);
-	seedEvent({ id: R_EV, title: 'Resultater', organizerToken: R_OTOK, status: 'open' });
+	seedEvent({ id: R_EV, title: 'Resultater', organizerToken: R_OTOK, status: 'open', ...flags });
 	seedDateOption({ id: 'ra', eventId: R_EV, startsAt: '2026-09-12T08:00:00Z', sortOrder: 0 });
 	seedDateOption({ id: 'rb', eventId: R_EV, startsAt: '2026-09-20T08:00:00Z', sortOrder: 1 });
 	seedDateOption({ id: 'rc', eventId: R_EV, startsAt: '2026-10-03T08:00:00Z', sortOrder: 2 });
@@ -86,6 +89,61 @@ test('with no responses at all, no date is highlighted as best', async ({ page }
 	// Bars render (Foretrukket label present) but no date is crowned best.
 	await expect(page.getByText(m.prefPreferred()).first()).toBeVisible();
 	await expect(page.getByText(m.bestDate())).toHaveCount(0);
+});
+
+test('"I don\'t know" answers do not sway the ranking', async ({ page }) => {
+	// ra and rb: identical preferred/available/unavailable; rb also has unsure
+	// answers. Both must score equally and both be highlighted.
+	seedResults(
+		[
+			resp('ri1', 'ra', 'preferred'),
+			resp('ri1', 'rb', 'preferred'),
+			resp('ri2', 'rb', 'unsure'),
+			resp('ri3', 'rb', 'unsure')
+		],
+		{ allowUnsure: true }
+	);
+	await page.goto(`/e/${R_OTOK}`);
+	await expect(page.getByText(m.bestDate())).toHaveCount(2);
+});
+
+test('an invitee who marked every date "I don\'t know" counts as fully answered', async ({
+	page
+}) => {
+	seedResults(
+		[resp('ri1', 'ra', 'unsure'), resp('ri1', 'rb', 'unsure'), resp('ri1', 'rc', 'unsure')],
+		{ allowUnsure: true }
+	);
+	await page.goto(`/e/${R_OTOK}`);
+	// Anna carries the fully-answered badge - never pending or partial.
+	await expect(page.getByText(m.answered(), { exact: true })).toHaveCount(1);
+	await expect(page.getByText(m.partialAnswered(), { exact: true })).toHaveCount(0);
+	await expect(page.getByText(m.pending(), { exact: true })).toHaveCount(2); // Bo, Ced
+	// The unsure count renders on the bars.
+	await expect(page.getByText(m.prefUnsure()).first()).toBeVisible();
+});
+
+test('a disabled choice shows no count - its folded answers count in the fixed pair', async ({
+	page
+}) => {
+	// Post-fold state: preferred was disabled, its vote already folded to
+	// available (the fold itself is covered in event-management/choices).
+	seedResults([resp('ri1', 'ra', 'available')], { allowPreferred: false });
+	await page.goto(`/e/${R_OTOK}`);
+	await expect(page.getByText(m.prefAvailable()).first()).toBeVisible();
+	await expect(page.getByText(m.prefPreferred())).toHaveCount(0);
+});
+
+test('expanding a result lists the names behind the "I don\'t know" count', async ({ page }) => {
+	seedResults([resp('ri1', 'ra', 'unsure'), resp('ri2', 'ra', 'available')], {
+		allowUnsure: true
+	});
+	await page.goto(`/e/${R_OTOK}`);
+	const results = page.locator('section').filter({ hasText: m.resultsSection() });
+	await expect(results.getByText('Anna', { exact: true })).toHaveCount(0);
+	await results.getByRole('button', { name: m.showWho() }).first().click();
+	await expect(results.getByText('Anna', { exact: true })).toBeVisible(); // unsure ra
+	await expect(results.getByText('Bo', { exact: true })).toBeVisible(); // available ra
 });
 
 test('invitee badges distinguish pending, partial, and fully answered', async ({ page }) => {

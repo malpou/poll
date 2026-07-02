@@ -14,9 +14,10 @@ poll: Yes/No always, "Preferred" and "I don't know" as per-event options.
 - New per-event toggle "I don't know" (`unsure`, default off): an explicit
   neutral answer that counts as answering that date.
 - Organizer sets both toggles at creation and can change them while the poll
-  is open. Disabling a choice keeps already-recorded answers; it just stops
-  being offered.
-- Results count and break down whatever choices carry answers; best-option
+  is open. Disabling a choice folds already-recorded answers into the fixed
+  pair — Preferred becomes Available, "I don't know" becomes Unavailable —
+  and it stops being offered.
+- Results count and break down the event's enabled choices; best-option
   scoring is unchanged (`Preferred×1.2 + Available − Unavailable`), with
   unsure carrying no weight.
 

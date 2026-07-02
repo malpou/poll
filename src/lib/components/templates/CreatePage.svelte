@@ -30,6 +30,9 @@
 	// 'assigned': organizer names everyone up front (one link each). 'open': one
 	// shared link, anyone submits their own name. Default keeps the current flow.
 	let pollMode = $state<PollMode>('assigned');
+	// Choice toggles: yes/no are always offered; these two are optional.
+	let allowPreferred = $state(true);
+	let allowUnsure = $state(false);
 	let dates = $state<DateOption[]>([]);
 	let participants = $state<Participant[]>([]);
 
@@ -133,6 +136,31 @@
 			<p class="text-caption leading-relaxed text-ink-muted">
 				{pollMode === 'open' ? m.modeOpenHint() : m.modeAssignedHint()}
 			</p>
+		</div>
+
+		<!-- Hidden inputs carry explicit values so the server never has to guess
+		     an unchecked box's meaning (allowPreferred defaults on). -->
+		<div class="mb-9 flex flex-col gap-2">
+			<span class="text-sm font-semibold text-ink">{m.fieldChoices()}</span>
+			<label class="flex items-center gap-2 text-body text-ink">
+				<input
+					type="checkbox"
+					bind:checked={allowPreferred}
+					class="h-5 w-5 cursor-pointer accent-[var(--color-primary,#1B3A7B)]"
+				/>
+				{m.prefPreferred()}
+			</label>
+			<label class="flex items-center gap-2 text-body text-ink">
+				<input
+					type="checkbox"
+					bind:checked={allowUnsure}
+					class="h-5 w-5 cursor-pointer accent-[var(--color-primary,#1B3A7B)]"
+				/>
+				{m.prefUnsure()}
+			</label>
+			<p class="text-caption leading-relaxed text-ink-muted">{m.choicesHint()}</p>
+			<input type="hidden" name="allowPreferred" value={allowPreferred ? '1' : '0'} />
+			<input type="hidden" name="allowUnsure" value={allowUnsure ? '1' : '0'} />
 		</div>
 
 		{#if pollMode === 'assigned'}
