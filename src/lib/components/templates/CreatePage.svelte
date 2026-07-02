@@ -150,6 +150,17 @@
 				</p>
 			</fieldset>
 
+			{#if pollMode === 'assigned'}
+				<div class="mb-9">
+					<ParticipantList
+						bind:participants
+						onadd={addParticipant}
+						onremove={removeParticipant}
+						oncopied={() => toast.show(m.linkCopied())}
+					/>
+				</div>
+			{/if}
+
 			<!-- Hidden inputs carry explicit values so the server never has to guess
 		     an unchecked box's meaning (allowPreferred defaults on). -->
 			<div class="mb-9 flex flex-col gap-2">
@@ -176,17 +187,6 @@
 				<input type="hidden" name="allowPreferred" value={allowPreferred ? '1' : '0'} />
 				<input type="hidden" name="allowUnsure" value={allowUnsure ? '1' : '0'} />
 			</div>
-
-			{#if pollMode === 'assigned'}
-				<div class="mb-9">
-					<ParticipantList
-						bind:participants
-						onadd={addParticipant}
-						onremove={removeParticipant}
-						oncopied={() => toast.show(m.linkCopied())}
-					/>
-				</div>
-			{/if}
 
 			<div class="mt-2 flex flex-col gap-3.5">
 				{#if form?.error}
