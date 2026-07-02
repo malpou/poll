@@ -9,7 +9,7 @@ describe('formatDateOption', () => {
 		expect(formatDateOption('2026-09-12T08:00:00Z', '2026-09-12T09:00:00Z', 'da')).toEqual({
 			weekday: 'lørdag',
 			dateLabel: '12. september 2026',
-			timeRange: 'kl. 10.00–11.00'
+			timeRange: 'kl. 10.00-11.00'
 		});
 	});
 
@@ -17,7 +17,7 @@ describe('formatDateOption', () => {
 		expect(formatDateOption('2026-09-12T08:00:00Z', '2026-09-12T09:00:00Z', 'en')).toEqual({
 			weekday: 'Saturday',
 			dateLabel: '12 September 2026',
-			timeRange: 'at 10:00–11:00'
+			timeRange: 'at 10:00-11:00'
 		});
 	});
 
@@ -25,7 +25,7 @@ describe('formatDateOption', () => {
 		expect(formatDateOption('2026-09-12T08:00:00Z', '2026-09-12T09:00:00Z', 'fr')).toEqual({
 			weekday: 'samedi',
 			dateLabel: '12 septembre 2026',
-			timeRange: 'à 10:00–11:00'
+			timeRange: 'à 10:00-11:00'
 		});
 	});
 
