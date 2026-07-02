@@ -149,7 +149,7 @@
 							timeRange={d.timeRange}
 							index={i}
 							bind:value={answers[d.id]}
-							readOnly={closed}
+							readOnly={closed || submitted}
 							isNew={d.needsAnswer ?? false}
 						/>
 					{/each}
