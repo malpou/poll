@@ -212,12 +212,7 @@ export const actions = {
 		// option with no starts_at sinks to the end. Sort is stable, so ties keep
 		// their current order.
 		const ids = [...event.dateOptions]
-			.sort((a, b) => {
-				if (a.startsAt === b.startsAt) return 0;
-				if (a.startsAt === null) return 1;
-				if (b.startsAt === null) return -1;
-				return a.startsAt < b.startsAt ? -1 : 1;
-			})
+			.sort((a, b) => (a.startsAt ?? '\uffff').localeCompare(b.startsAt ?? '\uffff'))
 			.map((d) => d.id);
 		await provider.reorderDateOptions(event.id, ids);
 		return { ok: true };

@@ -436,28 +436,19 @@
 								{#if !view.closed}
 									<div class="flex shrink-0 items-center gap-2">
 										{#if view.options.length > 1}
-											<form method="POST" action="?/moveOption" use:enhance={refresh}>
-												<input type="hidden" name="optionId" value={opt.id} />
-												<input type="hidden" name="direction" value="up" />
-												<Button
-													variant="ghost"
-													iconOnly
-													type="submit"
-													label={m.moveUp()}
-													disabled={i === 0}><ChevronUp size={16} /></Button
-												>
-											</form>
-											<form method="POST" action="?/moveOption" use:enhance={refresh}>
-												<input type="hidden" name="optionId" value={opt.id} />
-												<input type="hidden" name="direction" value="down" />
-												<Button
-													variant="ghost"
-													iconOnly
-													type="submit"
-													label={m.moveDown()}
-													disabled={i === view.options.length - 1}><ChevronDown size={16} /></Button
-												>
-											</form>
+											{#each [{ dir: 'up', Icon: ChevronUp, label: m.moveUp(), off: i === 0 }, { dir: 'down', Icon: ChevronDown, label: m.moveDown(), off: i === view.options.length - 1 }] as mv (mv.dir)}
+												<form method="POST" action="?/moveOption" use:enhance={refresh}>
+													<input type="hidden" name="optionId" value={opt.id} />
+													<input type="hidden" name="direction" value={mv.dir} />
+													<Button
+														variant="ghost"
+														iconOnly
+														type="submit"
+														label={mv.label}
+														disabled={mv.off}><mv.Icon size={16} /></Button
+													>
+												</form>
+											{/each}
 										{/if}
 										<Button
 											variant="ghost"
