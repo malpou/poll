@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { zonedToUtcIso, utcIsoToZonedParts, formatDateOption } from './date';
+import { zonedToUtcIso, utcIsoToZonedParts, formatDateOption, tzLabel } from './date';
 import { langLabel } from './locales';
 
 const CPH = 'Europe/Copenhagen';
@@ -114,6 +114,17 @@ describe('formatDateOption', () => {
 			dateLabel: '',
 			timeRange: ''
 		});
+	});
+});
+
+describe('tzLabel', () => {
+	it('labels a zone as id plus localized generic name', () => {
+		expect(tzLabel(CPH, 'da')).toBe('Europe/Copenhagen (Centraleuropæisk tid)');
+		expect(tzLabel(CPH, 'en')).toBe('Europe/Copenhagen (Central European Time)');
+	});
+
+	it('falls back to the bare id when Intl yields no zone name', () => {
+		expect(tzLabel('Not/AZone', 'en')).toBe('Not/AZone');
 	});
 });
 

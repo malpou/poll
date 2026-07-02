@@ -12,6 +12,7 @@
 	import { browser } from '$app/environment';
 	import { m } from '$lib/paraglide/messages';
 	import { locales, langLabel } from '$lib/logic/locales';
+	import { tzLabel } from '$lib/logic/date';
 	import { helpers } from '$lib/data/shared';
 	import type { DateOption, Locale, Participant, PollMode } from '$lib/types';
 
@@ -116,7 +117,7 @@
 		<div class="mb-9">
 			<SelectField label={m.fieldTimezone()} name="timezone" value={tzDefault}>
 				{#each zones as tz (tz)}
-					<option value={tz}>{tz}</option>
+					<option value={tz}>{tzLabel(tz, locale)}</option>
 				{/each}
 			</SelectField>
 		</div>

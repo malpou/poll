@@ -12,6 +12,8 @@
 	import ResponseOutcome from '$lib/components/organisms/ResponseOutcome.svelte';
 	import SubmitBar from '$lib/components/organisms/SubmitBar.svelte';
 	import { m } from '$lib/paraglide/messages';
+	import { getLocale } from '$lib/paraglide/runtime';
+	import { tzLabel } from '$lib/logic/date';
 	import { isRichText } from '$lib/forms/richtext';
 	import type { EventStatus, Preference, ResponseDateView } from '$lib/types';
 	import type { OutcomeRow } from '$lib/logic/results';
@@ -152,7 +154,9 @@
 					<SectionHeading text={m.datesQuestion()} />
 					<!-- Only relevant when times exist; date-only polls have no zone to name. -->
 					{#if view.dates.some((d) => d.timeRange)}
-						<p class="text-caption text-ink-muted">{m.timezoneNote({ timezone: view.timezone })}</p>
+						<p class="text-caption text-ink-muted">
+							{m.timezoneNote({ timezone: tzLabel(view.timezone, getLocale()) })}
+						</p>
 					{/if}
 					{#if hasNewDates && !closed}
 						<NoticeBanner text={m.newDatesBanner()} tone="primary" />
