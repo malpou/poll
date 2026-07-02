@@ -1,37 +1,42 @@
-import { execFileSync } from 'node:child_process';
+import Database from 'better-sqlite3';
+import { readdirSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
 import type { Locale, Preference } from '../src/lib/types';
 
 // The single home for e2e DB access. Specs seed/read the local D1 through these
 // typed builders and never write SQL themselves - mirroring how src/lib/data/d1.ts
-// is the only place app SQL lives. Seeding runs against the same local D1 the
-// preview server uses (wrangler dev), via `wrangler d1 execute`.
+// is the only place app SQL lives. We open the same local-D1 SQLite file the
+// preview server (wrangler/miniflare) uses, in-process via better-sqlite3 -
+// spawning `wrangler d1 execute` per statement cost a ~1s cold start each and
+// dominated e2e wall time. busy_timeout lets our connection wait out miniflare's
+// writes instead of erroring SQLITE_BUSY (the flake the old per-call retry chased).
 
 const NOW = '2026-07-01T00:00:00Z';
 
+let _db: Database.Database | undefined;
+function conn(): Database.Database {
+	if (_db) return _db;
+	// globalSetup runs d1:migrate before the server boots, so the file exists by
+	// the first seed. Name is a content hash; metadata.sqlite is miniflare's own.
+	const dir = fileURLToPath(
+		new URL('../.wrangler/state/v3/d1/miniflare-D1DatabaseObject', import.meta.url)
+	);
+	const file = readdirSync(dir).find((f) => f.endsWith('.sqlite') && f !== 'metadata.sqlite');
+	if (!file) throw new Error(`no local D1 sqlite under ${dir} - did globalSetup migrate?`);
+	_db = new Database(`${dir}/${file}`);
+	_db.pragma('busy_timeout = 5000');
+	return _db;
+}
+
 export function d1(sql: string): { results: Record<string, unknown>[] } {
-	// The preview server (wrangler dev) and this spawned wrangler share one local
-	// D1 file, so writes occasionally lose a lock/visibility race and surface as a
-	// transient FK/BUSY error. One retry clears it; the seeds are idempotent.
-	const run = () =>
-		execFileSync(
-			'bunx',
-			['wrangler', 'd1', 'execute', 'DB', '--local', '--json', '--command', sql],
-			{ encoding: 'utf8' }
-		);
-	let out: string;
-	for (let attempt = 0; ; attempt++) {
-		try {
-			out = run();
-			break;
-		} catch (e) {
-			if (attempt >= 2) throw e;
-		}
+	const db = conn();
+	// Reads need rows back; writes (including wipeEvent's multi-statement DELETE)
+	// don't and go through exec, which - unlike prepare - takes several statements.
+	if (/^\s*SELECT/i.test(sql)) {
+		return { results: db.prepare(sql).all() as Record<string, unknown>[] };
 	}
-	// wrangler prints a JSON array of statement results; take the first.
-	const parsed = JSON.parse(out.slice(out.indexOf('['))) as {
-		results: Record<string, unknown>[];
-	}[];
-	return parsed[0];
+	db.exec(sql);
+	return { results: [] };
 }
 
 // SQL literal for a string-or-null value. String-escaped rather than

@@ -144,14 +144,18 @@
 		{/if}
 
 		<div class="mb-[30px] flex flex-col gap-1.5">
-			{#if mode === 'assigned'}
-				<div class="text-[15px] font-semibold text-primary">
-					{m.greeting({ name: view.name ?? '' })}
-				</div>
-			{:else if name.trim()}
-				<div class="text-[15px] font-semibold text-primary">
-					{m.greeting({ name: name.trim() })}
-				</div>
+			<!-- No greeting once closed: a decided/cancelled poll is an outcome, not a
+			     personal ask, and the counts-only view must show no invitee name. -->
+			{#if !closed}
+				{#if mode === 'assigned'}
+					<div class="text-[15px] font-semibold text-primary">
+						{m.greeting({ name: view.name ?? '' })}
+					</div>
+				{:else if name.trim()}
+					<div class="text-[15px] font-semibold text-primary">
+						{m.greeting({ name: name.trim() })}
+					</div>
+				{/if}
 			{/if}
 			<h1 class="text-[30px] font-extrabold tracking-[-0.02em] text-ink">{view.title}</h1>
 			{#if view.description}
