@@ -54,6 +54,13 @@ in markup.
   ones signal intent on hover (`hover:bg-bad-tint hover:text-bad`).
   Meta/detail lists use a 14px icon as the bullet in place of a text label,
   with the label kept as `sr-only` text.
+- **Combo box** (type-to-filter pickers over long lists): the input styled
+  exactly like a select (control radius, border, `focus:border-primary`);
+  the suggestion list is a card-styled panel directly beneath (`bg-card`,
+  `border-border`, control radius, `max-h-60` scroll, no shadow). The
+  active/keyboard-highlighted option gets `bg-primary-tint`. The list
+  appears and closes instantly — no open/close animation, per the
+  "seen dozens of times per session" motion rule.
 - Prominent date displays capitalize the weekday via CSS (`capitalize`);
   running text keeps the poll language's own casing (Danish lowercase).
 

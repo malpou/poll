@@ -6,6 +6,7 @@
 	import IconButton from '$lib/components/atoms/IconButton.svelte';
 	import SectionHeading from '$lib/components/atoms/SectionHeading.svelte';
 	import SelectField from '$lib/components/atoms/SelectField.svelte';
+	import TimezoneCombobox from '$lib/components/atoms/TimezoneCombobox.svelte';
 	import { X, Pencil, Check, Lock, LockOpen, Users, Languages, Clock } from '@lucide/svelte';
 	import { m } from '$lib/paraglide/messages';
 	import { locales, langLabel } from '$lib/logic/locales';
@@ -42,8 +43,6 @@
 		onpreviewlocale: (l: Locale) => void;
 	} = $props();
 
-	const zones = Intl.supportedValuesOf('timeZone');
-
 	/**
 	 * Plain-text labels for the non-edit header. Keyed by the poll's stored values.
 	 */
@@ -58,6 +57,7 @@
 	let draftMode = $state<PollMode>('assigned'); // re-seeded by startEdit()
 	let draftAllowPreferred = $state(true);
 	let draftAllowUnsure = $state(false);
+	let draftTimezone = $state('');
 
 	function startEdit() {
 		draftTitle = title;
@@ -66,6 +66,7 @@
 		draftMode = pollMode;
 		draftAllowPreferred = allowPreferred;
 		draftAllowUnsure = allowUnsure;
+		draftTimezone = timezone;
 		editingDetails = true;
 	}
 	function cancelEdit() {
@@ -136,11 +137,7 @@
 				</SelectField>
 				<!-- Saving re-renders every option's times in the new zone; no live
 				     preview since times are server-rendered. -->
-				<SelectField label={m.fieldTimezone()} name="timezone" value={timezone}>
-					{#each zones as tz (tz)}
-						<option value={tz}>{tzLabel(tz, locale)}</option>
-					{/each}
-				</SelectField>
+				<TimezoneCombobox name="timezone" bind:value={draftTimezone} {locale} />
 				<div class="flex items-center gap-2.5">
 					<Button variant="ghost" type="submit" iconOnly label={m.save()}
 						><Check size={16} /></Button

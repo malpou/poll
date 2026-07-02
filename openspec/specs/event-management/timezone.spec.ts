@@ -48,16 +48,45 @@ test('the organizer picks another timezone and the times convert', async ({ page
 	await expect(page.getByText('America/New_York (Eastern Time)')).toBeVisible();
 	await expect(page.getByText(`${m.timeAt()}04:00`).first()).toBeVisible();
 
-	// Change the timezone in the header edit form and save.
+	// Change the timezone via the edit form's combo box and save.
 	await page.getByRole('button', { name: m.edit() }).first().click();
 	const form = page.locator('form[action="?/saveDetails"]');
-	await form.locator('select[name="timezone"]').selectOption('Europe/Copenhagen');
+	const combo = form.getByRole('combobox', { name: m.fieldTimezone() });
+	await combo.fill('Copenhagen');
+	await page.getByRole('option', { name: 'Europe/Copenhagen (Central European Time)' }).click();
 	await form.getByRole('button', { name: m.save() }).click();
 
 	// Persisted, and the same instant now renders as Copenhagen wall-clock.
 	await expect.poll(() => eventTimezone(EV)).toBe('Europe/Copenhagen');
 	await expect(page.getByText(`${m.timeAt()}10:00`).first()).toBeVisible();
 	await expect(page.getByText('Europe/Copenhagen (Central European Time)')).toBeVisible();
+});
+
+test('the organizer changes the timezone by typing and it persists', async ({ page }) => {
+	seed();
+	await page.goto(`/e/${OTOK}`);
+	await page.getByRole('button', { name: m.edit() }).first().click();
+	const form = page.locator('form[action="?/saveDetails"]');
+	const combo = form.getByRole('combobox', { name: m.fieldTimezone() });
+	// Keyboard-only path: typing filters, Enter picks the highlighted match.
+	await combo.fill('Copenh');
+	await combo.press('Enter');
+	await expect(form.locator('input[name="timezone"]')).toHaveValue('Europe/Copenhagen');
+	await form.getByRole('button', { name: m.save() }).click();
+	await expect.poll(() => eventTimezone(EV)).toBe('Europe/Copenhagen');
+});
+
+test('invalid edit text keeps the current timezone', async ({ page }) => {
+	seed();
+	await page.goto(`/e/${OTOK}`);
+	await page.getByRole('button', { name: m.edit() }).first().click();
+	const form = page.locator('form[action="?/saveDetails"]');
+	const combo = form.getByRole('combobox', { name: m.fieldTimezone() });
+	await combo.fill('not a real zone');
+	// Nothing matches, so leaving the field reverts to the event's zone.
+	await page.keyboard.press('Tab');
+	await expect(combo).toHaveValue('America/New_York (Eastern Time)');
+	await expect(form.locator('input[name="timezone"]')).toHaveValue('America/New_York');
 });
 
 test("the dashboard names the timezone in the event's language", async ({ page }) => {

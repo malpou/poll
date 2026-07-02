@@ -84,8 +84,12 @@ test('timezone picker defaults to the visitor timezone and persists on create', 
 	page
 }) => {
 	await page.goto('/');
-	// The picker pre-selects the browser's own zone (pinned above).
-	await expect(page.locator('select[name="timezone"]')).toHaveValue('America/New_York');
+	// The combo box shows the browser's own zone (pinned above); the hidden
+	// input carries the IANA id the form will post.
+	await expect(page.getByRole('combobox', { name: m.fieldTimezone() })).toHaveValue(
+		'America/New_York (Eastern Time)'
+	);
+	await expect(page.locator('input[name="timezone"]')).toHaveValue('America/New_York');
 
 	await page.getByLabel(m.fieldTitle()).fill('NYC brunch');
 	await addDate(page, '2026-09-12');
@@ -97,10 +101,41 @@ test('timezone picker defaults to the visitor timezone and persists on create', 
 
 test('timezone picker labels follow the picked language', async ({ page }) => {
 	await page.goto('/');
-	const cph = page.locator('select[name="timezone"] option[value="Europe/Copenhagen"]');
-	// English browser first: identifier plus English generic zone name.
-	await expect(cph).toHaveText('Europe/Copenhagen (Central European Time)');
-	// Pick Danish: the same option re-labels with the Danish zone name, live.
+	// English browser first: the selected zone shows identifier plus English
+	// generic zone name.
+	await expect(page.getByRole('combobox', { name: m.fieldTimezone() })).toHaveValue(
+		'America/New_York (Eastern Time)'
+	);
+	// Pick Danish: the same zone re-labels with the Danish zone name, live.
 	await page.locator('select#locale').selectOption('da');
-	await expect(cph).toHaveText('Europe/Copenhagen (Centraleuropæisk tid)');
+	await expect(
+		page.getByRole('combobox', { name: m.fieldTimezone({}, { locale: 'da' }) })
+	).toHaveValue('America/New_York (Eastern-tid)');
+});
+
+test('choosing a timezone by typing creates the event in that zone', async ({ page }) => {
+	await page.goto('/');
+	await page.getByLabel(m.fieldTitle()).fill('CPH brunch');
+	await addDate(page, '2026-09-12');
+
+	// Typing filters the suggestion list; picking a match selects the zone.
+	const combo = page.getByRole('combobox', { name: m.fieldTimezone() });
+	await combo.fill('Copenhagen');
+	await page.getByRole('option', { name: 'Europe/Copenhagen (Central European Time)' }).click();
+	await expect(page.locator('input[name="timezone"]')).toHaveValue('Europe/Copenhagen');
+
+	await page.getByRole('button', { name: m.create() }).click();
+	await expect(page).toHaveURL(/\/e\/[A-Za-z0-9]+$/);
+	// The dashboard header shows the typed-and-picked zone persisted.
+	await expect(page.getByText('Europe/Copenhagen (Central European Time)')).toBeVisible();
+});
+
+test('text matching no timezone reverts to the previous selection', async ({ page }) => {
+	await page.goto('/');
+	const combo = page.getByRole('combobox', { name: m.fieldTimezone() });
+	await combo.fill('not a real zone');
+	// No suggestion matches, so leaving the field falls back to the default.
+	await page.keyboard.press('Tab');
+	await expect(combo).toHaveValue('America/New_York (Eastern Time)');
+	await expect(page.locator('input[name="timezone"]')).toHaveValue('America/New_York');
 });

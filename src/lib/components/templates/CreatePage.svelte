@@ -3,6 +3,7 @@
 	import RichTextEditor from '$lib/components/atoms/RichTextEditor.svelte';
 	import Button from '$lib/components/atoms/Button.svelte';
 	import SelectField from '$lib/components/atoms/SelectField.svelte';
+	import TimezoneCombobox from '$lib/components/atoms/TimezoneCombobox.svelte';
 	import { Check } from '@lucide/svelte';
 	import DateList from '$lib/components/organisms/DateList.svelte';
 	import ParticipantList from '$lib/components/organisms/ParticipantList.svelte';
@@ -12,7 +13,6 @@
 	import { browser } from '$app/environment';
 	import { m } from '$lib/paraglide/messages';
 	import { locales, langLabel } from '$lib/logic/locales';
-	import { tzLabel } from '$lib/logic/date';
 	import { helpers } from '$lib/data/shared';
 	import type { DateOption, Locale, Participant, PollMode } from '$lib/types';
 
@@ -39,9 +39,10 @@
 
 	// Timezone every option's times are read in. Defaults to the visitor's own
 	// zone; SSR computes the server's, hydration replaces it with the browser's.
+	// State lives outside {#key locale} so a language preview keeps the choice.
 	const zones = Intl.supportedValuesOf('timeZone');
 	const guess = new Intl.DateTimeFormat().resolvedOptions().timeZone;
-	const tzDefault = zones.includes(guess) ? guess : 'Europe/Copenhagen';
+	let timezone = $state(zones.includes(guess) ? guess : 'Europe/Copenhagen');
 
 	const toast = createToast();
 
@@ -115,11 +116,7 @@
 		</div>
 
 		<div class="mb-9">
-			<SelectField label={m.fieldTimezone()} name="timezone" value={tzDefault}>
-				{#each zones as tz (tz)}
-					<option value={tz}>{tzLabel(tz, locale)}</option>
-				{/each}
-			</SelectField>
+			<TimezoneCombobox name="timezone" bind:value={timezone} {locale} />
 		</div>
 
 		<div class="mb-9 flex flex-col gap-2">
