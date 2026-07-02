@@ -12,7 +12,8 @@ manage the event through a secret organizer link.
 The system SHALL allow anyone to create an event with a title, a language, a
 timezone, a poll mode, and one or more candidate date options, and SHALL return
 a secret organizer link for it. The timezone picker SHALL default to the
-visitor's own timezone.
+visitor's own timezone, and SHALL label each timezone with its identifier plus
+a zone name localized to the form's current language.
 
 #### Scenario: Create an event with options
 
@@ -35,6 +36,13 @@ visitor's own timezone.
 - GIVEN a visitor on the create page
 - WHEN they pick another language
 - THEN the whole form re-renders in that language without a reload
+
+#### Scenario: Timezone picker labels follow the picked language
+
+- GIVEN a visitor on the create page
+- WHEN they pick a non-English language
+- THEN each timezone option shows its identifier together with a zone name in
+  that language
 
 ### Requirement: Organizer access control
 
@@ -199,10 +207,19 @@ submit.
 
 The system SHALL render every date option's times in the event's timezone,
 chosen by the organizer at creation and changeable afterwards alongside the
-title and description.
+title and description. Wherever the event's timezone is named — on the
+dashboard and in the timezone picker when editing — the label SHALL include a
+zone name localized to the current language alongside the identifier.
 
 #### Scenario: Change the timezone
 
 - GIVEN an event whose options have start times
 - WHEN the organizer picks another timezone
 - THEN the dashboard and every response page show the times converted to it
+
+#### Scenario: Dashboard names the timezone in the event's language
+
+- GIVEN an event in a non-English language
+- WHEN the organizer opens the dashboard
+- THEN the event's timezone is shown as its identifier together with a zone
+  name in that language

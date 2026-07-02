@@ -9,6 +9,7 @@
 	import { X, Pencil, Check, Lock, LockOpen, Users, Languages, Clock } from '@lucide/svelte';
 	import { m } from '$lib/paraglide/messages';
 	import { locales, langLabel } from '$lib/logic/locales';
+	import { tzLabel } from '$lib/logic/date';
 	import { refreshThen } from '$lib/forms/enhance';
 	import { isRichText, toEditorHtml } from '$lib/forms/richtext';
 	import type { Locale, PollMode } from '$lib/types';
@@ -105,7 +106,7 @@
 				     preview since times are server-rendered. -->
 				<SelectField label={m.fieldTimezone()} name="timezone" value={timezone}>
 					{#each zones as tz (tz)}
-						<option value={tz}>{tz}</option>
+						<option value={tz}>{tzLabel(tz, locale)}</option>
 					{/each}
 				</SelectField>
 				<div class="flex items-center gap-2.5">
@@ -145,7 +146,7 @@
 				<li class="flex items-center gap-1.5">
 					<Clock size={14} aria-hidden="true" />
 					<span class="sr-only">{m.fieldTimezone()}:</span>
-					<span class="font-semibold text-ink">{timezone}</span>
+					<span class="font-semibold text-ink">{tzLabel(timezone, locale)}</span>
 				</li>
 			</ul>
 		{/if}

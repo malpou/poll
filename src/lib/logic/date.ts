@@ -38,6 +38,34 @@ function formatters(locale: Locale, tz: string) {
 	return f;
 }
 
+// "Europe/Copenhagen (Centraleuropæisk tid)" - the IANA id stays (generic
+// names collide across zones), the parenthesis localizes it. Cached per
+// locale+zone: the pickers label ~400 zones in one go.
+const tzLabelCache = new Map<string, string>();
+export function tzLabel(tz: string, locale: Locale): string {
+	const key = `${locale}|${tz}`;
+	let label = tzLabelCache.get(key);
+	if (label === undefined) {
+		let name: string | undefined;
+		try {
+			// No-arg formatToParts = "now". The instant matters: ICU resolves the
+			// generic name through the metazone in effect, and epoch-0 lookups
+			// degrade to standard-time names.
+			name = new Intl.DateTimeFormat(INTL_LOCALE[locale], {
+				timeZone: tz,
+				timeZoneName: 'longGeneric'
+			})
+				.formatToParts()
+				.find((p) => p.type === 'timeZoneName')?.value;
+		} catch {
+			// Unknown zone or unsupported option - never throw over a label.
+		}
+		label = name ? `${tz} (${name})` : tz;
+		tzLabelCache.set(key, label);
+	}
+	return label;
+}
+
 export interface FormattedDate {
 	weekday: string; // "lørdag"
 	dateLabel: string; // "12. september 2026"

@@ -91,6 +91,16 @@ test('timezone picker defaults to the visitor timezone and persists on create', 
 	await addDate(page, '2026-09-12');
 	await page.getByRole('button', { name: m.create() }).click();
 	await expect(page).toHaveURL(/\/e\/[A-Za-z0-9]+$/);
-	// The dashboard header shows the persisted zone.
-	await expect(page.getByText('America/New_York')).toBeVisible();
+	// The dashboard header shows the persisted zone, localized.
+	await expect(page.getByText('America/New_York (Eastern Time)')).toBeVisible();
+});
+
+test('timezone picker labels follow the picked language', async ({ page }) => {
+	await page.goto('/');
+	const cph = page.locator('select[name="timezone"] option[value="Europe/Copenhagen"]');
+	// English browser first: identifier plus English generic zone name.
+	await expect(cph).toHaveText('Europe/Copenhagen (Central European Time)');
+	// Pick Danish: the same option re-labels with the Danish zone name, live.
+	await page.locator('select#locale').selectOption('da');
+	await expect(cph).toHaveText('Europe/Copenhagen (Centraleuropæisk tid)');
 });

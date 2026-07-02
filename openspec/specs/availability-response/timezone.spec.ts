@@ -56,11 +56,16 @@ test('a respondent in another timezone sees the event-zone time and its name', a
 	await page.goto(`/r/${RTOK}`);
 	const card = page.getByTestId(`date-card-${OPT}`);
 	await expect(card).toContainText(`${m.timeAt()}04:00`);
-	await expect(page.getByText(m.timezoneNote({ timezone: 'America/New_York' }))).toBeVisible();
+	// The note names the zone with its localized (en poll) generic name.
+	await expect(
+		page.getByText(m.timezoneNote({ timezone: 'America/New_York (Eastern Time)' }))
+	).toBeVisible();
 });
 
 test('a date-only poll shows no timezone note', async ({ page }) => {
 	await page.goto(`/r/${DATEONLY_RTOK}`);
 	await expect(page.getByText(m.greeting({ name: 'Otto' }))).toBeVisible();
-	await expect(page.getByText(m.timezoneNote({ timezone: 'America/New_York' }))).toHaveCount(0);
+	await expect(
+		page.getByText(m.timezoneNote({ timezone: 'America/New_York (Eastern Time)' }))
+	).toHaveCount(0);
 });
