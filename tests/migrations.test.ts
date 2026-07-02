@@ -23,11 +23,26 @@ const apply = (file: string) =>
 
 beforeEach(() => {
 	db = new Database(':memory:');
-	// Seed between 0001 and the rest so the copy step in 0004 has rows to carry.
+	// Seed a full child graph on the 0001 schema so 0004's events-rebuild must
+	// carry real data across the DROP: two events, each with date_options AND
+	// invitees (both direct FKs to events), plus responses (grandchildren via
+	// invitees + date_options). e9 stresses value fidelity - NULL vs present
+	// description, unicode + newline title - so silent corruption fails here too,
+	// not just row loss. Seeded on the legacy 0001 shape so 0002/0003 back-fill.
 	apply(migrations[0]);
-	db.exec(`INSERT INTO events (id, title, organizer_token, status, created_at)
-	         VALUES ('e1', 'Legacy', 'otok-1', 'closed', '2026-07-01T00:00:00Z')`);
-	db.exec(`INSERT INTO date_options (id, event_id, sort_order) VALUES ('d1', 'e1', 0)`);
+	db.exec(`INSERT INTO events (id, title, description, organizer_token, status, created_at) VALUES
+	         ('e1', 'Legacy', NULL, 'otok-1', 'closed', '2026-07-01T00:00:00Z'),
+	         ('e9', 'Årsmøde 🎉', 'Line one
+Line two', 'otok-9', 'open', '2026-07-02T00:00:00Z')`);
+	db.exec(`INSERT INTO date_options (id, event_id, sort_order) VALUES
+	         ('d1', 'e1', 0), ('d2', 'e1', 1), ('d9', 'e9', 0)`);
+	db.exec(`INSERT INTO invitees (id, event_id, label, token, created_at) VALUES
+	         ('i1', 'e1', 'Anna', 'itok-1', '2026-07-01T00:00:00Z'),
+	         ('i9', 'e9', 'Bo', 'itok-9', '2026-07-02T00:00:00Z')`);
+	db.exec(`INSERT INTO responses (invitee_id, date_option_id, preference, updated_at) VALUES
+	         ('i1', 'd1', 'preferred', '2026-07-01T00:00:00Z'),
+	         ('i1', 'd2', 'available', '2026-07-01T00:00:00Z'),
+	         ('i9', 'd9', 'unavailable', '2026-07-02T00:00:00Z')`);
 	for (const m of migrations.slice(1)) apply(m);
 });
 
@@ -76,17 +91,65 @@ describe('migration stack', () => {
 		expect(() => db.exec(`UPDATE date_options SET selected = 2 WHERE id = 'd1'`)).toThrow(/CHECK/);
 	});
 
+	it('the rebuild drops no rows from events or any child table', () => {
+		const count = (t: string) =>
+			(db.prepare(`SELECT COUNT(*) AS n FROM ${t}`).get() as { n: number }).n;
+		expect(count('events')).toBe(2);
+		expect(count('date_options')).toBe(3);
+		expect(count('invitees')).toBe(2);
+		expect(count('responses')).toBe(3);
+	});
+
+	it('column values survive verbatim - NULL, unicode, and newlines', () => {
+		const legacy = db.prepare(`SELECT description FROM events WHERE id = 'e1'`).get() as {
+			description: string | null;
+		};
+		expect(legacy.description).toBeNull();
+		const rich = db.prepare(`SELECT title, description FROM events WHERE id = 'e9'`).get() as {
+			title: string;
+			description: string;
+		};
+		expect(rich.title).toBe('Årsmøde 🎉');
+		expect(rich.description).toBe('Line one\nLine two');
+	});
+
 	it('child tables still reference the rebuilt events table', () => {
 		db.pragma('foreign_keys = ON');
 		expect(() =>
 			db.exec(`INSERT INTO date_options (id, event_id, sort_order) VALUES ('dX', 'missing', 0)`)
 		).toThrow(/FOREIGN KEY/);
-		// The pre-rebuild child row still resolves.
-		const ok = db
-			.prepare(
-				`SELECT COUNT(*) AS n FROM date_options d JOIN events e ON e.id = d.event_id WHERE d.id = 'd1'`
+		// invitees is the other direct FK to events - the rebuild must keep it too.
+		expect(() =>
+			db.exec(
+				`INSERT INTO invitees (id, event_id, label, token, created_at)
+				 VALUES ('iX', 'missing', 'X', 'itok-x', '2026-07-01T00:00:00Z')`
 			)
-			.get() as { n: number };
-		expect(ok.n).toBe(1);
+		).toThrow(/FOREIGN KEY/);
+		// Every seeded child (both direct FKs) still resolves to its event.
+		const resolved = (t: string) =>
+			(
+				db
+					.prepare(`SELECT COUNT(*) AS n FROM ${t} c JOIN events e ON e.id = c.event_id`)
+					.get() as { n: number }
+			).n;
+		expect(resolved('date_options')).toBe(3);
+		expect(resolved('invitees')).toBe(2);
+	});
+
+	it('responses (grandchildren) still join up to the rebuilt events by both paths', () => {
+		// responses reach events only through invitees AND date_options; if the
+		// rebuild orphaned either FK chain this count would drop below 3.
+		const n = (
+			db
+				.prepare(
+					`SELECT COUNT(*) AS n FROM responses r
+					 JOIN invitees i ON i.id = r.invitee_id
+					 JOIN date_options d ON d.id = r.date_option_id
+					 JOIN events ei ON ei.id = i.event_id
+					 JOIN events ed ON ed.id = d.event_id`
+				)
+				.get() as { n: number }
+		).n;
+		expect(n).toBe(3);
 	});
 });
