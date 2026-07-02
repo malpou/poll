@@ -41,7 +41,7 @@ The system SHALL show who has answered.
 ### Requirement: Best-option highlight
 
 The system SHALL highlight the option(s) with the strongest availability, ranking
-by a weighted net score of `Preferred×2 + Available − Unavailable` (highest
+by a weighted net score of `Preferred×1.2 + Available − Unavailable` (highest
 wins). Ties on the same score highlight every matching option.
 
 #### Scenario: A clear winner
