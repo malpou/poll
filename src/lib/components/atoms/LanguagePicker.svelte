@@ -10,12 +10,14 @@
 		value = $bindable(),
 		name = 'locale',
 		showLegend = true,
+		alignEnd = false,
 		onpick,
 		class: cls = ''
 	}: {
 		value: Locale;
 		name?: string;
 		showLegend?: boolean;
+		alignEnd?: boolean;
 		onpick?: (l: Locale) => void;
 		class?: string;
 	} = $props();
@@ -26,7 +28,7 @@
 		class={showLegend ? 'text-2xs font-bold uppercase tracking-widest text-ink-muted' : 'sr-only'}
 		>{m.fieldLanguage()}</legend
 	>
-	<div class="flex flex-wrap items-center gap-3">
+	<div class="flex flex-wrap items-center gap-3 {alignEnd ? 'justify-end' : ''}">
 		{#each locales as l (l)}
 			<label class="relative cursor-pointer" title={langLabel(l, l)}>
 				<!-- The input overlays the swatch invisibly so it stays clickable and

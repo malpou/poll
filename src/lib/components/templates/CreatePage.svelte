@@ -85,7 +85,7 @@
 			{#key locale}
 				<AccentPicker bind:value={accent} showLegend={false} />
 			{/key}
-			<LanguagePicker bind:value={locale} onpick={pickLocale} showLegend={false} />
+			<LanguagePicker bind:value={locale} onpick={pickLocale} showLegend={false} alignEnd />
 		</div>
 
 		<!-- Re-render every m.*() under the newly picked locale. Form state (title,
