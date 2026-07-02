@@ -10,7 +10,11 @@ declare global {
 		interface Platform {
 			env: {
 				DB: D1Database;
+				// Load-cache TTL; "0" disables (see src/lib/server/cache.ts).
+				CACHE_TTL_SECONDS?: string;
 			};
+			context: { waitUntil(promise: Promise<unknown>): void };
+			caches: CacheStorage & { default: Cache };
 		}
 	}
 }

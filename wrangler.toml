@@ -7,6 +7,11 @@ compatibility_flags = ["nodejs_compat"]
 # (requires malpou.io to be a zone on this Cloudflare account).
 routes = [{ pattern = "poll.malpou.io", custom_domain = true }]
 
+# Backstop TTL for the edge-cached page loads (src/lib/server/cache.ts).
+# Writes purge their entries immediately; this only bounds cross-colo staleness.
+[vars]
+CACHE_TTL_SECONDS = "30"
+
 [assets]
 directory = ".svelte-kit/cloudflare"
 binding = "ASSETS"

@@ -4,11 +4,12 @@ import { formatDateOption, utcIsoToZonedParts } from '$lib/date';
 import { field, validateTimes } from '$lib/forms';
 import { inviteeStatus, responseCountByInvitee } from '$lib/participant-status';
 import { markBest } from '$lib/results';
+import { cachedLoad, invalidateCache } from '$lib/server/cache';
 import { setRequestLocale } from '../../../hooks.server';
 import { m } from '$lib/paraglide/messages';
 import { isLocale } from '$lib/paraglide/runtime';
 import type { DateOptionInput } from '$lib/data/provider';
-import type { Preference } from '$lib/types';
+import type { EventWithDetails, Preference } from '$lib/types';
 import type { Actions, PageServerLoad } from './$types';
 
 // Read date + optional times from a form into the provider's input shape.
@@ -20,14 +21,14 @@ function dateInput(form: FormData): DateOptionInput {
 	};
 }
 
-export const load: PageServerLoad = async ({ params, platform, url }) => {
+// The whole dashboard view, computed from D1. Cached per token+origin, so it
+// must not touch per-request state: the locale goes to m.*() explicitly, and
+// setRequestLocale happens in `load` (also needed on cache hits).
+async function computeDashboard(platform: App.Platform | undefined, token: string, origin: string) {
 	const provider = getProvider(platform);
-	const event = await provider.getEventByOrganizerToken(params.token);
+	const event = await provider.getEventByOrganizerToken(token);
 	// Reveal nothing on an unknown token - same discipline as the response page.
-	if (!event) return { invalid: true as const };
-
-	// The whole dashboard renders in the poll's stored locale (m.*() + dates).
-	setRequestLocale(event.locale);
+	if (!event) return null;
 
 	const [results, responses] = await Promise.all([
 		provider.getResults(event.id),
@@ -86,9 +87,9 @@ export const load: PageServerLoad = async ({ params, platform, url }) => {
 
 	return {
 		invalid: false as const,
-		token: params.token,
-		organizerUrl: provider.organizerUrl(url.origin, params.token),
-		shareUrl: provider.shareUrl(url.origin, event.shareToken),
+		token,
+		organizerUrl: provider.organizerUrl(origin, token),
+		shareUrl: provider.shareUrl(origin, event.shareToken),
 		title: event.title,
 		description: event.description,
 		locale: event.locale,
@@ -103,8 +104,8 @@ export const load: PageServerLoad = async ({ params, platform, url }) => {
 		// has no fixed roster, so it drops the "of Y" denominator.
 		respondedLabel:
 			event.pollMode === 'open'
-				? m.answeredLabelOpen({ total: responseCounts.size })
-				: m.answeredLabel({ total: responseCounts.size, totalInvitees }),
+				? m.answeredLabelOpen({ total: responseCounts.size }, { locale: event.locale })
+				: m.answeredLabel({ total: responseCounts.size, totalInvitees }, { locale: event.locale }),
 		options: event.dateOptions.map((d) => {
 			// Copenhagen wall-clock parts for the edit form's native inputs.
 			const start = utcIsoToZonedParts(d.startsAt);
@@ -120,11 +121,22 @@ export const load: PageServerLoad = async ({ params, platform, url }) => {
 		invitees: event.invitees.map((inv) => ({
 			id: inv.id,
 			label: inv.label,
-			url: provider.inviteeUrl(url.origin, inv.token),
+			url: provider.inviteeUrl(origin, inv.token),
 			status: inviteeStatus(responseCounts.get(inv.id) ?? 0, event.dateOptions.length),
 			note: inv.note
 		}))
 	};
+}
+
+export const load: PageServerLoad = async ({ params, platform, url }) => {
+	const payload = await cachedLoad(platform, url.origin, 'e', params.token, () =>
+		computeDashboard(platform, params.token, url.origin)
+	);
+	if (!payload) return { invalid: true as const };
+	// The whole dashboard renders in the poll's stored locale (m.*() + dates);
+	// must run on cache hits too, so it lives outside the cached compute.
+	setRequestLocale(payload.locale);
+	return payload;
 };
 
 // Every action re-resolves the event by token server-side; never trust the
@@ -142,8 +154,26 @@ function notOpen(event: { status: string }) {
 	return event.status !== 'open';
 }
 
+// Purge everything a dashboard mutation can affect: the dashboard itself, the
+// shared page, and every invitee page (date/detail/status/locale edits change
+// them all). Uses the pre-mutation event, so a removed invitee's page is
+// purged too; a just-added invitee has no entry yet. Await before returning -
+// the client re-runs load immediately after a successful action.
+function purgeEvent(
+	platform: App.Platform | undefined,
+	origin: string,
+	organizerToken: string,
+	event: EventWithDetails
+) {
+	return invalidateCache(platform, origin, [
+		{ kind: 'e', token: organizerToken },
+		{ kind: 's', token: event.shareToken },
+		...event.invitees.map((i) => ({ kind: 'r' as const, token: i.token }))
+	]);
+}
+
 export const actions = {
-	saveDetails: async ({ params, request, platform }) => {
+	saveDetails: async ({ params, request, platform, url }) => {
 		const { provider, event } = await resolve(platform, params.token);
 		if (!event) return fail(404);
 		if (notOpen(event)) return fail(409);
@@ -165,10 +195,11 @@ export const actions = {
 		if ((mode === 'assigned' || mode === 'open') && mode !== event.pollMode) {
 			await provider.setPollMode(event.id, mode);
 		}
+		await purgeEvent(platform, url.origin, params.token, event);
 		return { ok: true };
 	},
 
-	addOption: async ({ params, request, platform }) => {
+	addOption: async ({ params, request, platform, url }) => {
 		const { provider, event } = await resolve(platform, params.token);
 		if (!event) return fail(404);
 		if (notOpen(event)) return fail(409);
@@ -178,10 +209,11 @@ export const actions = {
 		const timeError = validateTimes(date.startTime, date.endTime);
 		if (timeError) return fail(400, { error: timeError });
 		await provider.addDateOption(event.id, date);
+		await purgeEvent(platform, url.origin, params.token, event);
 		return { ok: true };
 	},
 
-	editOption: async ({ params, request, platform }) => {
+	editOption: async ({ params, request, platform, url }) => {
 		const { provider, event } = await resolve(platform, params.token);
 		if (!event) return fail(404);
 		if (notOpen(event)) return fail(409);
@@ -193,20 +225,22 @@ export const actions = {
 		const timeError = validateTimes(date.startTime, date.endTime);
 		if (timeError) return fail(400, { error: timeError });
 		await provider.updateDateOption(optionId, date);
+		await purgeEvent(platform, url.origin, params.token, event);
 		return { ok: true };
 	},
 
-	removeOption: async ({ params, request, platform }) => {
+	removeOption: async ({ params, request, platform, url }) => {
 		const { provider, event } = await resolve(platform, params.token);
 		if (!event) return fail(404);
 		if (notOpen(event)) return fail(409);
 		const optionId = field(await request.formData(), 'optionId');
 		if (!event.dateOptions.some((d) => d.id === optionId)) return fail(404);
 		await provider.removeDateOption(optionId);
+		await purgeEvent(platform, url.origin, params.token, event);
 		return { ok: true };
 	},
 
-	moveOption: async ({ params, request, platform }) => {
+	moveOption: async ({ params, request, platform, url }) => {
 		const { provider, event } = await resolve(platform, params.token);
 		if (!event) return fail(404);
 		const form = await request.formData();
@@ -221,10 +255,11 @@ export const actions = {
 		if (to < 0 || to >= ids.length) return { ok: true }; // already at the edge
 		[ids[from], ids[to]] = [ids[to], ids[from]];
 		await provider.reorderDateOptions(event.id, ids);
+		await purgeEvent(platform, url.origin, params.token, event);
 		return { ok: true };
 	},
 
-	sortOptions: async ({ params, platform }) => {
+	sortOptions: async ({ params, platform, url }) => {
 		const { provider, event } = await resolve(platform, params.token);
 		if (!event) return fail(404);
 		// Chronological ascending. UTC ISO strings compare lexically; a malformed
@@ -234,20 +269,22 @@ export const actions = {
 			.sort((a, b) => (a.startsAt ?? '\uffff').localeCompare(b.startsAt ?? '\uffff'))
 			.map((d) => d.id);
 		await provider.reorderDateOptions(event.id, ids);
+		await purgeEvent(platform, url.origin, params.token, event);
 		return { ok: true };
 	},
 
-	addInvitee: async ({ params, request, platform }) => {
+	addInvitee: async ({ params, request, platform, url }) => {
 		const { provider, event } = await resolve(platform, params.token);
 		if (!event) return fail(404);
 		if (notOpen(event)) return fail(409);
 		const label = field(await request.formData(), 'label');
 		if (!label) return fail(400, { error: 'label' });
 		await provider.addInvitee(event.id, label);
+		await purgeEvent(platform, url.origin, params.token, event);
 		return { ok: true };
 	},
 
-	renameInvitee: async ({ params, request, platform }) => {
+	renameInvitee: async ({ params, request, platform, url }) => {
 		const { provider, event } = await resolve(platform, params.token);
 		if (!event) return fail(404);
 		if (notOpen(event)) return fail(409);
@@ -257,20 +294,22 @@ export const actions = {
 		if (!event.invitees.some((i) => i.id === inviteeId)) return fail(404);
 		if (!label) return fail(400, { error: 'label' });
 		await provider.renameInvitee(inviteeId, label);
+		await purgeEvent(platform, url.origin, params.token, event);
 		return { ok: true };
 	},
 
-	removeInvitee: async ({ params, request, platform }) => {
+	removeInvitee: async ({ params, request, platform, url }) => {
 		const { provider, event } = await resolve(platform, params.token);
 		if (!event) return fail(404);
 		if (notOpen(event)) return fail(409);
 		const inviteeId = field(await request.formData(), 'inviteeId');
 		if (!event.invitees.some((i) => i.id === inviteeId)) return fail(404);
 		await provider.removeInvitee(inviteeId);
+		await purgeEvent(platform, url.origin, params.token, event);
 		return { ok: true };
 	},
 
-	close: async ({ params, request, platform }) => {
+	close: async ({ params, request, platform, url }) => {
 		const { provider, event } = await resolve(platform, params.token);
 		if (!event) return fail(404);
 		if (notOpen(event)) return fail(409);
@@ -284,23 +323,26 @@ export const actions = {
 		if (ids.length === 0 || !ids.every((id) => valid.has(id)))
 			return fail(400, { error: m.errorNoSelection({}, { locale: event.locale }) });
 		await provider.closeEvent(event.id, ids);
+		await purgeEvent(platform, url.origin, params.token, event);
 		return { ok: true };
 	},
 
-	cancel: async ({ params, platform }) => {
+	cancel: async ({ params, platform, url }) => {
 		const { provider, event } = await resolve(platform, params.token);
 		if (!event) return fail(404);
 		if (notOpen(event)) return fail(409);
 		await provider.cancelEvent(event.id);
+		await purgeEvent(platform, url.origin, params.token, event);
 		return { ok: true };
 	},
 
-	reopen: async ({ params, platform }) => {
+	reopen: async ({ params, platform, url }) => {
 		const { provider, event } = await resolve(platform, params.token);
 		if (!event) return fail(404);
 		if (!notOpen(event)) return fail(409);
 		// Also discards the chosen dates - closing again asks for a fresh pick.
 		await provider.reopenEvent(event.id);
+		await purgeEvent(platform, url.origin, params.token, event);
 		return { ok: true };
 	}
 } satisfies Actions;
