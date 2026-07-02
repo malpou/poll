@@ -12,6 +12,7 @@
 	import ResponseOutcome from '$lib/components/organisms/ResponseOutcome.svelte';
 	import SubmitBar from '$lib/components/organisms/SubmitBar.svelte';
 	import { m } from '$lib/paraglide/messages';
+	import { isRichText } from '$lib/forms/richtext';
 	import type { EventStatus, Preference, ResponseDateView } from '$lib/types';
 	import type { OutcomeRow } from '$lib/logic/results';
 
@@ -121,9 +122,17 @@
 			{/if}
 			<h1 class="text-title font-extrabold tracking-[-0.02em] text-ink">{view.title}</h1>
 			{#if view.description}
-				<p class="mt-1.5 whitespace-pre-line text-base leading-relaxed text-ink-muted">
-					{view.description}
-				</p>
+				{#if isRichText(view.description)}
+					<!-- Editor HTML, sanitized to the allowed subset at write time. -->
+					<div class="rich-text mt-1.5 text-base leading-relaxed text-ink-muted">
+						<!-- eslint-disable-next-line svelte/no-at-html-tags -->
+						{@html view.description}
+					</div>
+				{:else}
+					<p class="mt-1.5 whitespace-pre-line text-base leading-relaxed text-ink-muted">
+						{view.description}
+					</p>
+				{/if}
 			{/if}
 		</div>
 

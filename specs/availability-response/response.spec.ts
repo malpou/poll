@@ -30,7 +30,8 @@ function seed() {
 	seedEvent({
 		id: EV_OPEN,
 		title: TITLE,
-		description: 'Vi mødes ved indgangen.',
+		// Pre-formatting plain text (two lines) - the legacy render path.
+		description: 'Vi mødes ved indgangen.\nHusk madkurv.',
 		organizerToken: 'e2e-otok-open',
 		status: 'open'
 	});
@@ -76,6 +77,14 @@ test('valid token shows title, greeting, and every date option', async ({ page }
 	await expect(page.getByText(m.greeting({ name: 'Anna' }))).toBeVisible();
 	await expect(page.getByTestId(`date-card-${D1}`)).toContainText('lørdag');
 	await expect(page.getByTestId(`date-card-${D2}`)).toContainText('søndag');
+});
+
+test('legacy plain-text description keeps its line breaks', async ({ page }) => {
+	await page.goto(`/r/${OPEN_TOKEN}`);
+	const desc = page.getByText('Vi mødes ved indgangen.');
+	await expect(desc).toBeVisible();
+	// innerText preserves rendered line breaks; the two lines must not collapse.
+	expect(await desc.innerText()).toBe('Vi mødes ved indgangen.\nHusk madkurv.');
 });
 
 test('invalid token shows the friendly not-found and no event data', async ({ page }) => {

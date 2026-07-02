@@ -1,6 +1,6 @@
 <script lang="ts">
 	import TextField from '$lib/components/atoms/TextField.svelte';
-	import TextArea from '$lib/components/atoms/TextArea.svelte';
+	import RichTextEditor from '$lib/components/atoms/RichTextEditor.svelte';
 	import Button from '$lib/components/atoms/Button.svelte';
 	import SelectField from '$lib/components/atoms/SelectField.svelte';
 	import { Check } from '@lucide/svelte';
@@ -96,7 +96,7 @@
 		</div>
 
 		<div class="mb-10">
-			<TextArea label={m.fieldDescription()} name="description" bind:value={description} />
+			<RichTextEditor label={m.fieldDescription()} name="description" bind:value={description} />
 		</div>
 
 		<div class="mb-10">

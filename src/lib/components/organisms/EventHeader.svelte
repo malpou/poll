@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { enhance } from '$app/forms';
 	import TextField from '$lib/components/atoms/TextField.svelte';
-	import TextArea from '$lib/components/atoms/TextArea.svelte';
+	import RichTextEditor from '$lib/components/atoms/RichTextEditor.svelte';
 	import Button from '$lib/components/atoms/Button.svelte';
 	import IconButton from '$lib/components/atoms/IconButton.svelte';
 	import SectionHeading from '$lib/components/atoms/SectionHeading.svelte';
@@ -9,6 +9,7 @@
 	import { X, Pencil, Check, Lock, LockOpen } from '@lucide/svelte';
 	import { m } from '$lib/paraglide/messages';
 	import { refreshThen } from '$lib/forms/enhance';
+	import { isRichText, toEditorHtml } from '$lib/forms/richtext';
 	import type { Locale, PollMode } from '$lib/types';
 
 	let {
@@ -48,7 +49,8 @@
 
 	function startEdit() {
 		draftTitle = title;
-		draftDescription = description ?? '';
+		// Legacy plain-text descriptions become paragraphs so line breaks survive.
+		draftDescription = toEditorHtml(description ?? '');
 		draftMode = pollMode;
 		editingDetails = true;
 	}
@@ -72,7 +74,11 @@
 				class="mt-2 flex flex-col gap-2.5"
 			>
 				<TextField label={m.fieldTitle()} name="title" bind:value={draftTitle} />
-				<TextArea label={m.fieldDescription()} name="description" bind:value={draftDescription} />
+				<RichTextEditor
+					label={m.fieldDescription()}
+					name="description"
+					bind:value={draftDescription}
+				/>
 				<!-- Language + mode edited alongside title/description; saved together. -->
 				<SelectField label={m.fieldMode()} name="pollMode" value={draftMode}>
 					<option value="assigned">{m.modeAssigned()}</option>
@@ -100,9 +106,17 @@
 		{:else}
 			<h1 class="mt-1 text-title font-extrabold tracking-[-0.02em] text-ink">{title}</h1>
 			{#if description}
-				<p class="mt-1.5 whitespace-pre-line text-body leading-relaxed text-ink-muted">
-					{description}
-				</p>
+				{#if isRichText(description)}
+					<!-- Editor HTML, sanitized to the allowed subset at write time. -->
+					<div class="rich-text mt-1.5 text-body leading-relaxed text-ink-muted">
+						<!-- eslint-disable-next-line svelte/no-at-html-tags -->
+						{@html description}
+					</div>
+				{:else}
+					<p class="mt-1.5 whitespace-pre-line text-body leading-relaxed text-ink-muted">
+						{description}
+					</p>
+				{/if}
 			{/if}
 			<div class="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-caption text-ink-muted">
 				<span

@@ -5,6 +5,7 @@ import { m } from '$lib/paraglide/messages';
 import { baseLocale, extractLocaleFromHeader, isLocale } from '$lib/paraglide/runtime';
 import { setRequestLocale } from '../hooks.server';
 import { field, validateTimes } from '$lib/forms/forms';
+import { richTextIsEmpty, sanitizeRichText } from '$lib/forms/richtext';
 import type { DateOption, Locale, Participant, PollMode } from '$lib/types';
 import type { Actions, PageServerLoad } from './$types';
 
@@ -41,7 +42,8 @@ export const actions = {
 	create: async ({ request, platform }) => {
 		const form = await request.formData();
 		const title = field(form, 'title');
-		const description = field(form, 'description');
+		const rawDescription = sanitizeRichText(field(form, 'description'));
+		const description = richTextIsEmpty(rawDescription) ? '' : rawDescription;
 		const localeField = field(form, 'locale');
 		const locale: Locale = isLocale(localeField) ? localeField : baseLocale;
 		const pollMode: PollMode = field(form, 'pollMode') === 'open' ? 'open' : 'assigned';

@@ -2,6 +2,7 @@ import { fail } from '@sveltejs/kit';
 import { getProvider } from '$lib/data/provider';
 import { formatDateOption, utcIsoToZonedParts } from '$lib/logic/date';
 import { field, validateTimes } from '$lib/forms/forms';
+import { richTextIsEmpty, sanitizeRichText } from '$lib/forms/richtext';
 import { inviteeStatus, responseCountByInvitee } from '$lib/logic/participant-status';
 import { markBest } from '$lib/logic/results';
 import { cachedLoad, invalidateCache } from '$lib/server/cache';
@@ -191,8 +192,12 @@ export const actions = {
 		const title = field(form, 'title');
 		// Validation error copy renders in the poll's own locale.
 		if (!title) return fail(400, { error: m.errorNoTitle({}, { locale: event.locale }) });
-		const description = field(form, 'description');
-		await provider.updateEventDetails(event.id, title, description || null);
+		const description = sanitizeRichText(field(form, 'description'));
+		await provider.updateEventDetails(
+			event.id,
+			title,
+			richTextIsEmpty(description) ? null : description
+		);
 
 		// Language + mode live in the same edit block; apply them here too. Mode
 		// switching keeps every existing invitee and response - it only changes how

@@ -68,15 +68,50 @@ test('editing the title and description persists', async ({ page }) => {
 	await page.getByRole('button', { name: m.edit() }).first().click();
 	const form = page.locator('form[action="?/saveDetails"]');
 	await form.locator('input[name="title"]').fill('Ny titel');
-	await form.locator('textarea[name="description"]').fill('Ny beskrivelse');
+	// Description is a rich-text contenteditable; fill() replaces its content.
+	await form.getByRole('textbox', { name: m.fieldDescription() }).fill('Ny beskrivelse');
 	await form.getByRole('button', { name: m.save() }).click();
 	await expect
 		.poll(() => eventDetails(EV))
 		.toEqual({
 			title: 'Ny titel',
-			description: 'Ny beskrivelse'
+			description: '<p>Ny beskrivelse</p>'
 		});
 	await expect(page.getByRole('heading', { name: 'Ny titel' })).toBeVisible();
+});
+
+test('bold formatting persists and renders for invitees', async ({ page }) => {
+	seed();
+	await page.goto(`/e/${OTOK}`);
+	await page.getByRole('button', { name: m.edit() }).first().click();
+	const form = page.locator('form[action="?/saveDetails"]');
+	const desc = form.getByRole('textbox', { name: m.fieldDescription() });
+	await desc.fill('Husk madkurv');
+	await desc.press('ControlOrMeta+a');
+	await form.getByRole('button', { name: m.rteBold() }).click();
+	await form.getByRole('button', { name: m.save() }).click();
+	await expect.poll(() => eventDetails(EV).description).toContain('<strong>');
+
+	await page.goto(`/r/${RTOK}`);
+	await expect(page.locator('strong', { hasText: 'Husk madkurv' })).toBeVisible();
+});
+
+test('disallowed markup is stripped server-side', async ({ page }) => {
+	seed();
+	// Bypass the editor: a crafted POST is the case the server must defend.
+	// Same-origin header so SvelteKit's CSRF check lets the action run.
+	const base = test.info().project.use.baseURL ?? '';
+	await page.request.post(`/e/${OTOK}?/saveDetails`, {
+		headers: { origin: base },
+		form: {
+			title: TITLE,
+			description: '<p>ok</p><script>alert(1)</script>',
+			pollMode: 'assigned',
+			locale: 'da'
+		}
+	});
+	await expect.poll(() => eventDetails(EV).description).not.toContain('<script');
+	await expect.poll(() => eventDetails(EV).description).toContain('<p>ok</p>');
 });
 
 test('saving an empty title is rejected and keeps the old title', async ({ page }) => {

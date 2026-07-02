@@ -76,6 +76,33 @@ the event is open, and SHALL reject an empty title.
 - WHEN they save with an empty title
 - THEN the system rejects it and the old title is kept
 
+### Requirement: Formatted description
+
+The system SHALL let the organizer format the event description with bold,
+italic, bullet lists, and numbered lists — both at creation and when editing —
+and SHALL render that formatting on the dashboard and on invitee pages. The
+system SHALL strip any other markup from a submitted description. Descriptions
+saved before formatting existed SHALL keep their line breaks.
+
+#### Scenario: Formatting renders for invitees
+
+- GIVEN an organizer saves a description with a bolded phrase
+- WHEN an invitee opens their response link
+- THEN the phrase renders bold
+
+#### Scenario: Disallowed markup is stripped
+
+- GIVEN a save request whose description contains a script tag
+- WHEN the system processes it
+- THEN the stored description contains no script tag
+- AND the description renders as inert text
+
+#### Scenario: Legacy plain-text description keeps line breaks
+
+- GIVEN an event whose description predates formatting
+- WHEN any page renders it
+- THEN its line breaks are preserved
+
 ### Requirement: Manage date options
 
 The system SHALL let the organizer add, edit, and remove date options while the
