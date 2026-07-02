@@ -63,7 +63,13 @@ export interface DataProvider {
 	addInvitee(eventId: string, label: string): Promise<{ token: string }>;
 	renameInvitee(inviteeId: string, label: string): Promise<void>;
 	removeInvitee(inviteeId: string): Promise<void>;
-	setEventStatus(eventId: string, status: 'open' | 'closed'): Promise<void>;
+	// The three legal status transitions, each atomic with its selection write
+	// (a close that set status but lost the pick would show a decided poll with
+	// no dates). closeEvent flags the chosen options and clears the rest;
+	// cancelEvent and reopenEvent clear every flag.
+	closeEvent(eventId: string, selectedOptionIds: string[]): Promise<void>;
+	cancelEvent(eventId: string): Promise<void>;
+	reopenEvent(eventId: string): Promise<void>;
 	setEventLocale(eventId: string, locale: Locale): Promise<void>;
 	updateEventDetails(eventId: string, title: string, description: string | null): Promise<void>;
 }

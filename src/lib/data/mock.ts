@@ -58,7 +58,11 @@ export const mockProvider: DataProvider = {
 
 	async removeInvitee() {},
 
-	async setEventStatus() {},
+	async closeEvent() {},
+
+	async cancelEvent() {},
+
+	async reopenEvent() {},
 
 	async setEventLocale() {},
 

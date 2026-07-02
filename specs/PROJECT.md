@@ -32,15 +32,19 @@ for this write volume.
 ## Data model (D1)
 
 - `events(id, title, description, locale, poll_mode, organizer_token, share_token, status, created_at)`
-  - status ∈ {open, closed}
+  - status ∈ {open, closed, cancelled}. `closed` means the organizer picked the
+    final date(s); `cancelled` means they closed without picking (abandoned).
+    Reopening returns to `open` and clears any chosen dates
   - locale ∈ {da, en, fr} - the language the whole poll renders in
   - poll_mode ∈ {assigned, open}, default assigned. `assigned`: organizer adds
     named invitees, each with a personal `/r` link. `open`: one shared `/s` link
     anyone can submit through, naming themselves
   - share_token - unique; the open-mode shared link. Minted for every event so a
     poll can switch to open later without a migration
-- `date_options(id, event_id, starts_at, ends_at, label, sort_order)`
+- `date_options(id, event_id, starts_at, ends_at, label, sort_order, selected)`
   - `starts_at` and `ends_at` are both optional (nullable); `ends_at` requires `starts_at`
+  - `selected` ∈ {0, 1} - flagged on the option(s) the organizer picked when
+    closing; always 0 while the poll is open or cancelled
 - `invitees(id, event_id, label, token, note, created_at)`
   - in open mode, an invitee row is created on submit (label = the name the
     submitter typed), so open submitters are ordinary invitees - results and

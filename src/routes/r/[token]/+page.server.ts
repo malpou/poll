@@ -2,6 +2,7 @@ import { fail } from '@sveltejs/kit';
 import { getProvider } from '$lib/data/provider';
 import { formatDateOption } from '$lib/date';
 import { orderForRespondent } from '$lib/participant-status';
+import { outcomeFor } from '$lib/results';
 import { setRequestLocale } from '../../../hooks.server';
 import type { Preference } from '$lib/types';
 import type { ResponseInput } from '$lib/data/provider';
@@ -11,7 +12,8 @@ const PREFERENCES: readonly string[] = ['preferred', 'available', 'unavailable']
 const isPreference = (v: string): v is Preference => PREFERENCES.includes(v);
 
 export const load: PageServerLoad = async ({ params, platform }) => {
-	const ctx = await getProvider(platform).getInviteeContext(params.token);
+	const provider = getProvider(platform);
+	const ctx = await provider.getInviteeContext(params.token);
 	if (!ctx) return { invalid: true as const };
 
 	// Response page renders in the poll's stored locale for every consumer.
@@ -27,9 +29,14 @@ export const load: PageServerLoad = async ({ params, platform }) => {
 			? new Set(ctx.responses.map((r) => r.dateOptionId))
 			: new Set<string>();
 
+	// Decided poll → chosen dates + count distribution (counts only, never
+	// names); null on a poll closed before decisions existed (specs/poll-closing).
+	const outcome = await outcomeFor(provider, ctx.event, ctx.dateOptions);
+
 	return {
 		invalid: false as const,
-		closed: ctx.event.status === 'closed',
+		status: ctx.event.status,
+		outcome,
 		name: ctx.invitee.label,
 		title: ctx.event.title,
 		description: ctx.event.description,
@@ -50,7 +57,7 @@ export const actions = {
 		// or status. Closed events are read-only here too, not just in the UI.
 		const ctx = await provider.getInviteeContext(params.token);
 		if (!ctx) return fail(404);
-		if (ctx.event.status === 'closed') return fail(403);
+		if (ctx.event.status !== 'open') return fail(403);
 
 		const form = await request.formData();
 		const optionIds = new Set(ctx.dateOptions.map((d) => d.id));

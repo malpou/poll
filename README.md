@@ -29,6 +29,11 @@ A poll runs in one of two modes, chosen at creation and switchable later:
 | `/r/{invitee_token}`   | a named invitee    | Mark each date **preferred / available / unavailable**, add a note, submit                    |
 | `/s/{share_token}`     | anyone (open mode) | Enter a name, mark each date, add a note, submit                                              |
 
+Closing a poll means deciding: the organizer picks one or more of the candidate
+dates as the final date(s) - or cancels the poll outright - and every link then
+shows the chosen date(s) with a per-date distribution of the answers. Reopening
+puts the decision back on the table.
+
 The organizer link is private - treat it like a password, never share it. In
 open mode the **shared link** (`/s/…`) is the one to hand out; the dashboard
 shows it prominently at the top.

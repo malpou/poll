@@ -1,6 +1,7 @@
 import { fail, redirect } from '@sveltejs/kit';
 import { getProvider } from '$lib/data/provider';
 import { formatDateOption } from '$lib/date';
+import { outcomeFor } from '$lib/results';
 import { setRequestLocale } from '../../../hooks.server';
 import type { Preference } from '$lib/types';
 import type { ResponseInput } from '$lib/data/provider';
@@ -14,7 +15,8 @@ const isPreference = (v: string): v is Preference => PREFERENCES.includes(v);
 const cookieName = (eventId: string) => `edit_${eventId}`;
 
 export const load: PageServerLoad = async ({ params, platform, cookies }) => {
-	const ctx = await getProvider(platform).getShareContext(params.token);
+	const provider = getProvider(platform);
+	const ctx = await provider.getShareContext(params.token);
 	// Unknown token or not an open poll - reveal nothing (same discipline as /r, /e).
 	if (!ctx) return { invalid: true as const };
 
@@ -25,9 +27,13 @@ export const load: PageServerLoad = async ({ params, platform, cookies }) => {
 	// Shared page renders in the poll's stored locale for every consumer.
 	setRequestLocale(ctx.event.locale);
 
+	// Same decided-poll outcome as /r: chosen dates + count distribution.
+	const outcome = await outcomeFor(provider, ctx.event, ctx.dateOptions);
+
 	return {
 		invalid: false as const,
-		closed: ctx.event.status === 'closed',
+		status: ctx.event.status,
+		outcome,
 		title: ctx.event.title,
 		description: ctx.event.description,
 		dates: ctx.dateOptions.map((d) => ({
@@ -44,7 +50,7 @@ export const actions = {
 		// mode, or status.
 		const ctx = await provider.getShareContext(params.token);
 		if (!ctx) return fail(404);
-		if (ctx.event.status === 'closed') return fail(403);
+		if (ctx.event.status !== 'open') return fail(403);
 
 		const form = await request.formData();
 		const nameVal = form.get('name');
