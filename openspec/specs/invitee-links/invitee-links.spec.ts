@@ -146,6 +146,19 @@ test('copy the shared link puts the full absolute /s URL on the clipboard', asyn
 	expect(copied.endsWith(`/s/${O_SHARE}`)).toBe(true);
 });
 
+test("copy an open-mode participant's personal link puts their /r URL on the clipboard", async ({
+	page,
+	context
+}) => {
+	await context.grantPermissions(['clipboard-read', 'clipboard-write']);
+	seedOpen();
+	await page.goto(`/e/${O_OTOK}`);
+	await inviteesSection(page).getByRole('button', { name: m.copyLink() }).click();
+	const copied = await page.evaluate(() => navigator.clipboard.readText());
+	expect(copied).toMatch(/^https?:\/\/[^/]+\/r\//);
+	expect(copied.endsWith(`/r/${O_SHARE}-r1`)).toBe(true);
+});
+
 test('open mode rejects roster changes server-side', async ({ request }) => {
 	seedOpen();
 	const origin = { origin: 'http://localhost:8787' };

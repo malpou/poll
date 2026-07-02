@@ -69,8 +69,9 @@
 		<SectionHeading text={m.participantsSection()} class="mb-3.5" />
 
 		{#if pollMode === 'open'}
-			<!-- Open mode: the shared link lives at the top. Here we just list the
-			     respondents read-only (names come from submissions). -->
+			<!-- Open mode: the shared link lives at the top. Respondents are listed
+			     read-only (names come from submissions), each with their personal
+			     link so the organizer can hand it back if lost. -->
 			{#if invitees.length > 0}
 				<div class="flex flex-col gap-2.5">
 					{#each invitees as inv, i (inv.id)}
@@ -80,6 +81,7 @@
 								{@render noteToggle(inv)}
 							</div>
 							{@render noteBody(inv)}
+							<CopyLinkRow url={inv.url} {oncopied} class="mt-2.5" />
 						</div>
 					{/each}
 				</div>

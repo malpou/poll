@@ -32,8 +32,9 @@ mode has no hand-added roster - submitters name themselves through the shared li
 ### Requirement: Distribute links
 
 The system SHALL let the organizer view and copy the link(s) to send by their own
-means (email, text, etc.): each invitee's personal link in assigned mode, or the
-one shared link in open mode.
+means (email, text, etc.): each invitee's personal link in assigned mode; in open
+mode the one shared link, plus each submitter's personal link so the organizer
+can always hand a participant their link back (e.g. lost link, new device).
 
 #### Scenario: Copy a personal link (assigned mode)
 
@@ -47,6 +48,12 @@ one shared link in open mode.
 - WHEN the organizer copies the shared link (shown prominently at the top of the
   dashboard, distinct from the private organizer link)
 - THEN the full absolute `/s/{share_token}` URL is placed on the clipboard
+
+#### Scenario: Copy an open-mode participant's personal link
+
+- GIVEN an open-mode event where a participant has submitted through the shared link
+- WHEN the organizer copies that participant's link from the participants list
+- THEN the full absolute `/r/{token}` URL for that participant is placed on the clipboard
 
 ### Requirement: Rename and remove invitees (assigned mode)
 
