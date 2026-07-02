@@ -53,10 +53,10 @@
 	let answers = $state<Record<string, Preference | undefined>>({ ...(seed?.answers ?? {}) });
 	let note = $state(seed?.note ?? '');
 	// Frozen from the seed so cards keep their badges/order while the user picks.
-	const hasNewDates =
-		Object.keys(seed?.answers ?? {}).length > 0 && (seed?.dates ?? []).some((d) => d.needsAnswer);
+	const hasAnswered = Object.keys(seed?.answers ?? {}).length > 0;
+	const hasNewDates = hasAnswered && (seed?.dates ?? []).some((d) => d.needsAnswer);
 	// Outstanding new dates land the returning respondent straight in edit mode.
-	let submitted = $state(Object.keys(seed?.answers ?? {}).length > 0 && !hasNewDates);
+	let submitted = $state(hasAnswered && !hasNewDates);
 	// Personal edit link handed back after an open submission (from the action).
 	let editUrl = $state<string | null>(null);
 	let toastOpen = $state(false);
