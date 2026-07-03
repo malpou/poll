@@ -1,117 +1,123 @@
-# payment-gating Delta
+# pro-tier Delta
 
 ## ADDED Requirements
 
-### Requirement: Payment required to activate a poll
+### Requirement: Polls are free by default with an optional Pro upgrade
 
-The system SHALL require a one-time payment of 10 DKK before a newly created
-poll becomes usable. A valid creation submission SHALL store the event in an
-awaiting-payment state and send the creator to an external checkout page for
-that amount.
+The system SHALL create every poll free and immediately usable, and SHALL
+offer the organizer, from the poll's management page, a one-time upgrade of
+that single poll to Pro for 10 DKK via an external checkout page. A poll that
+is already Pro SHALL NOT be offered the upgrade again.
 
-#### Scenario: Creation leads to checkout
+#### Scenario: Creation is free and instant
 
 - GIVEN a visitor who submits a valid create form
 - WHEN the submission is accepted
-- THEN the event is stored awaiting payment
-- AND the visitor is redirected to a checkout page charging 10 DKK
+- THEN the poll is created as a free poll, fully usable
+- AND the visitor lands on the organizer page with no payment step
 
-#### Scenario: Payment confirmation activates the poll
+#### Scenario: Organizer starts a Pro upgrade
 
-- GIVEN an event awaiting payment
-- WHEN the payment provider confirms the checkout completed
-- THEN the event becomes paid and fully usable
+- GIVEN a free poll's organizer page
+- WHEN the organizer uses the upgrade action
+- THEN they are redirected to a checkout page charging 10 DKK for that poll
 
-#### Scenario: Duplicate payment confirmation is harmless
+#### Scenario: Pro poll is not offered the upgrade
 
-- GIVEN an event already marked paid
-- WHEN the payment provider delivers the same confirmation again
-- THEN the event's paid state and timestamp are unchanged
+- GIVEN a Pro poll's organizer page
+- WHEN the page is shown
+- THEN it indicates the poll is Pro
+- AND no upgrade action is offered
 
 ### Requirement: Payment confirmation is server-verified
 
 The system SHALL treat the payment provider's signed server-to-server
-confirmation as the sole source of truth for payment. A browser returning via
-the success URL SHALL NOT by itself mark an event paid, and confirmations
-with a missing or invalid signature SHALL be rejected without changing any
-event.
+confirmation as the sole source of truth for a Pro upgrade. A browser
+returning via the checkout return URL SHALL NOT by itself make a poll Pro,
+confirmations with a missing or invalid signature SHALL be rejected without
+changing any poll, and a duplicate confirmation SHALL leave the poll's Pro
+state and timestamp unchanged.
+
+#### Scenario: Payment confirmation upgrades the poll
+
+- GIVEN a free poll with a checkout in progress
+- WHEN the payment provider confirms the checkout completed
+- THEN the poll becomes Pro
 
 #### Scenario: Forged confirmation is rejected
 
-- GIVEN an event awaiting payment
+- GIVEN a free poll
 - WHEN a confirmation arrives whose signature is missing or invalid
 - THEN the request is rejected
-- AND the event still awaits payment
+- AND the poll remains free
 
-#### Scenario: Visiting the success URL without paying does not activate
+#### Scenario: Duplicate confirmation is harmless
 
-- GIVEN an event awaiting payment
-- WHEN someone opens the post-payment return URL without a completed payment
-- THEN the event still awaits payment
+- GIVEN a poll already Pro
+- WHEN the payment provider delivers the same confirmation again
+- THEN the poll's Pro state and timestamp are unchanged
 
-### Requirement: Awaiting-payment organizer state
+#### Scenario: Visiting the return URL without paying does not upgrade
 
-While an event awaits payment, its organizer page SHALL show an
-awaiting-payment notice, in the poll's language, with an action to start a
-new checkout for the same event, and SHALL NOT show the management dashboard.
-Once paid, the organizer page SHALL show the normal dashboard.
+- GIVEN a free poll with a checkout in progress
+- WHEN someone opens the checkout return URL without a completed payment
+- THEN the poll remains free
 
-#### Scenario: Organizer page while unpaid
+### Requirement: Return from checkout keeps the organizer token private
 
-- GIVEN an event awaiting payment
-- WHEN its organizer link is opened
-- THEN an awaiting-payment notice appears with a retry-payment action
-- AND no management controls are shown
+The checkout round trip SHALL NOT place the organizer token in any URL or
+data given to the payment provider. Returning from checkout — completed or
+canceled — SHALL resolve server-side to that poll's organizer page.
 
-#### Scenario: Retry payment from the organizer page
+#### Scenario: Completed checkout lands on the organizer page
 
-- GIVEN an event awaiting payment
-- WHEN the organizer uses the retry-payment action
-- THEN they are redirected to a checkout page for that event
-
-#### Scenario: Organizer page after payment
-
-- GIVEN an event whose payment was confirmed
-- WHEN its organizer link is opened
-- THEN the normal management dashboard is shown
-
-### Requirement: Unpaid events are hidden from respondents
-
-An event awaiting payment SHALL have its respondent links and its open-mode
-shared link respond with a not-found page revealing no event data.
-
-#### Scenario: Respondent link while unpaid
-
-- GIVEN an event awaiting payment with an invitee
-- WHEN the invitee's response link is opened
-- THEN a not-found page is shown and no event data is revealed
-
-#### Scenario: Shared link while unpaid
-
-- GIVEN an open-mode event awaiting payment
-- WHEN its shared link is opened
-- THEN a not-found page is shown and no event data is revealed
-
-### Requirement: Return from payment keeps the organizer token private
-
-The post-payment return trip SHALL NOT place the organizer token in any URL
-or data given to the payment provider. After a completed payment, the return
-URL SHALL be resolved server-side to the organizer page for the paid event.
-
-#### Scenario: Completed payment lands on the organizer page
-
-- GIVEN an event whose checkout just completed
-- WHEN the payer returns via the post-payment return URL
-- THEN they are forwarded to that event's organizer page
+- GIVEN a poll whose checkout just completed
+- WHEN the payer returns via the checkout return URL
+- THEN they are forwarded to that poll's organizer page
 - AND the URLs shared with the payment provider contain no organizer token
 
-### Requirement: Pre-existing events remain usable
+#### Scenario: Canceled checkout returns to the organizer page
 
-Events created before payment gating existed SHALL count as paid and keep
-working unchanged.
+- GIVEN a free poll whose checkout was canceled
+- WHEN the organizer returns via the cancel URL
+- THEN they are forwarded to that poll's organizer page, still free
 
-#### Scenario: Old event unaffected
+### Requirement: Free polls carry a made-with badge on participant pages
 
-- GIVEN an event created before payment gating
-- WHEN its organizer, respondent, or shared links are opened
-- THEN they behave exactly as for a paid event
+A free poll's participant-facing pages SHALL show a discreet badge — on
+respondent links and the open-mode shared link — in the poll's language,
+saying the poll was made with this tool and inviting the visitor to create
+their own for free, linking to the landing page in that language. Pro polls
+SHALL NOT show the badge. Organizer pages SHALL never show it.
+
+#### Scenario: Badge on a free poll's respondent page
+
+- GIVEN a free poll with an invitee
+- WHEN the invitee's response link is opened
+- THEN a badge in the poll's language invites creating your own poll
+- AND it links to the landing page in that language
+
+#### Scenario: Badge on a free poll's shared page
+
+- GIVEN a free open-mode poll
+- WHEN its shared link is opened
+- THEN the badge is shown
+
+#### Scenario: No badge on a Pro poll
+
+- GIVEN a Pro poll with an invitee
+- WHEN the invitee's response link is opened
+- THEN no badge is shown
+
+### Requirement: Pre-existing polls are free polls
+
+Polls created before the Pro tier existed SHALL behave exactly as free
+polls: fully usable, badge shown, upgrade offered.
+
+#### Scenario: Old poll behaves as free
+
+- GIVEN a poll created before the Pro tier
+- WHEN its organizer and participant links are opened
+- THEN everything works unchanged
+- AND the participant pages show the badge
+- AND the organizer page offers the upgrade
