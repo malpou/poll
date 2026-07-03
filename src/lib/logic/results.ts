@@ -9,10 +9,12 @@ import type { DateOptionResult, DateOptionRow, EventRow } from '$lib/types';
  * Unsure ("I don't know") is deliberately absent: stated ignorance carries
  * weight 0, so it can never sway the highlight either way.
  */
+const score = (r: { preferred: number; available: number; unavailable: number }) =>
+	r.preferred * 1.2 + r.available - r.unavailable;
+
 export function markBest<T extends { preferred: number; available: number; unavailable: number }>(
 	rows: T[]
 ): (T & { isBest: boolean })[] {
-	const score = (r: T) => r.preferred * 1.2 + r.available - r.unavailable;
 	const sorted = [...rows].sort((a, b) => score(b) - score(a));
 	// No highlight until at least one response exists - otherwise an all-zero
 	// board ties every row on score=0 and marks them all "best".
@@ -25,16 +27,18 @@ export function markBest<T extends { preferred: number; available: number; unava
 }
 
 // Outcome view for a decided poll (openspec/specs/poll-closing): per-option counts and
-// percentages shown to participants after close. Null when no option is
-// selected - polls closed before decisions existed render as plain closed.
-// Percentage denominator is that option's full roster (answered + not), the
-// same basis the organizer dashboard uses.
+// percentages shown to participants after close, mirroring the organizer's
+// results view - same rank order, counts per enabled choice, never names.
+// Null when no option is selected - polls closed before decisions existed
+// render as plain closed. Percentage denominator is that option's full roster
+// (answered + not), the same basis the organizer dashboard uses.
 export interface OutcomeRow {
 	id: string;
 	chosen: boolean;
 	preferred: number;
 	available: number;
 	unavailable: number;
+	unsure: number;
 	preferredPct: number;
 	availablePct: number;
 	unavailablePct: number;
@@ -45,7 +49,7 @@ export function buildOutcome(
 	counts: Map<string, DateOptionResult>
 ): OutcomeRow[] | null {
 	if (!options.some((o) => o.selected)) return null;
-	return options.map((o) => {
+	const rows = options.map((o) => {
 		const c = counts.get(o.id) ?? {
 			preferred: 0,
 			available: 0,
@@ -63,11 +67,15 @@ export function buildOutcome(
 			preferred: c.preferred,
 			available: c.available,
 			unavailable: c.unavailable,
+			unsure: c.unsure,
 			preferredPct: pct(c.preferred),
 			availablePct: pct(c.available),
 			unavailablePct: pct(c.unavailable)
 		};
 	});
+	// Same order as the organizer's results view; sort is stable, so ties keep
+	// the poll's option order.
+	return rows.sort((a, b) => score(b) - score(a));
 }
 
 /**

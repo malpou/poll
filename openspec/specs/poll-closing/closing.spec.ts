@@ -95,6 +95,50 @@ test('a decided poll shows the outcome and distribution on the invitee link', as
 	await expect(page.getByText('Anna')).toHaveCount(0);
 });
 
+test("the outcome distribution shows only the poll's enabled choices", async ({ page }) => {
+	// Preferred off, "I don't know" on - the participant distribution must
+	// mirror the organizer's summary: no Preferred row, an unsure count shown.
+	wipeEvent(EV);
+	seedEvent({
+		id: EV,
+		title: 'Lukning (e2e)',
+		organizerToken: OTOK,
+		status: 'closed',
+		allowPreferred: false,
+		allowUnsure: true
+	});
+	seedDateOption({ id: DA, eventId: EV, startsAt: '2026-09-12T08:00:00Z', sortOrder: 0 });
+	seedDateOption({
+		id: DB,
+		eventId: EV,
+		startsAt: '2026-09-20T08:00:00Z',
+		sortOrder: 1,
+		selected: true
+	});
+	seedInvitee({ id: 'e2e-close-inv', eventId: EV, label: 'Anna', token: RTOK });
+	seedResponse({ inviteeId: 'e2e-close-inv', dateOptionId: DB, preference: 'available' });
+	seedResponse({ inviteeId: 'e2e-close-inv', dateOptionId: DA, preference: 'unsure' });
+
+	await page.goto(`/r/${RTOK}`);
+	await expect(page.getByText(m.distributionHeading())).toBeVisible();
+	await expect(page.getByText(m.prefPreferred())).toHaveCount(0);
+	await expect(page.getByText(m.prefUnsure()).first()).toBeVisible();
+	await expect(page.getByText(m.prefAvailable()).first()).toBeVisible();
+});
+
+test("the outcome distribution follows the organizer's ranking order", async ({ page }) => {
+	seedDecided();
+	await page.goto(`/r/${RTOK}`);
+	await expect(page.getByText(m.distributionHeading())).toBeVisible();
+
+	// Only DB (Sunday 20 Sep) carries a response, so it outranks DA (Saturday
+	// 12 Sep) and must be listed first despite DA's earlier option order.
+	const cards = page.locator('div.rounded-card').filter({ hasText: m.prefAvailable() });
+	await expect(cards).toHaveCount(2);
+	await expect(cards.first()).toContainText('Sunday');
+	await expect(cards.last()).toContainText('Saturday');
+});
+
 test('a decided open-mode poll shows the outcome on the shared link', async ({ page }) => {
 	const SHARE = 'e2e-close-share';
 	seedDecided({ pollMode: 'open', shareToken: SHARE });

@@ -71,11 +71,16 @@ organizer SHALL be asked to confirm before the cancellation takes effect.
 Once a poll is closed with chosen dates, the system SHALL show the chosen
 date(s) prominently on the invitee page (`/r`), the shared page (`/s`), and the
 organizer dashboard (`/e`), together with a per-date result distribution
-(Preferred / Available / Unavailable counts as bars). A confirmed RSVP poll
-shows its date and the final headcount instead (see specs/rsvp-poll).
-Participant pages SHALL show counts only, never which named person chose
-what. For a cancelled poll, the system SHALL show a cancelled message instead
-of chosen dates and distribution.
+mirroring the organizer's per-option summary: a count per enabled choice
+(Preferred and "I don't know" only when the poll offers them — see
+specs/results) with the counts as bars, and the options ordered by the same
+ranking the organizer's results view uses (see specs/results Best-option
+highlight). A confirmed RSVP poll shows its date and the final headcount
+instead, as the same coming / not-coming entries the organizer sees (see
+specs/rsvp-poll). Participant pages SHALL show counts only, never which named
+person chose what and never who has not answered. For a cancelled poll, the
+system SHALL show a cancelled message instead of chosen dates and
+distribution.
 
 #### Scenario: Invitee link on a decided poll
 
@@ -86,6 +91,23 @@ of chosen dates and distribution.
   bars
 - AND the chosen option is visually marked
 - AND no response controls or submit button are shown
+
+#### Scenario: Distribution shows only the poll's enabled choices
+
+- GIVEN a poll without the Preferred choice and with "I don't know" enabled,
+  closed with a chosen date
+- WHEN an invitee opens their `/r` link
+- THEN no Preferred count is shown on the distribution
+- AND each option shows an "I don't know" count alongside Available and
+  Unavailable
+
+#### Scenario: Distribution order matches the organizer's ranking
+
+- GIVEN a decided poll where a later-added option outscores an earlier one on
+  the results ranking
+- WHEN an invitee opens their `/r` link
+- THEN the distribution lists the higher-scoring option first, in the same
+  order the organizer's results view uses
 
 #### Scenario: Shared link on a decided poll
 
