@@ -143,13 +143,12 @@
 			</div>
 		{:else}
 			<!-- The zone still posts while the picker is collapsed. Same clock icon
-			     as the dashboard's timezone row, so the note reads as "timezone". -->
-			<p
-				in:fly={swapIn()}
-				class="flex flex-wrap items-center gap-x-1.5 gap-y-1 text-caption leading-relaxed text-ink-muted"
-			>
-				<Clock size={14} aria-hidden="true" class="shrink-0" />
-				<span>{m.timezonePicked({ timezone: tzLabel(timezone, locale) })}</span>
+			     as the dashboard's timezone row, so the note reads as "timezone".
+			     Inline flow, not flex: the icon leads the first line and the change
+			     affordance trails the text, wherever it wraps. -->
+			<p in:fly={swapIn()} class="text-caption leading-relaxed text-ink-muted">
+				<Clock size={14} aria-hidden="true" class="mr-1 inline align-text-bottom" />
+				{m.timezonePicked({ timezone: tzLabel(timezone, locale) })}
 				<button
 					type="button"
 					onclick={() => (timezoneOpen = true)}

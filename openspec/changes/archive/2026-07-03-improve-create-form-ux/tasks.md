@@ -1,9 +1,9 @@
 ## 1. Copy across all five languages
 
-- [ ] 1.1 Delete `createIntro`, `createIntroQuestion`, `createIntroRsvp` from `messages/{da,de,en,es,fr}.json`; the `pollType*Hint` strings stay as the single explainer
-- [ ] 1.2 Add the timezone-note strings ("We've picked {timezone} for you" + change affordance label) in all five languages
-- [ ] 1.3 Rename Participants → Invitees wording (values of `participantsSection`, `participantsHint`, and any other participant-labelled strings) in all five languages
-- [ ] 1.4 Add the disabled-submit reason strings (missing title, no dates, fewer than two options, no RSVP date) in all five languages
+- [x] 1.1 Delete `createIntro`, `createIntroQuestion`, `createIntroRsvp` from `messages/{da,de,en,es,fr}.json`; the `pollType*Hint` strings stay as the single explainer
+- [x] 1.2 Add the timezone-note strings ("We've picked {timezone} for you" + change affordance label) in all five languages
+- [x] 1.3 Rename Participants → Invitees wording (values of `participantsSection`, `participantsHint`, and any other participant-labelled strings) in all five languages — full sweep including dashboard dialogs/notices and hints per user
+- [x] 1.4 Add the disabled-submit reason strings (missing title, no dates, fewer than two options, no RSVP date) in all five languages — reused the existing `errorNoTitle` / `errorNoDates` / `errorTooFewOptions` / `errorRsvpOneDate` strings instead of adding duplicates
 
 ## 2. Create form restructure
 
