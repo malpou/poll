@@ -2,29 +2,40 @@
 	import { fly } from 'svelte/transition';
 	import { flyIn } from '$lib/motion';
 	import Callout from '$lib/components/molecules/Callout.svelte';
-	import ResultBars from '$lib/components/molecules/ResultBars.svelte';
+	import HeadcountCard from '$lib/components/molecules/HeadcountCard.svelte';
+	import ResultCard from '$lib/components/molecules/ResultCard.svelte';
 	import SectionHeading from '$lib/components/atoms/SectionHeading.svelte';
 	import { CalendarCheck, CircleCheck } from '@lucide/svelte';
 	import { m } from '$lib/paraglide/messages';
-	import type { PollType, ResponseDateView } from '$lib/types';
+	import type { PollType, Preference, ResponseDateView } from '$lib/types';
 	import type { OutcomeRow } from '$lib/logic/results';
 
 	// What a participant sees once the poll is decided or cancelled: the
-	// organizer's call, then counts only - names stay with the organizer.
+	// organizer's call, then the same result cards the organizer sees - same
+	// enabled-choice counts, bar fills, and rank order - with counts only;
+	// names stay with the organizer.
 	let {
 		cancelled,
 		dates,
-		outcomeById,
+		outcome,
+		choices,
 		pollType = 'dates'
 	}: {
 		cancelled: boolean;
 		dates: ResponseDateView[];
-		outcomeById: Map<string, OutcomeRow>;
+		// Rank-ordered by the organizer's scoring; null before a decision exists.
+		outcome: OutcomeRow[] | null;
+		// The event's enabled choices - Preferred / unsure rows follow them.
+		choices: Preference[];
 		pollType?: PollType;
 	} = $props();
 
 	const question = $derived(pollType === 'question');
 	const rsvp = $derived(pollType === 'rsvp');
+	const outcomeById = $derived(new Map((outcome ?? []).map((o) => [o.id, o])));
+	const dateById = $derived(new Map(dates.map((d) => [d.id, d])));
+	const showPreferred = $derived(choices.includes('preferred'));
+	const showUnsure = $derived(choices.includes('unsure'));
 	const chosenDates = $derived(dates.filter((d) => outcomeById.get(d.id)?.chosen));
 	const chosenHeading = $derived(
 		rsvp
@@ -77,71 +88,48 @@
 		</Callout>
 	</div>
 
-	<!-- ...then how everyone answered, counts only - names stay with the organizer. -->
+	<!-- ...then how everyone answered: the organizer's result cards, counts only. -->
 	{#if rsvp}
 		{#if rsvpOutcome}
 			<div class="mt-8 flex flex-col gap-3.5">
 				<SectionHeading text={m.distributionHeading()} />
-				<div in:fly={flyIn()} class="rounded-card border-2 border-border bg-card-alt p-4">
-					<div class="flex flex-wrap gap-x-6 gap-y-1">
-						<span class="text-body text-ink">
-							<span class="font-bold">{m.headcountComing()}</span>
-							<span class="text-ink-soft">{rsvpOutcome.available}</span>
-						</span>
-						<span class="text-body text-ink">
-							<span class="font-bold">{m.headcountNotComing()}</span>
-							<span class="text-ink-soft">{rsvpOutcome.unavailable}</span>
-						</span>
-					</div>
+				<div class="flex flex-col gap-3">
+					{#each [{ key: 'coming', label: m.headcountComing(), count: rsvpOutcome.available }, { key: 'notComing', label: m.headcountNotComing(), count: rsvpOutcome.unavailable }] as row, i (row.key)}
+						<div in:fly={flyIn(i)}>
+							<HeadcountCard label={row.label} count={row.count} />
+						</div>
+					{/each}
 				</div>
 			</div>
 		{/if}
 	{:else}
 		<div class="mt-8 flex flex-col gap-3.5">
 			<SectionHeading text={m.distributionHeading()} />
-			{#each dates as d, i (d.id)}
-				{@const o = outcomeById.get(d.id)}
-				{#if o}
-					<div
-						in:fly={flyIn(i)}
-						class="rounded-card border-2 bg-card-alt p-4 {o.chosen
-							? 'border-ink'
-							: 'border-border'}"
-					>
-						<div class="flex flex-wrap items-center gap-2.5">
-							{#if d.label}
-								<div class="text-body font-bold text-ink">{d.label}</div>
-							{:else}
-								<div>
-									<div class="text-body font-bold capitalize text-ink">{d.weekday}</div>
-									<div class="text-caption text-ink-muted">
-										{d.dateLabel}{#if d.timeRange}
-											· {d.timeRange}{/if}
-									</div>
-								</div>
-							{/if}
-							{#if o.chosen}
-								<span
-									class="whitespace-nowrap rounded-full bg-ink px-2.5 py-1 text-2xs font-bold uppercase tracking-wider text-card"
-								>
-									{question ? m.chosenBadgeQuestion() : m.chosenBadge()}
-								</span>
-							{/if}
-						</div>
-						<div class="mt-4">
-							<ResultBars
+			<div class="flex flex-col gap-3">
+				{#each outcome ?? [] as o, i (o.id)}
+					{@const d = dateById.get(o.id)}
+					{#if d}
+						<div in:fly={flyIn(i)}>
+							<ResultCard
+								weekday={d.weekday}
+								dateLabel={d.dateLabel}
+								timeRange={d.timeRange}
+								label={d.label}
+								chosen={o.chosen}
+								{pollType}
 								preferred={o.preferred}
 								available={o.available}
 								unavailable={o.unavailable}
 								preferredPct={o.preferredPct}
 								availablePct={o.availablePct}
 								unavailablePct={o.unavailablePct}
-								{pollType}
+								{showPreferred}
+								unsure={showUnsure ? o.unsure : undefined}
 							/>
 						</div>
-					</div>
-				{/if}
-			{/each}
+					{/if}
+				{/each}
+			</div>
 		</div>
 	{/if}
 {/if}

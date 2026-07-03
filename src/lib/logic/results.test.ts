@@ -34,8 +34,30 @@ describe('buildOutcome', () => {
 			],
 			counts([result('a', 1, 0, 2, 0), result('b', 3, 0, 0, 0), result('c', 2, 1, 0, 0)])
 		)!;
-		expect(rows.map((r) => r.id)).toEqual(['a', 'b', 'c']);
-		expect(rows.map((r) => r.chosen)).toEqual([false, true, true]);
+		// Ranked like the organizer's results view: b 3.6, c 3.4, a -0.8.
+		expect(rows.map((r) => r.id)).toEqual(['b', 'c', 'a']);
+		expect(rows.map((r) => r.chosen)).toEqual([true, true, false]);
+	});
+
+	it('orders the rows by the organizer ranking, ties keeping option order', () => {
+		const rows = buildOutcome(
+			[
+				{ id: 'a', selected: false },
+				{ id: 'b', selected: true },
+				{ id: 'c', selected: false }
+			],
+			// a and c tie on score 1.0; b outranks both. Ties must not swap a/c.
+			counts([result('a', 0, 1, 0, 0), result('b', 1, 1, 0, 0), result('c', 0, 1, 0, 0)])
+		)!;
+		expect(rows.map((r) => r.id)).toEqual(['b', 'a', 'c']);
+	});
+
+	it('carries unsure counts so the outcome can show the enabled choices', () => {
+		const [row] = buildOutcome(
+			[{ id: 'a', selected: true }],
+			counts([result('a', 0, 2, 1, 0, 3)])
+		)!;
+		expect(row.unsure).toBe(3);
 	});
 
 	it('computes percentages over the full roster, not-answered included', () => {

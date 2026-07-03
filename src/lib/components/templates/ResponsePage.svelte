@@ -57,7 +57,6 @@
 	const closed = $derived(!!view && view.status !== 'open');
 	const cancelled = $derived(!!view && view.status === 'cancelled');
 	const decided = $derived(!!view && view.status === 'closed' && view.outcome !== null);
-	const outcomeById = $derived(new Map((view?.outcome ?? []).map((o) => [o.id, o])));
 
 	// Local editable state, seeded once from the load (revisits pre-select).
 	// data only changes on navigation, which remounts this component.
@@ -148,7 +147,13 @@
 			</div>
 
 			{#if cancelled || decided}
-				<ResponseOutcome {cancelled} dates={view.dates} {outcomeById} pollType={view.pollType} />
+				<ResponseOutcome
+					{cancelled}
+					dates={view.dates}
+					outcome={view.outcome}
+					choices={view.choices}
+					pollType={view.pollType}
+				/>
 			{:else}
 				<div class="flex flex-col gap-5">
 					{#if mode === 'open'}

@@ -6,8 +6,9 @@
 	import { enhance } from '$app/forms';
 	import Button from '$lib/components/atoms/Button.svelte';
 	import SectionHeading from '$lib/components/atoms/SectionHeading.svelte';
-	import ResultBars from '$lib/components/molecules/ResultBars.svelte';
-	import { Lock, Star } from '@lucide/svelte';
+	import HeadcountCard from '$lib/components/molecules/HeadcountCard.svelte';
+	import ResultCard from '$lib/components/molecules/ResultCard.svelte';
+	import { Lock } from '@lucide/svelte';
 	import { m } from '$lib/paraglide/messages';
 	import { refreshThen, confirmingRefresh } from '$lib/forms/enhance';
 	import type { Locale, PollType, ResultView } from '$lib/types';
@@ -66,14 +67,8 @@
 			<div class="flex flex-col gap-3">
 				{#each [{ key: 'coming', label: m.headcountComing(), count: r.available, names: r.availableNames }, { key: 'notComing', label: m.headcountNotComing(), count: r.unavailable, names: r.unavailableNames }, { key: 'pending', label: m.pending(), count: pendingNames.length, names: pendingNames }] as row, i (row.key)}
 					{#if row.key !== 'pending' || row.count > 0}
-						<div in:fly={flyIn(i)} class="rounded-card border-2 border-border bg-card-alt p-4">
-							<div class="flex items-baseline gap-2.5">
-								<span class="text-lead font-bold text-ink">{row.label}</span>
-								<span class="text-body font-semibold text-ink-soft">{row.count}</span>
-							</div>
-							{#if row.names.length > 0}
-								<p class="mt-1 text-caption text-ink-muted">{row.names.join(', ')}</p>
-							{/if}
+						<div in:fly={flyIn(i)}>
+							<HeadcountCard label={row.label} count={row.count} names={row.names} />
 						</div>
 					{/if}
 				{/each}
@@ -112,72 +107,44 @@
 			{/if}
 			<div class="flex flex-col gap-3">
 				{#each results as r, i (r.id)}
-					<div
-						in:fly={flyIn(i)}
-						animate:flip={flipParams()}
-						class="rounded-card border-2 bg-card-alt p-4 transition-colors duration-150 {(selecting &&
-							picked[r.id]) ||
-						r.chosen ||
-						(r.isBest && !closed)
-							? 'border-ink'
-							: 'border-border'}"
-					>
-						<div class="flex flex-wrap items-baseline gap-x-2.5 gap-y-1">
-							{#if selecting}
-								<!-- The closing pick: one checkbox per option, posted on confirm. -->
-								<input
-									type="checkbox"
-									aria-label={question ? m.selectOptionLabel() : m.selectDateLabel()}
-									checked={picked[r.id] ?? false}
-									onchange={() => (picked[r.id] = !picked[r.id])}
-									class="h-5 w-5 shrink-0 translate-y-1 cursor-pointer accent-ink"
-								/>
-							{/if}
-							{#if r.label}
-								<span class="text-lead font-bold text-ink">{r.label}</span>
-							{:else}
-								<span class="text-lead font-bold capitalize text-ink">{r.weekday}</span>
-								<span class="text-body text-ink-soft">{r.dateLabel}</span>
-								{#if r.timeRange}
-									<span class="text-caption text-ink-muted">{r.timeRange}</span>
+					<div in:fly={flyIn(i)} animate:flip={flipParams()}>
+						<ResultCard
+							weekday={r.weekday}
+							dateLabel={r.dateLabel}
+							timeRange={r.timeRange}
+							label={r.label}
+							chosen={r.chosen}
+							best={r.isBest && !closed}
+							highlighted={selecting && (picked[r.id] ?? false)}
+							{pollType}
+							preferred={r.preferred}
+							available={r.available}
+							unavailable={r.unavailable}
+							preferredPct={r.preferredPct}
+							availablePct={r.availablePct}
+							unavailablePct={r.unavailablePct}
+							showPreferred={allowPreferred}
+							unsure={allowUnsure ? r.unsure : undefined}
+							names={{
+								preferred: r.preferredNames,
+								available: r.availableNames,
+								unavailable: r.unavailableNames,
+								unsure: r.unsureNames
+							}}
+						>
+							{#snippet leading()}
+								{#if selecting}
+									<!-- The closing pick: one checkbox per option, posted on confirm. -->
+									<input
+										type="checkbox"
+										aria-label={question ? m.selectOptionLabel() : m.selectDateLabel()}
+										checked={picked[r.id] ?? false}
+										onchange={() => (picked[r.id] = !picked[r.id])}
+										class="h-5 w-5 shrink-0 translate-y-1 cursor-pointer accent-ink"
+									/>
 								{/if}
-							{/if}
-							{#if r.chosen}
-								<span
-									class="ml-auto whitespace-nowrap rounded-full bg-ink px-2.5 py-1 text-2xs font-bold uppercase tracking-wider text-card"
-								>
-									{question ? m.chosenBadgeQuestion() : m.chosenBadge()}
-								</span>
-							{:else if r.isBest && !closed}
-								<!-- The recommendation only matters while the call is still open. -->
-								<span
-									class="ml-auto inline-flex -rotate-1 items-center gap-1 whitespace-nowrap rounded-full bg-hl px-2.5 py-1 text-2xs font-bold uppercase tracking-wider text-ink"
-								>
-									<Star size={11} fill="currentColor" aria-hidden="true" />
-									{question ? m.bestOption() : m.bestDate()}
-								</span>
-							{/if}
-						</div>
-
-						<div class="mt-3">
-							<ResultBars
-								preferred={r.preferred}
-								available={r.available}
-								unavailable={r.unavailable}
-								preferredPct={r.preferredPct}
-								availablePct={r.availablePct}
-								unavailablePct={r.unavailablePct}
-								showPreferred={allowPreferred}
-								{pollType}
-								unsure={allowUnsure ? r.unsure : undefined}
-								names={{
-									preferred: r.preferredNames,
-									available: r.availableNames,
-									unavailable: r.unavailableNames,
-									unsure: r.unsureNames
-								}}
-							/>
-						</div>
+							{/snippet}
+						</ResultCard>
 					</div>
 				{/each}
 			</div>
