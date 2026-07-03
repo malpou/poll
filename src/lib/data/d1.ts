@@ -211,14 +211,22 @@ export function d1Provider(db: D1Database): DataProvider {
 				.first();
 			if (!eventRow) return null;
 			const event = mapEvent(eventRow);
-			// Only open polls accept shared-link submissions.
-			if (event.pollMode !== 'open') return null;
 
 			const dates = await db
 				.prepare(`SELECT * FROM date_options WHERE event_id = ? ORDER BY sort_order`)
 				.bind(event.id)
 				.all();
-			return { event, dateOptions: dates.results.map(mapDateOption) };
+			const dateOptions = dates.results.map(mapDateOption);
+
+			// Open polls accept shared-link submissions. Assigned-mode polls only
+			// serve the decided outcome (closed with a chosen date) as a read-only
+			// result page; while open or cancelled they stay not-found.
+			if (event.pollMode !== 'open') {
+				const decided = event.status === 'closed' && dateOptions.some((d) => d.selected);
+				if (!decided) return null;
+			}
+
+			return { event, dateOptions };
 		},
 
 		async submitOpenResponse(eventId, name, answers, note) {

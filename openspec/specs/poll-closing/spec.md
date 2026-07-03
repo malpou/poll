@@ -69,8 +69,9 @@ organizer SHALL be asked to confirm before the cancellation takes effect.
 ### Requirement: Outcome shown to participants
 
 Once a poll is closed with chosen dates, the system SHALL show the chosen
-date(s) prominently on the invitee page (`/r`), the shared page (`/s`), and the
-organizer dashboard (`/e`), together with a per-date result distribution
+date(s) prominently on the invitee page (`/r`), the shared page (`/s`) —
+regardless of poll mode — and the organizer dashboard (`/e`), together with a
+per-date result distribution
 mirroring the organizer's per-option summary: a count per enabled choice
 (Preferred and "I don't know" only when the poll offers them — see
 specs/results) with the counts as bars, and the options ordered by the same
@@ -80,7 +81,8 @@ instead, as the same coming / not-coming entries the organizer sees (see
 specs/rsvp-poll). Participant pages SHALL show counts only, never which named
 person chose what and never who has not answered. For a cancelled poll, the
 system SHALL show a cancelled message instead of chosen dates and
-distribution.
+distribution. An assigned-mode poll's shared page SHALL serve only this decided
+outcome: while the poll is open or cancelled it SHALL remain not-found.
 
 #### Scenario: Invitee link on a decided poll
 
@@ -116,6 +118,25 @@ distribution.
 - THEN they see the same chosen-date outcome and distribution, with no name
   field or submit button
 
+#### Scenario: Shared link on a decided assigned-mode poll
+
+- GIVEN an assigned-mode poll closed with B chosen
+- WHEN a visitor opens the `/s` link
+- THEN they see the chosen-date outcome and distribution, counts only, with no
+  response controls
+
+#### Scenario: Shared link on an open assigned-mode poll stays hidden
+
+- GIVEN an assigned-mode poll that is still open
+- WHEN its `/s` link is opened
+- THEN a not-found page is shown and no event data is revealed
+
+#### Scenario: Shared link on a cancelled assigned-mode poll stays hidden
+
+- GIVEN a cancelled assigned-mode poll
+- WHEN its `/s` link is opened
+- THEN a not-found page is shown and no event data is revealed
+
 #### Scenario: Organizer dashboard on a decided poll
 
 - GIVEN a poll closed with B and C chosen
@@ -138,6 +159,25 @@ distribution.
 - WHEN anyone opens a link to it
 - THEN it renders as a plain closed poll: the closed notice, read-only
   responses, and no outcome block
+
+### Requirement: Organizer can share the result
+
+A decided poll's organizer dashboard SHALL offer an action, in the poll's
+language, that copies the poll's shared result link for passing on to the
+group. The action SHALL NOT be offered while the poll is open or after it was
+cancelled.
+
+#### Scenario: Copy the result link
+
+- GIVEN a decided poll's organizer dashboard
+- WHEN the organizer uses the share-the-result action
+- THEN the poll's shared link is on the clipboard
+
+#### Scenario: No share action on a cancelled poll
+
+- GIVEN a cancelled poll's organizer dashboard
+- WHEN the dashboard is shown
+- THEN no share-the-result action is offered
 
 ### Requirement: Reopen clears the decision
 

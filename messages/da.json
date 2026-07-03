@@ -30,6 +30,7 @@
 	"namePrompt": "Dit navn",
 	"shareLinkTitle": "Fælles link",
 	"shareLinkHint": "Alle med dette link kan tilføje deres navn og svar.",
+	"shareResultHint": "Del dette med gruppen, så alle kan se resultatet.",
 	"editLinkTitle": "Dit redigeringslink",
 	"editLinkHint": "Gem det for at ændre dit svar senere.",
 	"datesSection": "Mulige datoer",

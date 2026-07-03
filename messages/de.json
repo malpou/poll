@@ -30,6 +30,7 @@
 	"namePrompt": "Dein Name",
 	"shareLinkTitle": "Geteilter Link",
 	"shareLinkHint": "Alle mit diesem Link können ihren Namen und ihre Antwort hinzufügen.",
+	"shareResultHint": "Teile das mit der Gruppe, damit alle das Ergebnis sehen.",
 	"editLinkTitle": "Dein Bearbeitungslink",
 	"editLinkHint": "Speichere ihn, um deine Antwort später zu ändern.",
 	"datesSection": "Mögliche Termine",

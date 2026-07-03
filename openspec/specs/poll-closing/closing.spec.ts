@@ -151,6 +151,81 @@ test('a decided open-mode poll shows the outcome on the shared link', async ({ p
 	await expect(page.getByRole('button', { name: m.sendAnswer() })).toHaveCount(0);
 });
 
+test('a decided assigned-mode poll shows the outcome on the shared link', async ({ page }) => {
+	// seedDecided defaults to assigned mode; the shared link now serves the
+	// decided outcome there too, counts only.
+	const SHARE = 'e2e-close-share-assigned';
+	seedDecided({ shareToken: SHARE });
+	await page.goto(`/s/${SHARE}`);
+
+	await expect(page.getByText(m.chosenDateHeading())).toBeVisible();
+	await expect(page.getByText(m.distributionHeading())).toBeVisible();
+	// Counts only - never the invitee's name - and no way to answer.
+	await expect(page.getByText('Anna')).toHaveCount(0);
+	await expect(page.getByLabel(m.namePrompt())).toHaveCount(0);
+	await expect(page.getByRole('button', { name: m.sendAnswer() })).toHaveCount(0);
+});
+
+test('an open assigned-mode poll keeps its shared link not-found', async ({ page }) => {
+	// The token exists but must reveal nothing while the poll is still open.
+	const SHARE = 'e2e-close-share-open';
+	wipeEvent(EV);
+	seedEvent({
+		id: EV,
+		title: 'Lukning (e2e)',
+		organizerToken: OTOK,
+		status: 'open',
+		pollMode: 'assigned',
+		shareToken: SHARE
+	});
+	seedDateOption({ id: DA, eventId: EV, startsAt: '2026-09-12T08:00:00Z', sortOrder: 0 });
+	await page.goto(`/s/${SHARE}`);
+
+	await expect(page.getByText(m.linkNotFound())).toBeVisible();
+	await expect(page.getByText(m.chosenDateHeading())).toHaveCount(0);
+});
+
+test('a cancelled assigned-mode poll keeps its shared link not-found', async ({ page }) => {
+	const SHARE = 'e2e-close-share-cancelled';
+	wipeEvent(EV);
+	seedEvent({
+		id: EV,
+		title: 'Lukning (e2e)',
+		organizerToken: OTOK,
+		status: 'cancelled',
+		pollMode: 'assigned',
+		shareToken: SHARE
+	});
+	seedDateOption({ id: DA, eventId: EV, startsAt: '2026-09-12T08:00:00Z', sortOrder: 0 });
+	await page.goto(`/s/${SHARE}`);
+
+	await expect(page.getByText(m.linkNotFound())).toBeVisible();
+});
+
+test('a decided dashboard offers the share-the-result action', async ({ page, context }) => {
+	await context.grantPermissions(['clipboard-read', 'clipboard-write']);
+	const SHARE = 'e2e-close-share-result';
+	seedDecided({ shareToken: SHARE });
+	await page.goto(`/e/${OTOK}`);
+
+	// The action lives in the decided outcome callout (ink tone), alongside the
+	// chosen date - distinct from the private organizer-link banner.
+	const banner = page.locator('div[data-tone="ink"]').filter({ hasText: m.shareResultHint() });
+	await banner.getByRole('button', { name: m.copyLink() }).click();
+	const copied = await page.evaluate(() => navigator.clipboard.readText());
+	expect(copied.endsWith(`/s/${SHARE}?ref=result`)).toBe(true);
+});
+
+test('a cancelled dashboard offers no share-the-result action', async ({ page }) => {
+	wipeEvent(EV);
+	seedEvent({ id: EV, title: 'Lukning (e2e)', organizerToken: OTOK, status: 'cancelled' });
+	seedDateOption({ id: DA, eventId: EV, startsAt: '2026-09-12T08:00:00Z', sortOrder: 0 });
+	await page.goto(`/e/${OTOK}`);
+
+	await expect(page.getByText(m.cancelledBanner()).first()).toBeVisible();
+	await expect(page.getByText(m.shareResultHint())).toHaveCount(0);
+});
+
 // Re-seed as already closed with DB chosen (same shape `closing with one date`
 // produces), so the participant-view tests don't depend on the close flow.
 function seedDecided(extra: { pollMode?: 'assigned' | 'open'; shareToken?: string } = {}) {

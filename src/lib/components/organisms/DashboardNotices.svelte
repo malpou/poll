@@ -92,6 +92,10 @@
 						{/if}
 					{/each}
 				</div>
+				<!-- Share the result with the group: reuses the minted share_token,
+				     which /s now serves as a read-only outcome in any mode. -->
+				<p class="mt-3 text-caption leading-relaxed text-ink">{m.shareResultHint()}</p>
+				<CopyLinkRow url={`${shareUrl}?ref=result`} {oncopied} class="mt-2" />
 			</Callout>
 		{:else}
 			<!-- Poll closed before decisions existed: plain closed notice. -->
