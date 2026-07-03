@@ -3,7 +3,7 @@
 	import RichTextEditor from '$lib/components/atoms/RichTextEditor.svelte';
 	import Button from '$lib/components/atoms/Button.svelte';
 	import TimezoneCombobox from '$lib/components/atoms/TimezoneCombobox.svelte';
-	import { ArrowRight } from '@lucide/svelte';
+	import { ArrowRight, X } from '@lucide/svelte';
 	import SectionHeading from '$lib/components/atoms/SectionHeading.svelte';
 	import CalendarDatePicker from '$lib/components/molecules/CalendarDatePicker.svelte';
 	import TextOptionList from '$lib/components/molecules/TextOptionList.svelte';
@@ -14,6 +14,7 @@
 	import { browser } from '$app/environment';
 	import { replaceState } from '$app/navigation';
 	import { createUrl } from '$lib/logic/site-urls';
+	import { langLabel } from '$lib/logic/locales';
 	import { m } from '$lib/paraglide/messages';
 	import { helpers } from '$lib/data/shared';
 	import AccentPicker from '$lib/components/atoms/AccentPicker.svelte';
@@ -26,11 +27,15 @@
 	let {
 		form,
 		suggestedLocale,
-		suggestedAccent = 'yellow'
+		suggestedAccent = 'yellow',
+		hintLocale = null
 	}: {
 		form: { error?: string } | null;
 		suggestedLocale: Locale;
 		suggestedAccent?: Accent;
+		// Browser-preferred language when it differs from the form's: offered as
+		// a dismissible hint, never a redirect.
+		hintLocale?: Locale | null;
 	} = $props();
 
 	// Start empty; dates and participants are added via the same fill-then-add
@@ -96,7 +101,22 @@
 	function pickAccent(next: Accent) {
 		if (browser) replaceState(createUrl(locale, next), {});
 	}
+
+	// The hint is dismissible for the session (same key as the landing page's
+	// hint: one dismissal quiets the offer everywhere). Hidden during SSR so a
+	// dismissal never flashes.
+	let hintDismissed = $derived(!browser || sessionStorage.getItem('langHintDismissed') === '1');
+	function dismissHint() {
+		sessionStorage.setItem('langHintDismissed', '1');
+		hintDismissed = true;
+	}
 </script>
+
+<svelte:head>
+	{#key locale}
+		<title>{m.createTitle()} · {m.appName()}</title>
+	{/key}
+</svelte:head>
 
 <form
 	method="POST"
@@ -105,6 +125,32 @@
 	data-accent={accent}
 	class="mx-auto max-w-160 px-4 pb-18 pt-7"
 >
+	{#if hintLocale && hintLocale !== locale && !hintDismissed}
+		{@const hl = hintLocale}
+		<div
+			data-testid="lang-hint"
+			class="mb-4 flex items-center gap-2.5 rounded-card border-2 border-border bg-card-alt px-4 py-3 text-sm font-semibold text-ink"
+		>
+			<span class="h-2 w-2 shrink-0 rounded-full bg-ink"></span>
+			<!-- Written in the browser's language; picking it flips the poll-language
+			     picker in place - the same live switch, no navigation. -->
+			<button
+				type="button"
+				onclick={() => pickLocale(hl)}
+				class="cursor-pointer text-left underline hover:no-underline"
+			>
+				{m.createHintUse({ language: langLabel(hl, hl) }, { locale: hl })}
+			</button>
+			<button
+				type="button"
+				onclick={dismissHint}
+				aria-label={m.landingHintDismiss({}, { locale: hl })}
+				class="ml-auto cursor-pointer text-ink-muted transition-colors duration-150 hover:text-ink"
+			>
+				<X size={16} aria-hidden="true" />
+			</button>
+		</div>
+	{/if}
 	<div class="paper-sheet">
 		<!-- Corner pickers: accent top-left, language top-right, pinned to the
 	     edges at every width; each swatch row wraps onto multiple rows on

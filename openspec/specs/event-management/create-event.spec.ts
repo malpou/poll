@@ -118,6 +118,10 @@ test('language picker switches the whole form live, no reload', async ({ page })
 	).toBeVisible();
 	await expect(page.getByRole('button', { name: m.create({}, { locale: 'es' }) })).toBeVisible();
 	await expect(page.locator('html')).toHaveAttribute('lang', 'es');
+	// The browser tab follows the picked language too.
+	await expect(page).toHaveTitle(
+		`${m.createTitle({}, { locale: 'es' })} · ${m.appName({}, { locale: 'es' })}`
+	);
 
 	// And on to German: still no reload, but the URL follows shallowly.
 	await page.getByRole('radio', { name: 'Deutsch' }).check();
@@ -134,6 +138,38 @@ test('picking a language moves the create URL to that language', async ({ page }
 		page.getByRole('heading', { name: m.createTitle({}, { locale: 'da' }) })
 	).toBeVisible();
 	await expect(page).toHaveURL(/\/da\/create$/);
+});
+
+// --- Requirement: Browser language hint on the create page ---
+
+test.describe('create page language hint', () => {
+	test.use({ locale: 'da-DK' });
+	const hintText = () => m.createHintUse({ language: 'Dansk' }, { locale: 'da' });
+
+	test('hint applies the browser language to the form without a reload', async ({ page }) => {
+		await page.goto('/create');
+		await page.evaluate(() => ((window as { __live?: number }).__live = 1));
+		await page.getByTestId('lang-hint').getByRole('button', { name: hintText() }).click();
+		// The whole form flips to Danish in place; the hint is gone.
+		await expect(
+			page.getByRole('heading', { name: m.createTitle({}, { locale: 'da' }) })
+		).toBeVisible();
+		await expect(page.getByRole('radio', { name: 'Dansk' })).toBeChecked();
+		await expect(page.getByTestId('lang-hint')).toHaveCount(0);
+		expect(await page.evaluate(() => (window as { __live?: number }).__live)).toBe(1);
+	});
+
+	test('dismissed create hint stays away for the rest of the visit', async ({ page }) => {
+		await page.goto('/create');
+		await page
+			.getByTestId('lang-hint')
+			.getByRole('button', { name: m.landingHintDismiss({}, { locale: 'da' }) })
+			.click();
+		await expect(page.getByTestId('lang-hint')).toHaveCount(0);
+		await page.reload();
+		await expect(page.getByRole('heading', { name: m.createTitle() })).toBeVisible();
+		await expect(page.getByTestId('lang-hint')).toHaveCount(0);
+	});
 });
 
 test('timezone picker defaults to the visitor timezone and persists on create', async ({

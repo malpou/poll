@@ -173,5 +173,6 @@
 	"landingSampleOptionB": "La montagne",
 	"landingSampleOptionC": "Un week-end en ville",
 	"landingHintLink": "Lire cette page en {language}",
+	"createHintUse": "Utiliser {language} pour ce sondage",
 	"landingHintDismiss": "Fermer"
 }

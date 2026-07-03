@@ -165,6 +165,7 @@
 								availablePct={r.availablePct}
 								unavailablePct={r.unavailablePct}
 								showPreferred={allowPreferred}
+								{pollType}
 								unsure={allowUnsure ? r.unsure : undefined}
 								names={{
 									preferred: r.preferredNames,

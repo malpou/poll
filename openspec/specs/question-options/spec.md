@@ -146,11 +146,11 @@ renders an option as weekday, date, and time: on response pages (`/r` and
 ### Requirement: Question-poll wording
 
 The system SHALL render question polls with question wording wherever a
-dates poll's copy names dates: the response scale's choice labels, section
-headings, the response prompt, chosen-outcome headings, and new-option
-notices. The Available and Unavailable choices SHALL be labeled in
-works-for-me / doesn't-work terms. All such copy SHALL render in the poll's
-language, and dates polls SHALL keep their current wording.
+dates poll's copy names dates: the response scale's choice labels, result
+tally labels, section headings, the response prompt, chosen-outcome headings,
+and new-option notices. The Available and Unavailable choices SHALL be
+labeled in works-for-me / doesn't-work terms. All such copy SHALL render in
+the poll's language, and dates polls SHALL keep their current wording.
 
 #### Scenario: Choice labels read in question wording
 
@@ -158,6 +158,13 @@ language, and dates polls SHALL keep their current wording.
 - WHEN an invitee opens their response link
 - THEN the choice controls are labeled with the question-poll wording, in the
   poll's language, not the date wording
+
+#### Scenario: Result tallies read in question wording
+
+- GIVEN a question poll with responses
+- WHEN the organizer opens the dashboard
+- THEN each option's count row is labeled in works-for-me / doesn't-work
+  terms, not the date wording
 
 #### Scenario: Dates polls keep date wording
 

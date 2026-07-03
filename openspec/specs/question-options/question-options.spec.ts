@@ -334,6 +334,15 @@ test("the choice controls read in the poll's language in question wording", asyn
 	await expect(page.getByText(m.datesQuestion({}, { locale: 'da' }))).toHaveCount(0);
 });
 
+test('result tallies read in question wording on the dashboard', async ({ page }) => {
+	seed();
+	await page.goto(`/e/${OTOK}`);
+	// Pizza: Anna alone can make it - the count row reads works-for-me, not date terms.
+	await expect(page.getByText(`1 ${m.prefAvailableQuestion()}`).first()).toBeVisible();
+	await expect(page.getByText(`1 ${m.prefUnavailableQuestion()}`).first()).toBeVisible();
+	await expect(page.getByText(m.prefAvailable())).toHaveCount(0);
+});
+
 // A dates poll seeded through the same suite: its copy must be untouched.
 const FEV = 'e2e-question-fev';
 const FRTOK = 'e2e-question-frtok';

@@ -80,16 +80,22 @@ test('example answers are not persisted across a reload', async ({ page }) => {
 
 // --- Requirement: Language-specific landing URLs ---
 
-test('switching language via the switcher renders that language on its own URL', async ({
+test('switching language renders that language on its own URL without a full reload', async ({
 	page
 }) => {
 	await page.goto('/');
+	// A full navigation would wipe this stamp.
+	await page.evaluate(() => ((window as { __live?: number }).__live = 1));
 	await page.getByRole('radio', { name: 'Dansk' }).check();
 	await expect(page).toHaveURL(/\/da$/);
 	await expect(page.locator('html')).toHaveAttribute('lang', 'da');
 	await expect(
 		page.getByRole('heading', { name: m.landingTitle({}, { locale: 'da' }) })
 	).toBeVisible();
+	await expect(page).toHaveTitle(
+		`${m.appName({}, { locale: 'da' })} · ${m.landingTitle({}, { locale: 'da' })}`
+	);
+	expect(await page.evaluate(() => (window as { __live?: number }).__live)).toBe(1);
 });
 
 test('highlighter restyles the landing page live and carries into the create form', async ({
@@ -105,6 +111,18 @@ test('highlighter restyles the landing page live and carries into the create for
 	await expect(page).toHaveURL(/\/create\?accent=pink$/);
 	await expect(page.getByRole('radio', { name: m.accentPink() })).toBeChecked();
 	await expect(page.locator('form[data-accent="pink"]')).toBeVisible();
+});
+
+test('language switcher lists languages by worldwide speakers, most spoken first', async ({
+	page
+}) => {
+	await page.goto('/');
+	const radios = page.getByRole('group', { name: m.fieldLanguage() }).getByRole('radio');
+	await expect(radios).toHaveCount(5);
+	const order = ['English', 'Español', 'Français', 'Deutsch', 'Dansk'];
+	for (const [i, name] of order.entries()) {
+		await expect(radios.nth(i)).toHaveAccessibleName(name);
+	}
 });
 
 test('direct visit to a language URL renders entirely in that language', async ({ page }) => {
@@ -131,6 +149,8 @@ test('language versions cross-reference as alternates plus a default', async ({ 
 test('unsupported language segment yields the not-found page', async ({ page }) => {
 	const response = await page.goto('/xx');
 	expect(response?.status()).toBe(404);
+	await expect(page.getByText(m.linkNotFound())).toBeVisible();
+	await expect(page).toHaveTitle(`${m.linkNotFound()} · ${m.appName()}`);
 });
 
 // --- Requirement: Browser language hint without redirect ---

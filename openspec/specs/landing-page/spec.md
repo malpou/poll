@@ -69,8 +69,10 @@ near future.
 Each supported language SHALL have its own landing page URL, with English at
 the bare root and the other languages under a language segment. A language
 switcher SHALL offer all five languages using the same selector as the create
-form (each option labeled with the language's native name); picking one SHALL
-move to that language's URL. Each language version SHALL declare the other
+form (each option labeled with the language's native name, ordered by
+worldwide speaker count, most-spoken first); picking one SHALL
+re-render the page in that language, on that language's URL, without a full
+page load. Each language version SHALL declare the other
 versions as alternates for search engines. An unsupported language segment
 SHALL yield the not-found page.
 
@@ -78,7 +80,16 @@ SHALL yield the not-found page.
 
 - GIVEN a visitor on the English landing page
 - WHEN they pick Dansk in the language switcher
-- THEN the Danish landing page renders, on its own URL, entirely in Danish
+- THEN the Danish landing page renders, on its own URL, entirely in Danish —
+  including the browser tab title
+- AND the page did not fully reload
+
+#### Scenario: Languages ordered by worldwide speakers
+
+- GIVEN a visitor on the landing page
+- WHEN they look at the language switcher
+- THEN the languages read English, Spanish, French, German, Danish — most
+  spoken worldwide first
 
 #### Scenario: Direct visit to a language URL
 
@@ -96,7 +107,8 @@ SHALL yield the not-found page.
 
 - GIVEN a visitor opening the landing URL with an unsupported language segment
 - WHEN the request resolves
-- THEN the not-found page is shown
+- THEN the not-found page is shown, explaining the link doesn't exist
+- AND the browser tab title names the app
 
 ### Requirement: Landing page highlighter
 

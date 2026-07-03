@@ -104,11 +104,7 @@
 				pollType="rsvp"
 				bind:value={rsvpAnswer}
 			/>
-			<ResultBars
-				{...rsvpTally}
-				showPreferred={false}
-				labels={{ available: m.prefAvailableRsvp(), unavailable: m.prefUnavailableRsvp() }}
-			/>
+			<ResultBars {...rsvpTally} showPreferred={false} pollType="rsvp" />
 		</div>
 	</section>
 
@@ -128,14 +124,7 @@
 					pollType="question"
 					bind:value={questionAnswers[i]}
 				/>
-				<ResultBars
-					{...t}
-					showPreferred={false}
-					labels={{
-						available: m.prefAvailableQuestion(),
-						unavailable: m.prefUnavailableQuestion()
-					}}
-				/>
+				<ResultBars {...t} showPreferred={false} pollType="question" />
 			</div>
 		{/each}
 	</section>

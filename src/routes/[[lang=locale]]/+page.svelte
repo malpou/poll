@@ -21,10 +21,18 @@
 	// svelte-ignore state_referenced_locally
 	let accent = $state<Accent>(data.accent);
 
-	// Language switch is a plain navigation: the server re-renders the whole
-	// page in the picked language (marketing pages take locale from the URL).
+	// The page's language; seeded from the URL segment, the picker owns it
+	// afterwards.
+	// svelte-ignore state_referenced_locally
+	let locale = $state<Locale>(data.pageLocale);
+
+	// Live language switch, same trick as the create form: <html lang> flips
+	// first (m.*() reads it on the client), then the {#key locale} re-render
+	// repaints every string; the URL follows shallowly - no page load.
 	const pickLocale = (next: Locale) => {
-		location.href = landingUrl(next, accent);
+		document.documentElement.lang = next;
+		replaceState(landingUrl(next, accent), {});
+		locale = next;
 	};
 
 	// The hint is dismissible for the session (sessionStorage). It is hidden
@@ -37,12 +45,14 @@
 </script>
 
 <svelte:head>
-	<title>{m.appName()} · {m.landingTitle()}</title>
+	{#key locale}
+		<title>{m.appName()} · {m.landingTitle()}</title>
+	{/key}
 </svelte:head>
 <HreflangLinks />
 
 <div data-accent={accent} data-testid="landing-root" class="mx-auto max-w-160 px-4 pb-18 pt-7">
-	{#if data.hintLocale && !hintDismissed}
+	{#if data.hintLocale && data.hintLocale !== locale && !hintDismissed}
 		<div
 			data-testid="lang-hint"
 			class="mb-4 flex items-center gap-2.5 rounded-card border-2 border-border bg-card-alt px-4 py-3 text-sm font-semibold text-ink"
@@ -76,33 +86,40 @@
 		     this page live (and syncs the ?accent= query), language top-right
 		     navigates to that language's URL. -->
 		<div class="mb-6 flex items-start justify-between gap-12">
-			<AccentPicker
-				bind:value={accent}
-				showLegend={false}
-				onpick={(a: Accent) => replaceState(landingUrl(data.pageLocale, a), {})}
-			/>
-			<LanguagePicker value={data.pageLocale} onpick={pickLocale} showLegend={false} alignEnd />
+			{#key locale}
+				<AccentPicker
+					bind:value={accent}
+					showLegend={false}
+					onpick={(a: Accent) => replaceState(landingUrl(locale, a), {})}
+				/>
+			{/key}
+			<LanguagePicker bind:value={locale} onpick={pickLocale} showLegend={false} alignEnd />
 		</div>
 
-		<h1 class="mb-3 text-title font-bold text-ink">
-			<span class="hl-swipe">{m.landingTitle()}</span>
-		</h1>
-		<p class="mb-3 max-w-prose text-body leading-relaxed text-ink-soft">{m.landingIntro()}</p>
-		<p class="mb-8 max-w-prose text-body leading-relaxed text-ink-soft">{m.landingIntroTypes()}</p>
+		<!-- Re-render every m.*() under the newly picked locale. -->
+		{#key locale}
+			<h1 class="mb-3 text-title font-bold text-ink">
+				<span class="hl-swipe">{m.landingTitle()}</span>
+			</h1>
+			<p class="mb-3 max-w-prose text-body leading-relaxed text-ink-soft">{m.landingIntro()}</p>
+			<p class="mb-8 max-w-prose text-body leading-relaxed text-ink-soft">
+				{m.landingIntroTypes()}
+			</p>
 
-		<!-- Crawlable create call-to-action; mirrors the Button atom's primary look. -->
-		<a
-			href={createUrl(data.pageLocale, accent)}
-			class="inline-flex h-13 w-full cursor-pointer items-center justify-center gap-1.5 whitespace-nowrap rounded-cta bg-ink px-6 text-body font-bold tracking-wider text-card transition duration-150 hover:-translate-y-0.5 hover:bg-primary-hover"
-		>
-			{m.createTitle()}
-			<ArrowRight size={17} aria-hidden="true" />
-		</a>
+			<!-- Crawlable create call-to-action; mirrors the Button atom's primary look. -->
+			<a
+				href={createUrl(locale, accent)}
+				class="inline-flex h-13 w-full cursor-pointer items-center justify-center gap-1.5 whitespace-nowrap rounded-cta bg-ink px-6 text-body font-bold tracking-wider text-card transition duration-150 hover:-translate-y-0.5 hover:bg-primary-hover"
+			>
+				{m.createTitle()}
+				<ArrowRight size={17} aria-hidden="true" />
+			</a>
 
-		<hr class="my-9 border-t-2 border-dashed border-border" />
+			<hr class="my-9 border-t-2 border-dashed border-border" />
 
-		<div class="mb-2"><SectionHeading text={m.landingExamplesTitle()} /></div>
-		<p class="mb-6 max-w-prose text-caption text-ink-muted">{m.landingExamplesHint()}</p>
-		<LandingExamples locale={data.pageLocale} samples={data.samples} />
+			<div class="mb-2"><SectionHeading text={m.landingExamplesTitle()} /></div>
+			<p class="mb-6 max-w-prose text-caption text-ink-muted">{m.landingExamplesHint()}</p>
+			<LandingExamples {locale} samples={data.samples} />
+		{/key}
 	</div>
 </div>

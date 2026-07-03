@@ -41,6 +41,7 @@ selected — text matching no timezone reverts to the previously selected zone.
 - GIVEN a visitor on the create page
 - WHEN they pick another language
 - THEN the whole form re-renders in that language without a reload
+- AND the browser tab title follows the picked language
 
 #### Scenario: Timezone picker labels follow the picked language
 
@@ -62,6 +63,30 @@ selected — text matching no timezone reverts to the previously selected zone.
 - GIVEN a visitor on the create page who typed text matching no timezone
 - WHEN they leave the timezone field
 - THEN the picker reverts to the previously selected timezone
+
+### Requirement: Browser language hint on the create page
+
+When the browser's preferred language is a supported language other than the
+create form's current language, the create page SHALL show a dismissible
+hint, written in the browser's language, offering to use that language for
+the poll. Picking the hint SHALL flip the form's language picker to that
+language in place, without a reload, and the hint SHALL disappear once the
+form's language matches the browser's. Dismissing the hint SHALL keep it
+hidden for the rest of the visit.
+
+#### Scenario: Hint applies the browser language to the form
+
+- GIVEN a browser preferring Danish
+- WHEN it opens the English create page and the visitor picks the hint
+- THEN the form re-renders in Danish without a reload
+- AND the language picker shows Danish selected
+- AND the hint disappears
+
+#### Scenario: Dismissed create hint stays away
+
+- GIVEN a visitor who dismissed the language hint on the create page
+- WHEN they load the create page again in the same visit
+- THEN the hint is not shown
 
 ### Requirement: Organizer access control
 

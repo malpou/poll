@@ -3,6 +3,7 @@
 	import { onMount } from 'svelte';
 	import { Check, CircleQuestionMark, Star, X } from '@lucide/svelte';
 	import { m } from '$lib/paraglide/messages';
+	import type { PollType } from '$lib/types';
 
 	// One option's result, per DESIGN.md: an icon count per enabled choice, a
 	// single stacked bar (preferred + available fill; the rest stays track), and
@@ -17,9 +18,9 @@
 		unavailablePct: number;
 		showPreferred?: boolean;
 		unsure?: number;
-		// Per-poll-type wording for the count row (RSVP yes/no, question
-		// works-for-me); defaults to the date-poll preference labels.
-		labels?: { preferred?: string; available?: string; unavailable?: string };
+		// Wording for the count row follows the poll type everywhere (RSVP
+		// yes/no, question works-for-me, dates preference labels).
+		pollType?: PollType;
 		names?: {
 			preferred: string[];
 			available: string[];
@@ -37,7 +38,7 @@
 		unavailablePct,
 		showPreferred = true,
 		unsure = undefined,
-		labels = undefined,
+		pollType = 'dates',
 		names = null
 	}: Props = $props();
 
@@ -50,11 +51,27 @@
 	});
 
 	const counts = $derived([
-		...(showPreferred
-			? [{ icon: Star, label: labels?.preferred ?? m.prefPreferred(), count: preferred }]
-			: []),
-		{ icon: Check, label: labels?.available ?? m.prefAvailable(), count: available },
-		{ icon: X, label: labels?.unavailable ?? m.prefUnavailable(), count: unavailable },
+		...(showPreferred ? [{ icon: Star, label: m.prefPreferred(), count: preferred }] : []),
+		{
+			icon: Check,
+			label:
+				pollType === 'rsvp'
+					? m.prefAvailableRsvp()
+					: pollType === 'question'
+						? m.prefAvailableQuestion()
+						: m.prefAvailable(),
+			count: available
+		},
+		{
+			icon: X,
+			label:
+				pollType === 'rsvp'
+					? m.prefUnavailableRsvp()
+					: pollType === 'question'
+						? m.prefUnavailableQuestion()
+						: m.prefUnavailable(),
+			count: unavailable
+		},
 		...(unsure !== undefined
 			? [{ icon: CircleQuestionMark, label: m.prefUnsure(), count: unsure }]
 			: [])

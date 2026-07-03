@@ -2,7 +2,7 @@ import { fail, redirect } from '@sveltejs/kit';
 import { getProvider } from '$lib/data/provider';
 import { newToken } from '$lib/data/shared';
 import { m } from '$lib/paraglide/messages';
-import { baseLocale, isLocale } from '$lib/paraglide/runtime';
+import { baseLocale, extractLocaleFromHeader, isLocale } from '$lib/paraglide/runtime';
 import { field, parseIndexed, validateTimes } from '$lib/forms/forms';
 import { richTextIsEmpty, sanitizeRichText } from '$lib/forms/richtext';
 import type { Accent, DateOption, Locale, Participant, PollMode, PollType } from '$lib/types';
@@ -15,13 +15,20 @@ import type { Actions, PageServerLoad } from './$types';
  * segment) and the poll-language picker defaults to that same language. The
  * highlighter picker defaults to the ?accent= the landing page carried over.
  */
-export const load: PageServerLoad = ({ params, url }) => {
+export const load: PageServerLoad = ({ params, request, url }) => {
 	const suggestedLocale: Locale = isLocale(params.lang) ? params.lang : baseLocale;
 	const accentParam = url.searchParams.get('accent') ?? '';
 	const suggestedAccent: Accent = (ACCENTS as readonly string[]).includes(accentParam)
 		? (accentParam as Accent)
 		: 'yellow';
-	return { suggestedLocale, suggestedAccent };
+	// The browser-language hint, same offer as the landing page: never a
+	// redirect, only set when the preference differs from the form's language.
+	const browserLocale = extractLocaleFromHeader(request);
+	return {
+		suggestedLocale,
+		suggestedAccent,
+		hintLocale: browserLocale && browserLocale !== suggestedLocale ? browserLocale : null
+	};
 };
 
 export const actions = {

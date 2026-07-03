@@ -173,5 +173,6 @@
 	"landingSampleOptionB": "Die Berge",
 	"landingSampleOptionC": "Ein Wochenende in der Stadt",
 	"landingHintLink": "Diese Seite auf {language} lesen",
+	"createHintUse": "{language} für diese Umfrage verwenden",
 	"landingHintDismiss": "Schließen"
 }

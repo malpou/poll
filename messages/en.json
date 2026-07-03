@@ -173,5 +173,6 @@
 	"landingSampleOptionB": "The mountains",
 	"landingSampleOptionC": "A city weekend",
 	"landingHintLink": "Read this page in {language}",
+	"createHintUse": "Use {language} for this poll",
 	"landingHintDismiss": "Dismiss"
 }

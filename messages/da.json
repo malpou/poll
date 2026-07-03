@@ -173,5 +173,6 @@
 	"landingSampleOptionB": "Bjergene",
 	"landingSampleOptionC": "En weekend i byen",
 	"landingHintLink": "Læs denne side på {language}",
+	"createHintUse": "Brug {language} til denne afstemning",
 	"landingHintDismiss": "Luk"
 }

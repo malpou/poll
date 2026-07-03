@@ -136,6 +136,7 @@
 								preferredPct={o.preferredPct}
 								availablePct={o.availablePct}
 								unavailablePct={o.unavailablePct}
+								{pollType}
 							/>
 						</div>
 					</div>
