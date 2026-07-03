@@ -28,6 +28,30 @@ async function addDate(page: Page, day: number, startTime = '', endTime = '') {
 	if (endTime) await page.locator('input[name="dates.0.endTime"]').fill(endTime);
 }
 
+// The question type's fill-then-add option list: the add row is the last input.
+async function addTextOption(page: Page, text: string) {
+	await page.getByPlaceholder(m.optionPlaceholder()).last().fill(text);
+	await page.getByRole('button', { name: m.addOption() }).click();
+}
+
+// The collapsed timezone note's change affordance reveals the combo box.
+async function revealTimezone(page: Page) {
+	await page.getByRole('button', { name: m.timezoneChange() }).click();
+	return page.getByRole('combobox', { name: m.fieldTimezone() });
+}
+
+// The client gate disables the submit button on an invalid form; fire the
+// form's own submit to prove the server safety net still rejects it. Returns
+// SvelteKit's ActionResult (enhance POSTs get HTTP 200; the failure status
+// travels in the JSON body).
+async function forceSubmit(page: Page) {
+	const [res] = await Promise.all([
+		page.waitForResponse((r) => r.request().method() === 'POST'),
+		page.evaluate(() => document.querySelector('form')?.requestSubmit())
+	]);
+	return res.json() as Promise<{ type: string; status: number }>;
+}
+
 test('valid submit creates an event and redirects to /e/{token}', async ({ page }) => {
 	await page.goto('/create');
 	await page.getByLabel(m.fieldTitle()).fill('Sommerfest');
@@ -74,14 +98,108 @@ test('several time slots on one day yield one date option per slot', async ({ pa
 		.toBe(2);
 });
 
-test('zero date options is rejected with a validation message, no redirect', async ({ page }) => {
+test('a submission with zero date options reaching the server is rejected', async ({ page }) => {
 	await page.goto('/create');
 	await page.getByLabel(m.fieldTitle()).fill('Sommerfest');
-	// Toggle no days → zero options server-side.
+	// Toggle no days → zero options; the gate blocks the button, so force the
+	// POST through to the server.
+	expect(await forceSubmit(page)).toMatchObject({ type: 'failure', status: 400 });
+	// exact - the dates hint copy also contains this phrase as a substring;
+	// first - the gating caption shows the same message as the server error.
+	await expect(page.getByText(m.errorNoDates(), { exact: true }).first()).toBeVisible();
+	await expect(page).toHaveURL(/\/create$/);
+});
+
+test('the poll type leads the form and shows a single explainer', async ({ page }) => {
+	await page.goto('/create');
+	// The type choice appears before every other field.
+	const typeBeforeTitle = await page.evaluate(() => {
+		const type = document.querySelector('input[name="pollType"]');
+		const title = document.querySelector('input[name="title"]');
+		return Boolean(
+			type && title && type.compareDocumentPosition(title) & Node.DOCUMENT_POSITION_FOLLOWING
+		);
+	});
+	expect(typeBeforeTitle).toBe(true);
+	// Exactly one explainer for the picked type - the hint under the type
+	// choice; no separate intro paragraph repeats it.
+	await expect(page.getByText(m.pollTypeDatesHint())).toHaveCount(1);
+	await page.getByRole('radio', { name: m.pollTypeRsvp() }).check();
+	await expect(page.getByText(m.pollTypeRsvpHint())).toHaveCount(1);
+	await expect(page.getByText(m.pollTypeDatesHint())).toHaveCount(0);
+});
+
+test('creating without touching the poll mode yields an open poll', async ({ page }) => {
+	await page.goto('/create');
+	await page.getByLabel(m.fieldTitle()).fill('Åben som standard');
+	await addDate(page, 12);
 	await page.getByRole('button', { name: m.create() }).click();
+	await expect(page).toHaveURL(/\/e\/[A-Za-z0-9]+$/);
+	const otok = page.url().split('/').pop() ?? '';
+	await expect
+		.poll(
+			() =>
+				d1(`SELECT poll_mode FROM events WHERE organizer_token = '${otok}'`).results[0]
+					?.poll_mode as string
+		)
+		.toBe('open');
+	// Open-mode dashboards lead with the shared link to hand out.
+	await expect(page.getByText(m.shareLinkTitle())).toBeVisible();
+});
+
+test('assigned mode records the invitees added at creation', async ({ page }) => {
+	await page.goto('/create');
+	await page.getByLabel(m.fieldTitle()).fill('Navngivne folk');
+	await addDate(page, 12);
+	// Named people is the opt-in alternative to the open default.
+	await page.getByRole('radio', { name: m.modeAssigned() }).check();
+	await page.getByPlaceholder(m.name()).fill('Anna');
+	await page.getByRole('button', { name: m.addParticipant() }).click();
+	await page.getByRole('button', { name: m.create() }).click();
+	await expect(page).toHaveURL(/\/e\/[A-Za-z0-9]+$/);
+	const otok = page.url().split('/').pop() ?? '';
+	await expect
+		.poll(
+			() =>
+				d1(
+					`SELECT COUNT(*) AS n FROM invitees WHERE event_id =
+					 (SELECT id FROM events WHERE organizer_token = '${otok}')`
+				).results[0].n as number
+		)
+		.toBe(1);
+	await expect(page.getByText('Anna').first()).toBeVisible();
+});
+
+test('submit is disabled until the form is valid, naming the first missing thing', async ({
+	page
+}) => {
+	await page.goto('/create');
+	const submit = page.getByRole('button', { name: m.create() });
+	await expect(submit).toBeDisabled();
+	await expect(page.getByText(m.errorNoTitle(), { exact: true })).toBeVisible();
+	await page.getByLabel(m.fieldTitle()).fill('Snart gyldig');
+	await expect(submit).toBeDisabled();
 	// exact - the dates hint copy also contains this phrase as a substring.
 	await expect(page.getByText(m.errorNoDates(), { exact: true })).toBeVisible();
-	await expect(page).toHaveURL(/\/create$/);
+	await addDate(page, 12);
+	await expect(submit).toBeEnabled();
+	await expect(page.getByText(m.errorNoDates(), { exact: true })).toHaveCount(0);
+});
+
+test('the submit gate follows the picked poll type', async ({ page }) => {
+	await page.goto('/create');
+	const submit = page.getByRole('button', { name: m.create() });
+	await page.getByLabel(m.fieldTitle()).fill('Skiftende type');
+	await addDate(page, 12);
+	await expect(submit).toBeEnabled();
+	// Switching to a question poll with no options re-disables the submit.
+	await page.getByRole('radio', { name: m.pollTypeQuestion() }).check();
+	await expect(submit).toBeDisabled();
+	await expect(page.getByText(m.errorTooFewOptions(), { exact: true })).toBeVisible();
+	await addTextOption(page, 'Pizza');
+	await expect(submit).toBeDisabled();
+	await addTextOption(page, 'Sushi');
+	await expect(submit).toBeEnabled();
 });
 
 test('end time without a start time is rejected server-side', async ({ page }) => {
@@ -172,15 +290,16 @@ test.describe('create page language hint', () => {
 	});
 });
 
-test('timezone picker defaults to the visitor timezone and persists on create', async ({
+test('the timezone starts collapsed on the visitor zone and persists on create', async ({
 	page
 }) => {
 	await page.goto('/create');
-	// The combo box shows the browser's own zone (pinned above); the hidden
-	// input carries the IANA id the form will post.
-	await expect(page.getByRole('combobox', { name: m.fieldTimezone() })).toHaveValue(
-		'America/New_York (Eastern Time)'
-	);
+	// No picker on load - only a note naming the browser's own zone (pinned
+	// above) as pre-picked; the hidden input still carries the IANA id.
+	await expect(page.getByRole('combobox', { name: m.fieldTimezone() })).toHaveCount(0);
+	await expect(
+		page.getByText(m.timezonePicked({ timezone: 'America/New_York (Eastern Time)' }))
+	).toBeVisible();
 	await expect(page.locator('input[name="timezone"]')).toHaveValue('America/New_York');
 
 	await page.getByLabel(m.fieldTitle()).fill('NYC brunch');
@@ -191,14 +310,37 @@ test('timezone picker defaults to the visitor timezone and persists on create', 
 	await expect(page.getByText('America/New_York (Eastern Time)')).toBeVisible();
 });
 
-test('timezone picker labels follow the picked language', async ({ page }) => {
+test('picking a different timezone updates the note and collapses the picker again', async ({
+	page
+}) => {
+	await page.goto('/create');
+	await page.getByLabel(m.fieldTitle()).fill('CPH brunch');
+	await addDate(page, 12);
+
+	const combo = await revealTimezone(page);
+	await combo.fill('Copenhagen');
+	await page.getByRole('option', { name: 'Europe/Copenhagen (Central European Time)' }).click();
+	// The picker folds away on its own shortly after the pick...
+	await expect(page.getByRole('combobox', { name: m.fieldTimezone() })).toHaveCount(0);
+	// ...and the note names the new zone, which still posts.
+	await expect(
+		page.getByText(m.timezonePicked({ timezone: 'Europe/Copenhagen (Central European Time)' }))
+	).toBeVisible();
+	await expect(page.locator('input[name="timezone"]')).toHaveValue('Europe/Copenhagen');
+
+	await page.getByRole('button', { name: m.create() }).click();
+	await expect(page).toHaveURL(/\/e\/[A-Za-z0-9]+$/);
+	await expect(page.getByText('Europe/Copenhagen (Central European Time)')).toBeVisible();
+});
+
+test('revealed timezone picker labels follow the picked language', async ({ page }) => {
 	await page.goto('/create');
 	// English browser first: the selected zone shows identifier plus English
 	// generic zone name.
-	await expect(page.getByRole('combobox', { name: m.fieldTimezone() })).toHaveValue(
-		'America/New_York (Eastern Time)'
-	);
+	const combo = await revealTimezone(page);
+	await expect(combo).toHaveValue('America/New_York (Eastern Time)');
 	// Pick Danish: the same zone re-labels with the Danish zone name, live.
+	// The disclosure stays revealed across the language re-render.
 	await page.getByRole('radio', { name: 'Dansk' }).check();
 	await expect(
 		page.getByRole('combobox', { name: m.fieldTimezone({}, { locale: 'da' }) })
@@ -211,9 +353,11 @@ test('choosing a timezone by typing creates the event in that zone', async ({ pa
 	await addDate(page, 12);
 
 	// Typing filters the suggestion list; picking a match selects the zone.
-	const combo = page.getByRole('combobox', { name: m.fieldTimezone() });
+	const combo = await revealTimezone(page);
 	await combo.fill('Copenhagen');
 	await page.getByRole('option', { name: 'Europe/Copenhagen (Central European Time)' }).click();
+	// Wait out the auto-collapse so exactly one timezone input remains.
+	await expect(page.getByRole('combobox', { name: m.fieldTimezone() })).toHaveCount(0);
 	await expect(page.locator('input[name="timezone"]')).toHaveValue('Europe/Copenhagen');
 
 	await page.getByRole('button', { name: m.create() }).click();
@@ -224,9 +368,10 @@ test('choosing a timezone by typing creates the event in that zone', async ({ pa
 
 test('text matching no timezone reverts to the previous selection', async ({ page }) => {
 	await page.goto('/create');
-	const combo = page.getByRole('combobox', { name: m.fieldTimezone() });
+	const combo = await revealTimezone(page);
 	await combo.fill('not a real zone');
 	// No suggestion matches, so leaving the field falls back to the default.
+	// A blur is not a pick, so the picker stays revealed.
 	await page.keyboard.press('Tab');
 	await expect(combo).toHaveValue('America/New_York (Eastern Time)');
 	await expect(page.locator('input[name="timezone"]')).toHaveValue('America/New_York');

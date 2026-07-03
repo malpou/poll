@@ -6,11 +6,13 @@
 	let {
 		name,
 		value = $bindable(),
-		locale
+		locale,
+		onpick
 	}: {
 		name: string;
 		value: string;
 		locale: Locale;
+		onpick?: () => void;
 	} = $props();
 
 	const zones = Intl.supportedValuesOf('timeZone');
@@ -35,6 +37,7 @@
 		value = tz;
 		query = null;
 		open = false;
+		onpick?.();
 	}
 	function close() {
 		query = null; // ponytail: blur-revert — invalid text can never linger, the hidden input never held it

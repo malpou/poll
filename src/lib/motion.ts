@@ -19,6 +19,25 @@ export function flyIn(index = 0, { y = 8, duration = 240 } = {}) {
 }
 
 /**
+ * In-place state swap per DESIGN.md: content replaced where it stands (locale
+ * re-render, hint text) fades in with a slight rise, ~180ms ease-out. Pass
+ * y: 0 for an opacity-only swap. Reduced motion: near-instant fade, no rise.
+ */
+export function swapIn({ y = 4, duration = 180 } = {}) {
+	return prefersReducedMotion()
+		? { y: 0, duration: 90, easing: cubicOut }
+		: { y, duration, easing: cubicOut };
+}
+
+/**
+ * Disclosure open/close per DESIGN.md: a short ease-out slide. Reduced
+ * motion: instant.
+ */
+export function slideParams() {
+	return prefersReducedMotion() ? { duration: 0 } : { duration: 180, easing: cubicOut };
+}
+
+/**
  * Selector-indicator glide per DESIGN.md: ~350ms with a soft overshoot, never
  * a cut. Callers combine with prefersReducedMotion() to drop it.
  */

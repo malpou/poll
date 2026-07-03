@@ -12,13 +12,25 @@ manage the event through a secret organizer link.
 The system SHALL allow anyone to create an event with a title, a language, a
 poll mode, and a poll type — dates (the default), question (see
 specs/question-options), or RSVP (see specs/rsvp-poll) — and SHALL return a
-secret organizer link for it. A dates-type event SHALL additionally require a
-timezone and one or more candidate date options. The timezone picker SHALL default to the visitor's
-own timezone, and SHALL label each timezone with its identifier plus a zone
-name localized to the form's current language. The timezone picker SHALL be a
-combo box: an editable text field whose suggestion list narrows to the
-timezones matching the typed text, and only a real timezone can end up
-selected — text matching no timezone reverts to the previously selected zone.
+secret organizer link for it. The poll type choice SHALL come before every
+other field on the create page, and the page SHALL show exactly one explainer
+for the picked type — a short hint attached to the type choice, not a
+separate introductory paragraph repeating it. The poll mode SHALL default to
+open ("anyone with the link"); assigned mode ("named people") is the opt-in
+alternative.
+
+A dates-type event SHALL additionally require a timezone and one or more
+candidate date options; an RSVP event requires a timezone and its single date
+(see specs/rsvp-poll). The timezone SHALL default to the visitor's own
+timezone and start collapsed: instead of a picker, the form shows a short
+note naming the pre-picked zone with an affordance to change it. Activating
+the affordance SHALL reveal the timezone picker; picking a different zone
+SHALL update the note and collapse the picker again after a short delay. The
+revealed picker SHALL label each timezone with its identifier plus a zone
+name localized to the form's current language, and SHALL be a combo box: an
+editable text field whose suggestion list narrows to the timezones matching
+the typed text, and only a real timezone can end up selected — text matching
+no timezone reverts to the previously selected zone.
 
 #### Scenario: Create an event with options
 
@@ -33,8 +45,36 @@ selected — text matching no timezone reverts to the previously selected zone.
 #### Scenario: Reject an event with no options
 
 - GIVEN a visitor on the create page
-- WHEN they submit with zero date options
-- THEN the system rejects the submission with a validation message
+- WHEN a submission with zero date options reaches the server
+- THEN the system rejects it with a validation message
+
+#### Scenario: Poll type is chosen first with a single explainer
+
+- GIVEN a visitor on the create page
+- WHEN the page renders, whichever of the three poll types is picked
+- THEN the poll type choice appears before every other field
+- AND exactly one explainer for the picked type is shown
+
+#### Scenario: Poll mode defaults to anyone with the link
+
+- GIVEN a visitor on the create page
+- WHEN they create an event without touching the poll mode choice
+- THEN the event is created in open mode
+
+#### Scenario: Timezone starts collapsed on the visitor's zone
+
+- GIVEN a visitor on the create page with a dates or RSVP type picked
+- WHEN the page renders
+- THEN no timezone picker is shown — only a note naming the visitor's own
+  timezone as pre-picked, with an affordance to change it
+
+#### Scenario: Changing the timezone collapses the picker again
+
+- GIVEN a visitor who activated the change-timezone affordance
+- WHEN they pick a different timezone
+- THEN the note updates to the new zone
+- AND the picker collapses again shortly after
+- AND submitting creates the event in that timezone
 
 #### Scenario: Language picker previews the create form live
 
@@ -45,22 +85,23 @@ selected — text matching no timezone reverts to the previously selected zone.
 
 #### Scenario: Timezone picker labels follow the picked language
 
-- GIVEN a visitor on the create page
+- GIVEN a visitor on the create page who revealed the timezone picker
 - WHEN they pick a non-English language
 - THEN each timezone option shows its identifier together with a zone name in
   that language
 
 #### Scenario: Choose a timezone by typing
 
-- GIVEN a visitor on the create page
-- WHEN they type part of a timezone's label into the timezone picker and pick
-  the matching suggestion
+- GIVEN a visitor on the create page who revealed the timezone picker
+- WHEN they type part of a timezone's label into the picker and pick the
+  matching suggestion
 - AND submit the form
 - THEN the event is created in that timezone
 
 #### Scenario: Text matching no timezone reverts
 
-- GIVEN a visitor on the create page who typed text matching no timezone
+- GIVEN a visitor who revealed the timezone picker and typed text matching no
+  timezone
 - WHEN they leave the timezone field
 - THEN the picker reverts to the previously selected timezone
 
@@ -278,32 +319,36 @@ only be accepted when a start time is present, and MUST NOT be before it.
 
 ### Requirement: Configurable response choices
 
-Every event SHALL offer the Available and Unavailable choices. On dates and
+Every event SHALL offer the Available and Unavailable choices, and the choice
+settings SHALL state that these two are always included. On dates and
 question polls the organizer SHALL be able to enable or disable the
-"Preferred" choice (enabled by default) and the "I don't know" choice
-(disabled by default), both at creation and while the event is open —
-including events that already have recorded answers. RSVP polls offer exactly
-yes and no; the choice toggles do not apply to them (see specs/rsvp-poll). Disabling a choice SHALL fold its already-recorded answers
-into the fixed pair: Preferred answers become Available, "I don't know"
-answers become Unavailable. Folded answers still count as answered.
-Re-enabling a choice offers it again but SHALL NOT restore folded answers.
+"Preferred" choice and the "I don't know" choice — both disabled by default —
+both at creation and while the event is open, including events that already
+have recorded answers. RSVP polls offer exactly yes and no; the choice
+toggles do not apply to them (see specs/rsvp-poll). Disabling a choice SHALL
+fold its already-recorded answers into the fixed pair: Preferred answers
+become Available, "I don't know" answers become Unavailable. Folded answers
+still count as answered. Re-enabling a choice offers it again but SHALL NOT
+restore folded answers.
 
 #### Scenario: Defaults at creation
 
 - GIVEN a visitor on the create page
 - WHEN they create an event without touching the choice settings
-- THEN the event offers Preferred, Available, and Unavailable
-- AND does not offer "I don't know"
+- THEN the event offers exactly Available and Unavailable
+- AND does not offer Preferred or "I don't know"
 
 #### Scenario: Enable "I don't know" at creation
 
 - GIVEN a visitor on the create page
 - WHEN they enable the "I don't know" choice and create the event
-- THEN response pages for that event offer all four choices
+- THEN response pages for that event offer "I don't know" alongside the fixed
+  pair
 
 #### Scenario: Disable "Preferred" while open folds its votes to Available
 
-- GIVEN an open event where an invitee already marked a date Preferred
+- GIVEN an open event with "Preferred" enabled where an invitee already
+  marked a date Preferred
 - WHEN the organizer disables the "Preferred" choice
 - THEN response pages stop offering Preferred
 - AND the recorded Preferred answer becomes Available and keeps counting in
@@ -431,3 +476,26 @@ visitor picks another one, so a reload keeps the choice.
 - WHEN they open the create page through the call-to-action
 - THEN the highlighter picker starts on pink
 - AND the form previews pink
+
+### Requirement: Create form submit gating
+
+The create page SHALL disable submission while the form would fail
+validation for the picked poll type — an empty title, a dates poll with no
+date options, a question poll with fewer than two options, or an RSVP poll
+without its date — and SHALL enable it once the form is valid. Server-side
+validation still applies to whatever reaches it.
+
+#### Scenario: Submit disabled until the form is valid
+
+- GIVEN a visitor on the create page with an empty title
+- WHEN the page renders
+- THEN the submit control is disabled
+- AND it stays disabled after they enter a title but no date option
+- AND it becomes enabled once a title and a date option are both present
+
+#### Scenario: Gating follows the picked poll type
+
+- GIVEN a visitor with a title and one date option on a dates poll
+- WHEN they switch the poll type to question with no options added
+- THEN the submit control is disabled until at least two question options
+  exist

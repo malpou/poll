@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { fly } from 'svelte/transition';
-	import { flyIn } from '$lib/motion';
+	import { flyIn, swapIn } from '$lib/motion';
 	import { enhance } from '$app/forms';
 	import TextField from '$lib/components/atoms/TextField.svelte';
 	import Button from '$lib/components/atoms/Button.svelte';
@@ -40,7 +40,7 @@
 </script>
 
 {#key locale}
-	<section class="mb-10">
+	<section class="mb-10" in:fly={swapIn({ y: 0 })}>
 		<div class="mb-3.5 flex items-center justify-between gap-2.5">
 			<SectionHeading
 				text={question ? m.optionsSection() : rsvp ? m.dateSectionRsvp() : m.datesSection()}

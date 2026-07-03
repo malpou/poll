@@ -90,20 +90,32 @@ test('an untouched type choice creates a dates poll', async ({ page }) => {
 	expect(eventPollType(id)).toBe('dates');
 });
 
-test('fewer than two non-blank options is rejected with a validation message', async ({ page }) => {
+test('fewer than two non-blank options reaching the server is rejected', async ({ page }) => {
+	// The client gate disables the submit below two non-blank options; force
+	// the POST through to prove the server safety net still rejects it. The
+	// enhance POST returns HTTP 200; the failure status travels in the JSON.
+	const forceSubmit = async () => {
+		const [res] = await Promise.all([
+			page.waitForResponse((r) => r.request().method() === 'POST'),
+			page.evaluate(() => document.querySelector('form')?.requestSubmit())
+		]);
+		return res.json() as Promise<{ type: string; status: number }>;
+	};
+
 	await page.goto('/create');
 	await pickQuestionType(page);
 	await page.getByLabel(m.fieldTitle()).fill('Too few');
 	await addTextOption(page, 'Only one');
-	await page.getByRole('button', { name: m.create() }).click();
-	await expect(page.getByText(m.errorTooFewOptions(), { exact: true })).toBeVisible();
+	expect(await forceSubmit()).toMatchObject({ type: 'failure', status: 400 });
+	// first - the gating caption shows the same message as the server error.
+	await expect(page.getByText(m.errorTooFewOptions(), { exact: true }).first()).toBeVisible();
 	await expect(page).toHaveURL(/\/create$/);
 
 	// A second option that is only whitespace doesn't count toward the minimum.
 	await addTextOption(page, 'Real second');
 	await page.getByPlaceholder(m.optionPlaceholder()).nth(1).fill('   ');
-	await page.getByRole('button', { name: m.create() }).click();
-	await expect(page.getByText(m.errorTooFewOptions(), { exact: true })).toBeVisible();
+	expect(await forceSubmit()).toMatchObject({ type: 'failure', status: 400 });
+	await expect(page.getByText(m.errorTooFewOptions(), { exact: true }).first()).toBeVisible();
 	await expect(page).toHaveURL(/\/create$/);
 });
 
@@ -216,14 +228,15 @@ test('picking the question type swaps the calendar and timezone for text entry',
 	page
 }) => {
 	await page.goto('/create');
-	// Dates type first: calendar + timezone picker are there.
+	// Dates type first: calendar + the collapsed timezone note are there.
 	await expect(page.getByRole('button', { name: m.nextMonth() })).toBeVisible();
-	await expect(page.getByRole('combobox', { name: m.fieldTimezone() })).toBeVisible();
+	await expect(page.getByRole('button', { name: m.timezoneChange() })).toBeVisible();
 	await pickQuestionType(page);
 	// Question type: free-form text entry instead, no month calendar, no timezone.
 	await expect(page.getByPlaceholder(m.optionPlaceholder())).toBeVisible();
 	await expect(page.getByRole('button', { name: m.nextMonth() })).toHaveCount(0);
-	await expect(page.getByRole('combobox', { name: m.fieldTimezone() })).toHaveCount(0);
+	await expect(page.getByRole('button', { name: m.timezoneChange() })).toHaveCount(0);
+	await expect(page.locator('input[name="timezone"]')).toHaveCount(0);
 });
 
 test('a question poll dashboard offers no timezone, sort-by-date, or time fields', async ({

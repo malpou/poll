@@ -42,8 +42,10 @@ Motion rules live in `openspec/specs/DESIGN.md`.
   boolean; the existing `TimezoneCombobox` mounts only when revealed. On
   `value` change while revealed, a short `setTimeout` (~600ms) collapses it.
   The hidden `<input name="timezone">` must post even while collapsed — keep
-  the hidden input outside the disclosure. Placed directly below the
-  calendar for both dates and RSVP types (same spot in both branches).
+  the hidden input outside the disclosure. Placed inside the date section,
+  directly under its hint and above the calendar, for both dates and RSVP
+  types (same spot in both branches), with the dashboard's clock icon so the
+  note reads as "timezone".
 - **Auto-collapse only on a _different_ zone.** Re-picking the same zone via
   the combobox also collapses (simplest: collapse on any pick event) —
   acceptable; the spec only demands collapse after picking.

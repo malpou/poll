@@ -196,8 +196,15 @@ decorative. Animate transform and opacity only — the result bar grows with a
   ~200ms, auto-dismiss ~3s.
 - **Results re-sorts** slide rows to their new position (flip transition,
   ~300ms ease-in-out), never jump.
-- Shared motion params live in `src/lib/motion.ts` — use `flyIn`/`flipParams`
-  instead of inlining values; they handle reduced motion for you.
+- **State swaps animate, never cut.** Content replaced in place — a live
+  language re-render, a hint that follows a picked type or mode, a
+  disclosure opening or closing — fades/slides in with a short ease-out
+  (~180ms, `cubicOut`): full-block re-renders fade opacity-only, small text
+  swaps get a 4px rise, disclosures slide open. Nothing bounces. Under
+  reduced motion: near-instant opacity fade, disclosures snap.
+- Shared motion params live in `src/lib/motion.ts` — use
+  `flyIn`/`flipParams`/`swapIn`/`slideParams` instead of inlining values;
+  they handle reduced motion for you.
 - **Accessibility:** honor `prefers-reduced-motion` — drop transforms and
   stagger, keep only near-instant opacity fades. No motion blocks
   interaction.

@@ -47,7 +47,7 @@ async function openEdit(page: Page) {
 	return page.locator('form[action="?/saveDetails"]');
 }
 
-test('creating without touching the choice settings offers Preferred but not "I don\'t know"', async ({
+test('creating without touching the choice settings offers exactly the fixed pair', async ({
 	page
 }) => {
 	await page.goto('/create');
@@ -55,20 +55,25 @@ test('creating without touching the choice settings offers Preferred but not "I 
 	await addDate(page);
 	await page.getByRole('button', { name: m.create() }).click();
 	await expect(page).toHaveURL(/\/e\/[A-Za-z0-9]+$/);
-	// The result bars render one row per offered choice.
-	await expect(page.getByText(m.prefPreferred()).first()).toBeVisible();
+	// The result bars render one row per offered choice: the fixed pair only.
+	await expect(page.getByText(m.prefAvailable()).first()).toBeVisible();
+	await expect(page.getByText(m.prefPreferred())).toHaveCount(0);
 	await expect(page.getByText(m.prefUnsure())).toHaveCount(0);
 });
 
-test('enabling "I don\'t know" at creation offers all four choices', async ({ page }) => {
+test('enabling "I don\'t know" at creation offers it alongside the fixed pair', async ({
+	page
+}) => {
 	await page.goto('/create');
 	await page.getByLabel(m.fieldTitle()).fill('Med ved-ikke');
 	await addDate(page);
 	await page.getByRole('checkbox', { name: m.prefUnsure() }).check();
 	await page.getByRole('button', { name: m.create() }).click();
 	await expect(page).toHaveURL(/\/e\/[A-Za-z0-9]+$/);
-	await expect(page.getByText(m.prefPreferred()).first()).toBeVisible();
+	await expect(page.getByText(m.prefAvailable()).first()).toBeVisible();
 	await expect(page.getByText(m.prefUnsure()).first()).toBeVisible();
+	// Preferred stays opt-in - untouched means off.
+	await expect(page.getByText(m.prefPreferred())).toHaveCount(0);
 });
 
 test('disabling Preferred while open folds its recorded votes to Available', async ({ page }) => {

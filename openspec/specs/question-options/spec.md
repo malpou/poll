@@ -39,9 +39,9 @@ blank option texts SHALL NOT count toward the minimum.
 #### Scenario: Reject a question poll with fewer than two options
 
 - GIVEN a visitor creating a question poll
-- WHEN they submit with one text option, or with two options where one is
-  only whitespace
-- THEN the system rejects the submission with a validation message
+- WHEN a submission with one text option, or with two options where one is
+  only whitespace, reaches the server
+- THEN the system rejects it with a validation message
 
 ### Requirement: Poll type is immutable
 

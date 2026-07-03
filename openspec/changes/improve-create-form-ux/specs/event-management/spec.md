@@ -74,6 +74,7 @@ no timezone reverts to the previously selected zone.
 - GIVEN a visitor on the create page
 - WHEN they pick another language
 - THEN the whole form re-renders in that language without a reload
+- AND the browser tab title follows the picked language
 
 #### Scenario: Timezone picker labels follow the picked language
 
