@@ -202,5 +202,18 @@
 	"landingSampleHighlightOptionC": "Veggie curry",
 	"landingHintLink": "Read this page in {language}",
 	"createHintUse": "Use {language} for this poll",
-	"landingHintDismiss": "Dismiss"
+	"landingHintDismiss": "Dismiss",
+	"fieldOrganizerEmail": "Your email (optional)",
+	"organizerEmailHint": "We'll email you the admin link and code so you never lose access.",
+	"errorInvalidEmail": "Enter a valid email address",
+	"emailSubject": "Your poll's admin link",
+	"emailIntro": "Here's everything you need to manage your poll. Keep it safe; it's the only way in.",
+	"emailLinkLabel": "Admin link",
+	"emailCodeLabel": "Admin code",
+	"emailSecretWarning": "Anyone with this link and code can manage the poll, so keep them to yourself.",
+	"codePromptTitle": "Enter your admin code",
+	"codePromptHint": "This poll is protected. Enter the admin code from the email you received.",
+	"codePromptLabel": "Admin code",
+	"codePromptSubmit": "Unlock",
+	"codePromptError": "That code doesn't match"
 }

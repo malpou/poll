@@ -202,5 +202,18 @@
 	"landingSampleHighlightOptionC": "Grøntsagskarry",
 	"landingHintLink": "Læs denne side på {language}",
 	"createHintUse": "Brug {language} til denne afstemning",
-	"landingHintDismiss": "Luk"
+	"landingHintDismiss": "Luk",
+	"fieldOrganizerEmail": "Din e-mail (valgfri)",
+	"organizerEmailHint": "Vi sender dig admin-linket og koden, så du aldrig mister adgangen.",
+	"errorInvalidEmail": "Indtast en gyldig e-mailadresse",
+	"emailSubject": "Din afstemnings admin-link",
+	"emailIntro": "Her er alt, du skal bruge for at styre din afstemning. Gem det sikkert; det er den eneste vej ind.",
+	"emailLinkLabel": "Admin-link",
+	"emailCodeLabel": "Admin-kode",
+	"emailSecretWarning": "Alle med dette link og denne kode kan styre afstemningen, så hold dem for dig selv.",
+	"codePromptTitle": "Indtast din admin-kode",
+	"codePromptHint": "Denne afstemning er beskyttet. Indtast admin-koden fra den e-mail, du modtog.",
+	"codePromptLabel": "Admin-kode",
+	"codePromptSubmit": "Lås op",
+	"codePromptError": "Koden passer ikke"
 }

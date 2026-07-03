@@ -17,6 +17,22 @@ export function id(prefix: string): string {
 	return `${prefix}-${newToken().slice(0, 7)}`;
 }
 
+// Unambiguous alphabet: A-Z without I/O, digits 2-9 (no 0/1). Read aloud or
+// typed from an email without l/1/O/0 confusion.
+const CODE_ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+
+/**
+ * The organizer's admin code - a second secret emailed alongside the link.
+ * 8 chars over a 32-symbol alphabet ≈ 40 bits (32^8 ≈ 10^12), so online guessing
+ * is impractical without a rate limiter (openspec admin-link-email design).
+ */
+export function newAdminCode(): string {
+	const bytes = crypto.getRandomValues(new Uint8Array(8));
+	let out = '';
+	for (const b of bytes) out += CODE_ALPHABET[b % CODE_ALPHABET.length];
+	return out;
+}
+
 // Per-date preference counts. notAnswered is derived from the invitee total
 // (see getResults), NOT from this query - a missing responses row contributes 0
 // to every count here, so it can never read as "unavailable".

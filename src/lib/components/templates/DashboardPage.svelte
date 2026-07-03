@@ -36,6 +36,9 @@
 		accent: Accent;
 		status: EventStatus;
 		pollType: PollType;
+		// True when the organizer link was emailed at creation - suppresses the
+		// save-your-link warning, since they already have a durable copy.
+		emailed: boolean;
 		chosenDates: { weekday: string; dateLabel: string; timeRange: string; label: string }[];
 		respondedLabel: string;
 		results: ResultView[];
@@ -120,6 +123,7 @@
 				status={view.status}
 				shareUrl={view.shareUrl}
 				organizerUrl={view.organizerUrl}
+				emailed={view.emailed}
 				chosenDates={view.chosenDates}
 				pollType={view.pollType}
 				{partials}

@@ -1,4 +1,4 @@
-import { fail } from '@sveltejs/kit';
+import { fail, redirect } from '@sveltejs/kit';
 import { getProvider } from '$lib/data/provider';
 import { utcIsoToZonedParts } from '$lib/logic/date';
 import { optionDisplay } from '$lib/logic/options';
@@ -7,6 +7,7 @@ import { richTextIsEmpty, sanitizeRichText } from '$lib/forms/richtext';
 import { inviteeStatus, responseCountByInvitee } from '$lib/logic/participant-status';
 import { markBest, markBestRank, markBestStrokes, rankFillPct } from '$lib/logic/results';
 import { cachedLoad, invalidateCache } from '$lib/server/cache';
+import { adminCookie, ADMIN_COOKIE_OPTS, codeMatches } from '$lib/server/admin-gate';
 import { setRequestLocale } from '../../../hooks.server';
 import { m } from '$lib/paraglide/messages';
 import { isLocale } from '$lib/paraglide/runtime';
@@ -151,6 +152,13 @@ async function computeDashboard(platform: App.Platform | undefined, token: strin
 	return {
 		invalid: false as const,
 		token,
+		// Gate inputs for the load (cookie compare). Server-side only - stripped
+		// before the payload reaches the client, so the code never ships.
+		adminCode: event.adminCode,
+		eventId: event.id,
+		// A poll has a code exactly when it was created with an email, so the link
+		// was already emailed - the dashboard hides its "save this link" warning.
+		emailed: event.adminCode !== null,
 		organizerUrl: provider.organizerUrl(origin, token),
 		shareUrl: provider.shareUrl(origin, event.shareToken),
 		title: event.title,
@@ -194,7 +202,7 @@ async function computeDashboard(platform: App.Platform | undefined, token: strin
 	};
 }
 
-export const load: PageServerLoad = async ({ params, platform, url }) => {
+export const load: PageServerLoad = async ({ params, platform, cookies, url }) => {
 	const payload = await cachedLoad(platform, url.origin, 'e', params.token, () =>
 		computeDashboard(platform, params.token, url.origin)
 	);
@@ -202,7 +210,15 @@ export const load: PageServerLoad = async ({ params, platform, url }) => {
 	// The whole dashboard renders in the poll's stored locale (m.*() + dates);
 	// must run on cache hits too, so it lives outside the cached compute.
 	setRequestLocale(payload.locale);
-	return payload;
+	// Admin-code gate (openspec/specs/admin-link-email): a poll with a code shows
+	// nothing organizer-shaped until this browser holds it. Cookie is per-request
+	// so this runs outside the cached payload; adminCode/eventId never reach the
+	// client (destructured out here).
+	const { adminCode, eventId, ...view } = payload;
+	if (adminCode && !codeMatches(cookies.get(adminCookie(eventId)), adminCode)) {
+		return { locked: true as const, token: payload.token, locale: payload.locale };
+	}
+	return view;
 };
 
 /**
@@ -245,6 +261,19 @@ function purgeEvent(
 }
 
 export const actions = {
+	// Admin-code gate: submit the code from a browser that doesn't hold it. On a
+	// match, set the long-lived unlock cookie and reload the dashboard; otherwise
+	// a localized error, revealing no organizer content.
+	unlock: async ({ params, request, platform, cookies }) => {
+		const { event } = await resolve(platform, params.token);
+		if (!event) return fail(404);
+		const code = field(await request.formData(), 'code');
+		if (!event.adminCode || !codeMatches(code, event.adminCode))
+			return fail(400, { error: m.codePromptError({}, { locale: event.locale }) });
+		cookies.set(adminCookie(event.id), event.adminCode, ADMIN_COOKIE_OPTS);
+		redirect(303, `/e/${params.token}`);
+	},
+
 	saveDetails: async ({ params, request, platform, url }) => {
 		const { provider, event } = await resolve(platform, params.token);
 		if (!event) return fail(404);

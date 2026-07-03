@@ -2,21 +2,23 @@
 	let {
 		label,
 		name,
-		value = $bindable(),
+		value = $bindable(''),
 		type = 'text',
 		placeholder,
 		compact = false,
 		min,
-		max
+		max,
+		autocomplete
 	}: {
 		label?: string;
 		name?: string;
-		value: string;
-		type?: 'text' | 'date' | 'time' | 'number';
+		value?: string;
+		type?: 'text' | 'date' | 'time' | 'number' | 'email';
 		placeholder?: string;
 		compact?: boolean;
 		min?: number;
 		max?: number;
+		autocomplete?: 'on' | 'off';
 	} = $props();
 </script>
 
@@ -30,6 +32,7 @@
 		{placeholder}
 		{min}
 		{max}
+		{autocomplete}
 		bind:value
 		class="w-full border-b-2 border-border-strong bg-transparent px-0.5 text-body text-ink outline-none placeholder:text-ink-faint focus:border-ink {compact
 			? 'h-10'

@@ -57,6 +57,8 @@ export interface EventDraft {
 	accent: Accent;
 	pollType: PollType;
 	highlightBudget: number; // highlight polls only; 1-10, default 5
+	// Second admin secret, set only when the creator gave an email; null = ungated.
+	adminCode: string | null;
 	dates: DateOption[]; // dates polls only
 	textOptions: string[]; // text-option polls - trimmed option labels
 	participants: Participant[];
@@ -85,6 +87,8 @@ export interface EventRow {
 	accent: Accent;
 	pollType: PollType;
 	highlightBudget: number;
+	// Second admin secret; null = organizer pages are ungated (the default).
+	adminCode: string | null;
 	createdAt: string;
 }
 

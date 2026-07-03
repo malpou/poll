@@ -182,6 +182,24 @@ describe('migration stack', () => {
 		).toBe(3);
 	});
 
+	it('0010 adds a nullable admin_code - NULL on legacy and new rows, set values round-trip', () => {
+		const legacy = db.prepare(`SELECT admin_code FROM events WHERE id = 'e1'`).get() as {
+			admin_code: string | null;
+		};
+		expect(legacy.admin_code).toBeNull();
+		db.exec(`INSERT INTO events (id, title, organizer_token, status, created_at)
+		         VALUES ('eC', 'T', 'otok-c', 'open', '2026-07-01T00:00:00Z')`);
+		const fresh = db.prepare(`SELECT admin_code FROM events WHERE id = 'eC'`).get() as {
+			admin_code: string | null;
+		};
+		expect(fresh.admin_code).toBeNull();
+		db.exec(`UPDATE events SET admin_code = 'ABCD2345' WHERE id = 'eC'`);
+		expect(
+			(db.prepare(`SELECT admin_code FROM events WHERE id = 'eC'`).get() as { admin_code: string })
+				.admin_code
+		).toBe('ABCD2345');
+	});
+
 	it('the rebuild drops no rows from events or any child table', () => {
 		const count = (t: string) =>
 			(db.prepare(`SELECT COUNT(*) AS n FROM ${t}`).get() as { n: number }).n;

@@ -21,6 +21,7 @@
 		status,
 		shareUrl,
 		organizerUrl,
+		emailed = false,
 		chosenDates,
 		pollType = 'dates',
 		partials,
@@ -31,6 +32,8 @@
 		status: EventStatus;
 		shareUrl: string;
 		organizerUrl: string;
+		// Link already emailed at creation - hide the save-your-link warning.
+		emailed?: boolean;
 		chosenDates: { weekday: string; dateLabel: string; timeRange: string; label: string }[];
 		pollType?: PollType;
 		partials: InviteeView[];
@@ -53,12 +56,15 @@
 	{/if}
 
 	<!-- Save-your-link warning: the /e URL is the only way back to the results and
-	     is private - never the link to share (open mode has its own above). -->
-	<Callout tone="hl" title={m.organizerLinkTitle()} class="mb-6">
-		{#snippet icon()}<TriangleAlert size={16} class="shrink-0" />{/snippet}
-		<p class="mt-1.5 text-caption leading-relaxed text-ink">{m.organizerLinkWarning()}</p>
-		<CopyLinkRow url={organizerUrl} {oncopied} class="mt-2.5" />
-	</Callout>
+	     is private - never the link to share (open mode has its own above). Hidden
+	     when the link was emailed at creation: the organizer already has a copy. -->
+	{#if !emailed}
+		<Callout tone="hl" title={m.organizerLinkTitle()} class="mb-6">
+			{#snippet icon()}<TriangleAlert size={16} class="shrink-0" />{/snippet}
+			<p class="mt-1.5 text-caption leading-relaxed text-ink">{m.organizerLinkWarning()}</p>
+			<CopyLinkRow url={organizerUrl} {oncopied} class="mt-2.5" />
+		</Callout>
+	{/if}
 
 	{#if status === 'cancelled'}
 		<NoticeBanner text={m.cancelledBanner()} class="mb-6" />

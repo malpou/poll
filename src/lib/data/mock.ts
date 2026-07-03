@@ -1,5 +1,5 @@
 import type { DataProvider } from './provider';
-import { helpers, newToken } from './shared';
+import { helpers, id, newToken } from './shared';
 
 // In-memory mock for `bun run dev` without a DB and for tests. No persistence
 // across requests - the read methods return empty/not-found. Real storage is
@@ -9,7 +9,7 @@ export const mockProvider: DataProvider = {
 	...helpers,
 
 	async createEvent() {
-		return { organizerToken: newToken() };
+		return { organizerToken: newToken(), eventId: id('event') };
 	},
 
 	async getEventByOrganizerToken() {

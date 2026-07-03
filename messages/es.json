@@ -202,5 +202,18 @@
 	"landingSampleHighlightOptionC": "Curry de verduras",
 	"landingHintLink": "Leer esta página en {language}",
 	"createHintUse": "Usar {language} para esta encuesta",
-	"landingHintDismiss": "Cerrar"
+	"landingHintDismiss": "Cerrar",
+	"fieldOrganizerEmail": "Tu correo (opcional)",
+	"organizerEmailHint": "Te enviaremos el enlace de administración y el código para que nunca pierdas el acceso.",
+	"errorInvalidEmail": "Introduce un correo electrónico válido",
+	"emailSubject": "El enlace de administración de tu encuesta",
+	"emailIntro": "Esto es todo lo que necesitas para gestionar tu encuesta. Guárdalo bien; es la única forma de entrar.",
+	"emailLinkLabel": "Enlace de administración",
+	"emailCodeLabel": "Código de administración",
+	"emailSecretWarning": "Cualquiera con este enlace y código puede gestionar la encuesta, así que no los compartas.",
+	"codePromptTitle": "Introduce tu código de administración",
+	"codePromptHint": "Esta encuesta está protegida. Introduce el código de administración del correo que recibiste.",
+	"codePromptLabel": "Código de administración",
+	"codePromptSubmit": "Desbloquear",
+	"codePromptError": "Ese código no coincide"
 }

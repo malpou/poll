@@ -1,6 +1,8 @@
 import { fail, redirect } from '@sveltejs/kit';
 import { getProvider } from '$lib/data/provider';
-import { newToken } from '$lib/data/shared';
+import { newToken, newAdminCode } from '$lib/data/shared';
+import { adminCookie, ADMIN_COOKIE_OPTS } from '$lib/server/admin-gate';
+import { sendAdminEmail } from '$lib/server/email';
 import { m } from '$lib/paraglide/messages';
 import { baseLocale, extractLocaleFromHeader, isLocale } from '$lib/paraglide/runtime';
 import { field, parseIndexed, validateTimes } from '$lib/forms/forms';
@@ -39,13 +41,17 @@ export const load: PageServerLoad = ({ params, request, url }) => {
 };
 
 export const actions = {
-	create: async ({ request, platform }) => {
+	create: async ({ request, platform, cookies, url }) => {
 		const form = await request.formData();
 		const title = field(form, 'title');
 		const rawDescription = sanitizeRichText(field(form, 'description'));
 		const description = richTextIsEmpty(rawDescription) ? '' : rawDescription;
 		const localeField = field(form, 'locale');
 		const locale: Locale = isLocale(localeField) ? localeField : baseLocale;
+		// Optional organizer email. When present it triggers the admin-link email
+		// and a gate code; validated below, never stored.
+		const email = field(form, 'email');
+		const adminCode = email ? newAdminCode() : null;
 		// Trust boundary: only a real IANA zone reaches the DB (no SQL CHECK possible).
 		const tzField = field(form, 'timezone');
 		const timezone = Intl.supportedValuesOf('timeZone').includes(tzField)
@@ -119,6 +125,7 @@ export const actions = {
 			accent,
 			pollType,
 			highlightBudget,
+			adminCode,
 			dates,
 			textOptions,
 			participants
@@ -126,6 +133,8 @@ export const actions = {
 
 		let error: string | null = null;
 		if (!title) error = m.errorNoTitle();
+		// ponytail: pragmatic shape check, not RFC 5322; the send is best-effort anyway.
+		else if (email && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) error = m.errorInvalidEmail();
 		else if (
 			pollType === 'highlight' &&
 			(!Number.isInteger(highlightBudget) ||
@@ -145,7 +154,19 @@ export const actions = {
 		}
 		if (error) return fail(400, { error, values: draft });
 
-		const { organizerToken } = await getProvider(platform).createEvent(draft);
+		const { organizerToken, eventId } = await getProvider(platform).createEvent(draft);
+
+		// With a code: unlock the creator's own browser (so they never see the
+		// prompt) and email the link + code best-effort. Both must happen before
+		// the redirect throws.
+		if (adminCode) {
+			cookies.set(adminCookie(eventId), adminCode, ADMIN_COOKIE_OPTS);
+			const organizerUrl = `${url.origin}/e/${organizerToken}`;
+			platform?.ctx.waitUntil(
+				sendAdminEmail(platform, { to: email, organizerUrl, adminCode, locale })
+			);
+		}
+
 		redirect(303, `/e/${organizerToken}`);
 	}
 } satisfies Actions;

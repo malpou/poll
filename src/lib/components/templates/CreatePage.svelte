@@ -47,6 +47,9 @@
 	// cards the dashboard uses.
 	let title = $state('');
 	let description = $state('');
+	// Optional: emails the organizer their admin link + a gate code. Empty =
+	// today's behavior (no email, no code, no gate).
+	let email = $state('');
 	// Seed once from the browser-suggested locale; the picker owns it afterwards.
 	// svelte-ignore state_referenced_locally
 	let locale = $state<Locale>(suggestedLocale);
@@ -178,10 +181,14 @@
 	{/key}
 </svelte:head>
 
+<!-- novalidate: the server is the validation authority (it re-checks everything),
+     so the optional email's native type=email check never blocks the submit
+     before our localized error can render. -->
 <form
 	method="POST"
 	action="?/create"
 	use:enhance
+	novalidate
 	data-accent={accent}
 	class="mx-auto max-w-160 px-4 pb-18 pt-7"
 >
@@ -397,6 +404,11 @@
 					/>
 				</div>
 			{/if}
+
+			<div class="mb-9">
+				<TextField label={m.fieldOrganizerEmail()} name="email" type="email" bind:value={email} />
+				<p class="mt-1.5 text-caption text-ink-muted">{m.organizerEmailHint()}</p>
+			</div>
 
 			<div class="mt-2 flex flex-col gap-3.5">
 				{#if form?.error}

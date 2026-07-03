@@ -12,6 +12,16 @@ declare global {
 				DB: D1Database;
 				// Load-cache TTL; "0" disables (see src/lib/server/cache.ts).
 				CACHE_TTL_SECONDS?: string;
+				// Cloudflare Email Service send_email binding; absent locally/in e2e.
+				EMAIL?: {
+					send(message: {
+						to: string;
+						from: { email: string; name?: string };
+						subject: string;
+						html?: string;
+						text?: string;
+					}): Promise<unknown>;
+				};
 			};
 			context: { waitUntil(promise: Promise<unknown>): void };
 			caches: CacheStorage & { default: Cache };

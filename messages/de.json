@@ -202,5 +202,18 @@
 	"landingSampleHighlightOptionC": "Gemüsecurry",
 	"landingHintLink": "Diese Seite auf {language} lesen",
 	"createHintUse": "{language} für diese Umfrage verwenden",
-	"landingHintDismiss": "Schließen"
+	"landingHintDismiss": "Schließen",
+	"fieldOrganizerEmail": "Deine E-Mail (optional)",
+	"organizerEmailHint": "Wir senden dir den Admin-Link und den Code, damit du den Zugang nie verlierst.",
+	"errorInvalidEmail": "Gib eine gültige E-Mail-Adresse ein",
+	"emailSubject": "Der Admin-Link deiner Umfrage",
+	"emailIntro": "Hier ist alles, was du zum Verwalten deiner Umfrage brauchst. Bewahre es sicher auf; es ist der einzige Zugang.",
+	"emailLinkLabel": "Admin-Link",
+	"emailCodeLabel": "Admin-Code",
+	"emailSecretWarning": "Wer diesen Link und Code hat, kann die Umfrage verwalten. Behalte sie für dich.",
+	"codePromptTitle": "Gib deinen Admin-Code ein",
+	"codePromptHint": "Diese Umfrage ist geschützt. Gib den Admin-Code aus der E-Mail ein, die du erhalten hast.",
+	"codePromptLabel": "Admin-Code",
+	"codePromptSubmit": "Entsperren",
+	"codePromptError": "Der Code stimmt nicht"
 }

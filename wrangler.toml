@@ -16,6 +16,12 @@ CACHE_TTL_SECONDS = "30"
 directory = ".svelte-kit/cloudflare"
 binding = "ASSETS"
 
+# Cloudflare Email Service: transactional admin-link email (src/lib/server/email.ts).
+# Sends only work once malpou.io is onboarded: `wrangler email sending enable malpou.io`.
+# Absent locally/in e2e - the send is a no-op there.
+[[send_email]]
+name = "EMAIL"
+
 [[d1_databases]]
 binding = "DB"
 # D1 databases can't be renamed; the binding is by database_id, name stays as-is.

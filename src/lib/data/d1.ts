@@ -31,6 +31,7 @@ function mapEvent(r: Record<string, unknown>): EventRow {
 		accent: r.accent as EventRow['accent'],
 		pollType: r.poll_type as EventRow['pollType'],
 		highlightBudget: (r.highlight_budget as number | null) ?? 5,
+		adminCode: (r.admin_code as string | null) ?? null,
 		createdAt: r.created_at as string
 	};
 }
@@ -87,8 +88,8 @@ export function d1Provider(db: D1Database): DataProvider {
 			const statements: D1PreparedStatement[] = [
 				db
 					.prepare(
-						`INSERT INTO events (id, title, description, locale, timezone, poll_mode, allow_preferred, allow_unsure, accent, poll_type, highlight_budget, organizer_token, share_token, status, created_at)
-						 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'open', ?)`
+						`INSERT INTO events (id, title, description, locale, timezone, poll_mode, allow_preferred, allow_unsure, accent, poll_type, highlight_budget, admin_code, organizer_token, share_token, status, created_at)
+						 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'open', ?)`
 					)
 					.bind(
 						eventId,
@@ -102,6 +103,7 @@ export function d1Provider(db: D1Database): DataProvider {
 						draft.accent,
 						draft.pollType,
 						draft.highlightBudget,
+						draft.adminCode,
 						organizerToken,
 						shareToken,
 						now
@@ -150,7 +152,7 @@ export function d1Provider(db: D1Database): DataProvider {
 			}
 
 			await db.batch(statements);
-			return { organizerToken };
+			return { organizerToken, eventId };
 		},
 
 		async getEventByOrganizerToken(token: string): Promise<EventWithDetails | null> {

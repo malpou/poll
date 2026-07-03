@@ -17,6 +17,8 @@ import { d1Provider } from './d1';
 
 export interface CreateResult {
 	organizerToken: string;
+	// The new event's id - the create action needs it to name the admin-unlock cookie.
+	eventId: string;
 }
 export interface ResponseInput {
 	dateOptionId: string;

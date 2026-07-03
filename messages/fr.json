@@ -202,5 +202,18 @@
 	"landingSampleHighlightOptionC": "Curry de légumes",
 	"landingHintLink": "Lire cette page en {language}",
 	"createHintUse": "Utiliser {language} pour ce sondage",
-	"landingHintDismiss": "Fermer"
+	"landingHintDismiss": "Fermer",
+	"fieldOrganizerEmail": "Ton e-mail (facultatif)",
+	"organizerEmailHint": "Nous t'enverrons le lien d'administration et le code pour que tu ne perdes jamais l'accès.",
+	"errorInvalidEmail": "Saisis une adresse e-mail valide",
+	"emailSubject": "Le lien d'administration de ton sondage",
+	"emailIntro": "Voici tout ce qu'il te faut pour gérer ton sondage. Garde-le bien; c'est le seul accès.",
+	"emailLinkLabel": "Lien d'administration",
+	"emailCodeLabel": "Code d'administration",
+	"emailSecretWarning": "Toute personne ayant ce lien et ce code peut gérer le sondage, alors garde-les pour toi.",
+	"codePromptTitle": "Saisis ton code d'administration",
+	"codePromptHint": "Ce sondage est protégé. Saisis le code d'administration de l'e-mail que tu as reçu.",
+	"codePromptLabel": "Code d'administration",
+	"codePromptSubmit": "Déverrouiller",
+	"codePromptError": "Ce code ne correspond pas"
 }
