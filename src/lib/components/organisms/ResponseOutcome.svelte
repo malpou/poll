@@ -7,7 +7,12 @@
 	import SectionHeading from '$lib/components/atoms/SectionHeading.svelte';
 	import { CalendarCheck, CircleCheck } from '@lucide/svelte';
 	import { m } from '$lib/paraglide/messages';
-	import type { PollType, Preference, ResponseDateView } from '$lib/types';
+	import {
+		isTextPollType,
+		type PollType,
+		type Preference,
+		type ResponseDateView
+	} from '$lib/types';
 	import type { OutcomeRow } from '$lib/logic/results';
 
 	// What a participant sees once the poll is decided or cancelled: the
@@ -30,8 +35,11 @@
 		pollType?: PollType;
 	} = $props();
 
-	const question = $derived(pollType === 'question');
+	const question = $derived(isTextPollType(pollType));
 	const rsvp = $derived(pollType === 'rsvp');
+	// Rank/highlight cards show value summaries instead of preference bars;
+	// participants see the same cards as the organizer, minus names.
+	const valueKind = $derived(pollType === 'rank' || pollType === 'highlight' ? pollType : null);
 	const outcomeById = $derived(new Map((outcome ?? []).map((o) => [o.id, o])));
 	const dateById = $derived(new Map(dates.map((d) => [d.id, d])));
 	const showPreferred = $derived(choices.includes('preferred'));
@@ -125,6 +133,14 @@
 								unavailablePct={o.unavailablePct}
 								{showPreferred}
 								unsure={showUnsure ? o.unsure : undefined}
+								value={valueKind
+									? {
+											kind: valueKind,
+											avgPosition: o.valueCount ? o.valueSum / o.valueCount : null,
+											valueSum: o.valueSum,
+											sharePct: o.sharePct
+										}
+									: null}
 							/>
 						</div>
 					{/if}

@@ -22,10 +22,24 @@ export interface Participant {
 export type PollMode = 'assigned' | 'open';
 
 // dates = candidate-date options; question = free-form text options; rsvp =
-// one fixed date, yes/no answers. Chosen at creation, immutable after;
+// one fixed date, yes/no answers; rank = order text options; highlight =
+// spend marker strokes on text options. Chosen at creation, immutable after;
 // validated at the form boundary (no SQL CHECK).
-export const POLL_TYPES = ['dates', 'question', 'rsvp'] as const;
+export const POLL_TYPES = ['dates', 'question', 'rsvp', 'rank', 'highlight'] as const;
 export type PollType = (typeof POLL_TYPES)[number];
+
+// The text-option types share the question type's option management: label
+// holds the text, no date/timezone affordances, choice toggles forced off
+// for rank/highlight.
+export const TEXT_POLL_TYPES = ['question', 'rank', 'highlight'] as const;
+export function isTextPollType(t: PollType): boolean {
+	return (TEXT_POLL_TYPES as readonly string[]).includes(t);
+}
+
+// Highlight stroke budget bounds; validated at the form boundary like accent.
+export const HIGHLIGHT_BUDGET_MIN = 1;
+export const HIGHLIGHT_BUDGET_MAX = 10;
+export const HIGHLIGHT_BUDGET_DEFAULT = 5;
 
 // The poll's highlighter accent; validated at the form boundary (no SQL CHECK).
 export const ACCENTS = ['yellow', 'pink', 'green', 'blue', 'purple'] as const;
@@ -42,8 +56,9 @@ export interface EventDraft {
 	allowUnsure: boolean;
 	accent: Accent;
 	pollType: PollType;
+	highlightBudget: number; // highlight polls only; 1-10, default 5
 	dates: DateOption[]; // dates polls only
-	textOptions: string[]; // question polls only - trimmed option labels
+	textOptions: string[]; // text-option polls - trimmed option labels
 	participants: Participant[];
 }
 
@@ -69,6 +84,7 @@ export interface EventRow {
 	allowUnsure: boolean;
 	accent: Accent;
 	pollType: PollType;
+	highlightBudget: number;
 	createdAt: string;
 }
 
@@ -97,6 +113,10 @@ export interface ResponseRow {
 	inviteeId: string;
 	dateOptionId: string;
 	preference: Preference;
+	// Rank position 1..N or highlight stroke count 0..budget; null on the
+	// preference-based types (preference holds a constant filler on value rows -
+	// the column is NOT NULL).
+	value: number | null;
 	updatedAt: string;
 }
 
@@ -167,6 +187,14 @@ export interface ResultView {
 	dateLabel: string;
 	timeRange: string;
 	label: string;
+	// Rank/highlight value summaries (zeros/empty on the preference types):
+	// Borda sum or stroke total, average rank position, highlight's share of
+	// all strokes, and each respondent's value for the organizer's pills.
+	valueSum: number;
+	valueCount: number;
+	avgPosition: number | null;
+	sharePct: number;
+	valueNames: { name: string; value: number }[];
 }
 
 export interface InviteeView {
@@ -186,4 +214,10 @@ export interface DateOptionResult {
 	unavailable: number;
 	unsure: number;
 	notAnswered: number;
+	// Value aggregates (rank/highlight; all 0 on preference types). valueSum is
+	// the Borda position sum or the stroke total; valueCount the number of
+	// value rows; firstPlaces the count of position-1 rows (rank tiebreak).
+	valueSum: number;
+	valueCount: number;
+	firstPlaces: number;
 }

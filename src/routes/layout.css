@@ -157,6 +157,26 @@ body::before {
 	margin-inline: -0.1em;
 }
 
+/* Lifted paper slip while a rank option is dragged (DESIGN.md): shadow plus a
+   slight tilt and scale - transform only, siblings flip around it. */
+.slip-lifted {
+	position: relative;
+	z-index: 10;
+	transform: rotate(1deg) scale(1.02);
+	box-shadow: 0 6px 16px color-mix(in srgb, var(--color-ink) 20%, transparent);
+}
+
+/* Stacked marker strokes on a highlight option's text. The component sets one
+   hl-swipe-style gradient layer per stroke; the translucent layers deepen
+   where they overlap and box-decoration-break keeps wrapped lines marked. */
+.hl-strokes {
+	display: inline;
+	box-decoration-break: clone;
+	-webkit-box-decoration-break: clone;
+	padding-inline: 0.1em;
+	margin-inline: -0.1em;
+}
+
 /* Formatted description content - shared by the editor and every render site.
    Preflight strips list markers and margins; restore just what the allowed
    subset (p, strong, em, ul, ol, li, br) needs. */

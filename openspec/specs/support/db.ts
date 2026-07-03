@@ -60,7 +60,8 @@ export interface EventSeed {
 	allowPreferred?: boolean; // omit → column default on
 	allowUnsure?: boolean; // omit → column default off
 	accent?: 'yellow' | 'pink' | 'green' | 'blue' | 'purple'; // omit → column default 'yellow'
-	pollType?: 'dates' | 'question' | 'rsvp'; // omit → column default 'dates'
+	pollType?: 'dates' | 'question' | 'rsvp' | 'rank' | 'highlight'; // omit → column default 'dates'
+	highlightBudget?: number; // highlight polls; omit → column default 5
 	createdAt?: string;
 }
 export interface DateOptionSeed {
@@ -84,13 +85,14 @@ export interface ResponseSeed {
 	inviteeId: string;
 	dateOptionId: string;
 	preference: Preference;
+	value?: number | null; // rank position / highlight stroke count
 	updatedAt?: string;
 }
 
 export function seedEvent(e: EventSeed) {
 	d1(
-		`INSERT INTO events (id, title, description, organizer_token, status, locale, timezone, poll_mode, allow_preferred, allow_unsure, accent, poll_type, share_token, created_at) VALUES
-		   (${lit(e.id)}, ${lit(e.title)}, ${lit(e.description)}, ${lit(e.organizerToken)}, ${lit(e.status)}, ${lit(e.locale ?? 'en')}, ${lit(e.timezone ?? 'Europe/Copenhagen')}, ${lit(e.pollMode ?? 'assigned')}, ${e.allowPreferred === false ? 0 : 1}, ${e.allowUnsure ? 1 : 0}, ${lit(e.accent ?? 'yellow')}, ${lit(e.pollType ?? 'dates')}, ${lit(e.shareToken ?? null)}, ${lit(e.createdAt ?? NOW)});`
+		`INSERT INTO events (id, title, description, organizer_token, status, locale, timezone, poll_mode, allow_preferred, allow_unsure, accent, poll_type, highlight_budget, share_token, created_at) VALUES
+		   (${lit(e.id)}, ${lit(e.title)}, ${lit(e.description)}, ${lit(e.organizerToken)}, ${lit(e.status)}, ${lit(e.locale ?? 'en')}, ${lit(e.timezone ?? 'Europe/Copenhagen')}, ${lit(e.pollMode ?? 'assigned')}, ${e.allowPreferred === false ? 0 : 1}, ${e.allowUnsure ? 1 : 0}, ${lit(e.accent ?? 'yellow')}, ${lit(e.pollType ?? 'dates')}, ${e.highlightBudget ?? 5}, ${lit(e.shareToken ?? null)}, ${lit(e.createdAt ?? NOW)});`
 	);
 }
 
@@ -110,8 +112,8 @@ export function seedInvitee(i: InviteeSeed) {
 
 export function seedResponse(r: ResponseSeed) {
 	d1(
-		`INSERT INTO responses (invitee_id, date_option_id, preference, updated_at) VALUES
-		   (${lit(r.inviteeId)}, ${lit(r.dateOptionId)}, ${lit(r.preference)}, ${lit(r.updatedAt ?? NOW)});`
+		`INSERT INTO responses (invitee_id, date_option_id, preference, value, updated_at) VALUES
+		   (${lit(r.inviteeId)}, ${lit(r.dateOptionId)}, ${lit(r.preference)}, ${r.value ?? 'NULL'}, ${lit(r.updatedAt ?? NOW)});`
 	);
 }
 
@@ -205,6 +207,24 @@ export function optionLabels(eventId: string): (string | null)[] {
 	return d1(
 		`SELECT label FROM date_options WHERE event_id = ${lit(eventId)} ORDER BY sort_order`
 	).results.map((r) => (r.label as string | null) ?? null);
+}
+
+// Rank positions / highlight stroke counts per option for one invitee,
+// keyed by date_option_id. Options without a value row are absent.
+export function responseValues(inviteeId: string): Record<string, number> {
+	const out: Record<string, number> = {};
+	for (const r of d1(
+		`SELECT date_option_id, value FROM responses WHERE invitee_id = ${lit(inviteeId)} AND value IS NOT NULL`
+	).results) {
+		out[r.date_option_id as string] = r.value as number;
+	}
+	return out;
+}
+
+// The highlight poll's stroke budget.
+export function eventHighlightBudget(eventId: string): number {
+	return d1(`SELECT highlight_budget FROM events WHERE id = ${lit(eventId)}`).results[0]
+		.highlight_budget as number;
 }
 
 export function eventTimezone(eventId: string): string {

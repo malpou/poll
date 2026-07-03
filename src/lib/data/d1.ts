@@ -12,6 +12,7 @@ import type {
 	ShareContext
 } from '$lib/types';
 import { helpers, id, newToken, RESULTS_SQL } from './shared';
+import { isTextPollType } from '$lib/types';
 import { zonedToUtcIso } from '$lib/logic/date';
 
 function mapEvent(r: Record<string, unknown>): EventRow {
@@ -29,6 +30,7 @@ function mapEvent(r: Record<string, unknown>): EventRow {
 		allowUnsure: r.allow_unsure === 1,
 		accent: r.accent as EventRow['accent'],
 		pollType: r.poll_type as EventRow['pollType'],
+		highlightBudget: (r.highlight_budget as number | null) ?? 5,
 		createdAt: r.created_at as string
 	};
 }
@@ -61,6 +63,7 @@ function mapResponse(r: Record<string, unknown>): ResponseRow {
 		inviteeId: r.invitee_id as string,
 		dateOptionId: r.date_option_id as string,
 		preference: r.preference as Preference,
+		value: (r.value as number | null) ?? null,
 		updatedAt: r.updated_at as string
 	};
 }
@@ -84,8 +87,8 @@ export function d1Provider(db: D1Database): DataProvider {
 			const statements: D1PreparedStatement[] = [
 				db
 					.prepare(
-						`INSERT INTO events (id, title, description, locale, timezone, poll_mode, allow_preferred, allow_unsure, accent, poll_type, organizer_token, share_token, status, created_at)
-						 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'open', ?)`
+						`INSERT INTO events (id, title, description, locale, timezone, poll_mode, allow_preferred, allow_unsure, accent, poll_type, highlight_budget, organizer_token, share_token, status, created_at)
+						 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'open', ?)`
 					)
 					.bind(
 						eventId,
@@ -98,13 +101,14 @@ export function d1Provider(db: D1Database): DataProvider {
 						draft.allowUnsure ? 1 : 0,
 						draft.accent,
 						draft.pollType,
+						draft.highlightBudget,
 						organizerToken,
 						shareToken,
 						now
 					)
 			];
 
-			if (draft.pollType === 'question') {
+			if (isTextPollType(draft.pollType)) {
 				draft.textOptions.forEach((label, i) => {
 					statements.push(
 						db
@@ -264,12 +268,12 @@ export function d1Provider(db: D1Database): DataProvider {
 			const statements = answers.map((a) =>
 				db
 					.prepare(
-						`INSERT INTO responses (invitee_id, date_option_id, preference, updated_at)
-						 VALUES (?, ?, ?, ?)
+						`INSERT INTO responses (invitee_id, date_option_id, preference, value, updated_at)
+						 VALUES (?, ?, ?, ?, ?)
 						 ON CONFLICT(invitee_id, date_option_id)
-						 DO UPDATE SET preference = excluded.preference, updated_at = excluded.updated_at`
+						 DO UPDATE SET preference = excluded.preference, value = excluded.value, updated_at = excluded.updated_at`
 					)
-					.bind(inviteeId, a.dateOptionId, a.preference, now)
+					.bind(inviteeId, a.dateOptionId, a.preference, a.value ?? null, now)
 			);
 			await db.batch(statements);
 		},
@@ -294,6 +298,9 @@ export function d1Provider(db: D1Database): DataProvider {
 				available: number;
 				unavailable: number;
 				unsure: number;
+				value_sum: number;
+				value_count: number;
+				first_places: number;
 			}>();
 
 			return rows.results.map((r) => ({
@@ -302,6 +309,9 @@ export function d1Provider(db: D1Database): DataProvider {
 				available: r.available,
 				unavailable: r.unavailable,
 				unsure: r.unsure,
+				valueSum: r.value_sum,
+				valueCount: r.value_count,
+				firstPlaces: r.first_places,
 				// missing responses row => counted here, never as unavailable.
 				// unsure is a recorded answer, so it never lands here either.
 				notAnswered: totalInvitees - (r.preferred + r.available + r.unavailable + r.unsure)
@@ -353,14 +363,39 @@ export function d1Provider(db: D1Database): DataProvider {
 
 		async addTextOption(eventId, label) {
 			// Append after the current last option for this event.
-			const max = await db
-				.prepare(`SELECT MAX(sort_order) AS m FROM date_options WHERE event_id = ?`)
+			const meta = await db
+				.prepare(
+					`SELECT (SELECT MAX(sort_order) FROM date_options WHERE event_id = e.id) AS m,
+					        (SELECT COUNT(*) FROM date_options WHERE event_id = e.id) AS n,
+					        e.poll_type AS poll_type
+					 FROM events e WHERE e.id = ?`
+				)
 				.bind(eventId)
-				.first<{ m: number | null }>();
-			await db
-				.prepare(`INSERT INTO date_options (id, event_id, label, sort_order) VALUES (?, ?, ?, ?)`)
-				.bind(id('opt'), eventId, label, (max?.m ?? -1) + 1)
-				.run();
+				.first<{ m: number | null; n: number; poll_type: string }>();
+			const optionId = id('opt');
+			const statements = [
+				db
+					.prepare(`INSERT INTO date_options (id, event_id, label, sort_order) VALUES (?, ?, ?, ?)`)
+					.bind(optionId, eventId, label, (meta?.m ?? -1) + 1)
+			];
+			if (meta?.poll_type === 'rank') {
+				// Rank ballots stay full permutations: append the new option at the
+				// last position (old option count + 1) to every submitted ballot.
+				// preference 'unsure' is the needs-confirmation marker - the response
+				// page flags these rows until the invitee resubmits.
+				statements.push(
+					db
+						.prepare(
+							`INSERT INTO responses (invitee_id, date_option_id, preference, value, updated_at)
+							 SELECT DISTINCT r.invitee_id, ?, 'unsure', ?, ?
+							 FROM responses r
+							 JOIN date_options d ON d.id = r.date_option_id
+							 WHERE d.event_id = ? AND r.value IS NOT NULL`
+						)
+						.bind(optionId, meta.n + 1, new Date().toISOString(), eventId)
+				);
+			}
+			await db.batch(statements);
 		},
 
 		async updateTextOption(optionId, label) {
@@ -382,11 +417,38 @@ export function d1Provider(db: D1Database): DataProvider {
 		},
 
 		async removeDateOption(optionId) {
+			const owner = await db
+				.prepare(
+					`SELECT d.event_id AS event_id, e.poll_type AS poll_type
+					 FROM date_options d JOIN events e ON e.id = d.event_id WHERE d.id = ?`
+				)
+				.bind(optionId)
+				.first<{ event_id: string; poll_type: string }>();
 			// No FK cascade - clear responses first, then the option.
-			await db.batch([
+			const statements = [
 				db.prepare(`DELETE FROM responses WHERE date_option_id = ?`).bind(optionId),
 				db.prepare(`DELETE FROM date_options WHERE id = ?`).bind(optionId)
-			]);
+			];
+			if (owner?.poll_type === 'rank') {
+				// Close the gap so every remaining ballot stays a strict 1..N order:
+				// each position becomes the count of that invitee's positions at or
+				// below it (positions are unique per ballot, so this is rank-compaction).
+				statements.push(
+					db
+						.prepare(
+							`UPDATE responses SET value = (
+								SELECT COUNT(*) FROM responses r2
+								JOIN date_options d2 ON d2.id = r2.date_option_id
+								WHERE r2.invitee_id = responses.invitee_id
+								  AND d2.event_id = ?1 AND r2.value <= responses.value
+							 )
+							 WHERE value IS NOT NULL
+							   AND date_option_id IN (SELECT id FROM date_options WHERE event_id = ?1)`
+						)
+						.bind(owner.event_id)
+				);
+			}
+			await db.batch(statements);
 		},
 
 		async addInvitee(eventId, label) {

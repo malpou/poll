@@ -11,7 +11,13 @@
 	import { X, ArrowUpNarrowWide, ChevronUp, ChevronDown, Pencil, Save, Plus } from '@lucide/svelte';
 	import { m } from '$lib/paraglide/messages';
 	import { refreshThen, confirmingRefresh } from '$lib/forms/enhance';
-	import type { DateOption, Locale, OptionView, PollType } from '$lib/types';
+	import {
+		isTextPollType,
+		type DateOption,
+		type Locale,
+		type OptionView,
+		type PollType
+	} from '$lib/types';
 
 	let {
 		options,
@@ -25,7 +31,7 @@
 		pollType?: PollType;
 	} = $props();
 
-	const question = $derived(pollType === 'question');
+	const question = $derived(isTextPollType(pollType));
 	// An RSVP keeps exactly one date: editable while open, never added to,
 	// removed, or reordered (openspec/specs/rsvp-poll).
 	const rsvp = $derived(pollType === 'rsvp');

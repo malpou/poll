@@ -5,14 +5,14 @@ import { optionDisplay } from '$lib/logic/options';
 import { field, parseIndexed, validateTimes } from '$lib/forms/forms';
 import { richTextIsEmpty, sanitizeRichText } from '$lib/forms/richtext';
 import { inviteeStatus, responseCountByInvitee } from '$lib/logic/participant-status';
-import { markBest } from '$lib/logic/results';
+import { markBest, markBestRank, markBestStrokes, rankFillPct } from '$lib/logic/results';
 import { cachedLoad, invalidateCache } from '$lib/server/cache';
 import { setRequestLocale } from '../../../hooks.server';
 import { m } from '$lib/paraglide/messages';
 import { isLocale } from '$lib/paraglide/runtime';
 import type { DateOptionInput } from '$lib/data/provider';
 import type { Accent, EventWithDetails, Preference } from '$lib/types';
-import { ACCENTS } from '$lib/types';
+import { ACCENTS, isTextPollType } from '$lib/types';
 import type { Actions, PageServerLoad } from './$types';
 
 /**
@@ -43,8 +43,12 @@ async function computeDashboard(platform: App.Platform | undefined, token: strin
 	]);
 	const totalInvitees = event.invitees.length;
 	// Per-invitee answer counts vs option count: 'partial' means dates were added
-	// after they answered (the UI's only way to save is all-at-once).
-	const responseCounts = responseCountByInvitee(responses);
+	// after they answered (the UI's only way to save is all-at-once). Rank rows
+	// the system appended on an option add carry the 'unsure' marker and don't
+	// count as answered, so those invitees read as partial too.
+	const responseCounts = responseCountByInvitee(
+		responses.filter((r) => !(r.value !== null && r.preference === 'unsure'))
+	);
 
 	// Who chose what, per option: group responder names by preference so the
 	// organizer can expand a date and see the specific people behind each count.
@@ -59,41 +63,89 @@ async function computeDashboard(platform: App.Platform | undefined, token: strin
 		bucket[r.preference].push(nameById.get(r.inviteeId) ?? '');
 	}
 
-	// Join counts with each option's Danish date labels, then rank + highlight.
+	// Each respondent's rank position / stroke count per option, for the
+	// organizer's value pills (rank: position order; highlight: most first).
+	const valueNamesByOption = new Map<string, { name: string; value: number }[]>();
+	for (const r of responses) {
+		if (r.value === null) continue;
+		let list = valueNamesByOption.get(r.dateOptionId);
+		if (!list) {
+			list = [];
+			valueNamesByOption.set(r.dateOptionId, list);
+		}
+		list.push({ name: nameById.get(r.inviteeId) ?? '', value: r.value });
+	}
+	for (const list of valueNamesByOption.values()) {
+		list.sort((a, b) => (event.pollType === 'highlight' ? b.value - a.value : a.value - b.value));
+	}
+
+	// Join counts with each option's labels, then rank + highlight per the
+	// poll type's scorer (net score, Borda, or stroke totals).
 	const counts = new Map(results.map((r) => [r.dateOptionId, r]));
+	const allStrokes = results.reduce((a, r) => a + r.valueSum, 0);
+	const optionCount = event.dateOptions.length;
 	const pct = (n: number) => (totalInvitees ? Math.round((n / totalInvitees) * 100) : 0);
-	const resultsView = markBest(
-		event.dateOptions.map((d) => {
-			const c = counts.get(d.id) ?? { preferred: 0, available: 0, unavailable: 0, unsure: 0 };
-			const names = namesByOption.get(d.id) ?? {
-				preferred: [],
-				available: [],
-				unavailable: [],
-				unsure: []
-			};
-			return {
-				id: d.id,
-				chosen: d.selected,
-				preferred: c.preferred,
-				available: c.available,
-				unavailable: c.unavailable,
-				unsure: c.unsure,
-				preferredPct: pct(c.preferred),
-				availablePct: pct(c.available),
-				unavailablePct: pct(c.unavailable),
-				unsurePct: pct(c.unsure),
-				preferredNames: names.preferred,
-				availableNames: names.available,
-				unavailableNames: names.unavailable,
-				unsureNames: names.unsure,
-				...optionDisplay(d, event)
-			};
-		})
-	);
+	const rows = event.dateOptions.map((d) => {
+		const c = counts.get(d.id) ?? {
+			preferred: 0,
+			available: 0,
+			unavailable: 0,
+			unsure: 0,
+			valueSum: 0,
+			valueCount: 0,
+			firstPlaces: 0
+		};
+		const names = namesByOption.get(d.id) ?? {
+			preferred: [],
+			available: [],
+			unavailable: [],
+			unsure: []
+		};
+		const avgPosition = c.valueCount ? c.valueSum / c.valueCount : null;
+		return {
+			id: d.id,
+			chosen: d.selected,
+			preferred: c.preferred,
+			available: c.available,
+			unavailable: c.unavailable,
+			unsure: c.unsure,
+			preferredPct: pct(c.preferred),
+			availablePct: pct(c.available),
+			unavailablePct: pct(c.unavailable),
+			unsurePct: pct(c.unsure),
+			preferredNames: names.preferred,
+			availableNames: names.available,
+			unavailableNames: names.unavailable,
+			unsureNames: names.unsure,
+			valueSum: c.valueSum,
+			valueCount: c.valueCount,
+			firstPlaces: c.firstPlaces,
+			avgPosition,
+			// The value bar's fill: highlight by stroke share, rank by how close
+			// the average position is to first place.
+			sharePct:
+				event.pollType === 'rank'
+					? rankFillPct(avgPosition, optionCount)
+					: allStrokes
+						? Math.round((c.valueSum / allStrokes) * 100)
+						: 0,
+			valueNames: valueNamesByOption.get(d.id) ?? [],
+			...optionDisplay(d, event)
+		};
+	});
+	const resultsView =
+		event.pollType === 'rank'
+			? markBestRank(rows)
+			: event.pollType === 'highlight'
+				? markBestStrokes(rows)
+				: markBest(rows);
 
 	// Same counts drive the delete-warning confirm on the options list.
 	const optionHasResponses = new Map(
-		results.map((r) => [r.dateOptionId, r.preferred + r.available + r.unavailable + r.unsure > 0])
+		results.map((r) => [
+			r.dateOptionId,
+			r.preferred + r.available + r.unavailable + r.unsure + r.valueCount > 0
+		])
 	);
 
 	return {
@@ -231,8 +283,9 @@ export const actions = {
 
 		// Choice toggles ride the same form. Disabling folds recorded answers into
 		// the fixed pair (Preferred→Available, unsure→Unavailable) in the provider.
-		// RSVP polls are strictly yes/no - the toggles never apply, even crafted.
-		if (event.pollType !== 'rsvp') {
+		// RSVP is strictly yes/no and rank/highlight answer by value - the toggles
+		// never apply to those, even crafted.
+		if (event.pollType !== 'rsvp' && event.pollType !== 'rank' && event.pollType !== 'highlight') {
 			const allowPreferred = field(form, 'allowPreferred') !== '0';
 			const allowUnsure = field(form, 'allowUnsure') === '1';
 			if (allowPreferred !== event.allowPreferred || allowUnsure !== event.allowUnsure)
@@ -251,8 +304,9 @@ export const actions = {
 		// UI hides the form, but a crafted POST must be rejected too.
 		if (event.pollType === 'rsvp') return fail(409);
 		const form = await request.formData();
-		// Question polls add one text option at a time; empty text is rejected.
-		if (event.pollType === 'question') {
+		// Text-option polls add one text option at a time; empty text is rejected.
+		// (For rank, the provider also appends it to existing ballots.)
+		if (isTextPollType(event.pollType)) {
 			const label = field(form, 'label');
 			if (!label) return fail(400, { error: 'label' });
 			await provider.addTextOption(event.id, label);
@@ -285,8 +339,8 @@ export const actions = {
 		const form = await request.formData();
 		const optionId = field(form, 'optionId');
 		if (!optionId || !event.dateOptions.some((d) => d.id === optionId)) return fail(404);
-		// Question polls edit the option's text; whitespace-only keeps the old text.
-		if (event.pollType === 'question') {
+		// Text-option polls edit the option's text; whitespace-only keeps the old text.
+		if (isTextPollType(event.pollType)) {
 			const label = field(form, 'label');
 			if (!label) return fail(400, { error: 'label' });
 			await provider.updateTextOption(optionId, label);
@@ -412,10 +466,9 @@ export const actions = {
 		const valid = new Set(event.dateOptions.map((d) => d.id));
 		if (ids.length === 0 || !ids.every((id) => valid.has(id)))
 			return fail(400, {
-				error:
-					event.pollType === 'question'
-						? m.errorNoSelectionQuestion({}, { locale: event.locale })
-						: m.errorNoSelection({}, { locale: event.locale })
+				error: isTextPollType(event.pollType)
+					? m.errorNoSelectionQuestion({}, { locale: event.locale })
+					: m.errorNoSelection({}, { locale: event.locale })
 			});
 		await provider.closeEvent(event.id, ids);
 		await purgeEvent(platform, url.origin, params.token, event);

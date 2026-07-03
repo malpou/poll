@@ -2,24 +2,26 @@
 
 ## Purpose
 
-A second poll type alongside candidate dates: the organizer asks a free-form
+Text-option polls alongside candidate dates: the organizer asks a free-form
 question (carried by the poll's title and description) with two or more
-free-form text options. Participants answer through the same links and choice
-scale; results, closing, and reopening work as on a dates poll. This spec
-covers everything question-specific: the type choice at creation, managing
-text options, rendering options as text, absent date affordances, and
-question wording.
+free-form text options. The question type answers through the same choice
+scale as dates; the rank and highlight types (specified in their own
+capabilities) reuse this capability's option management. This spec covers
+the type choice at creation, managing text options, rendering options as
+text, absent date affordances, and question wording.
 
 ## Requirements
 
 ### Requirement: Poll type chosen at creation
 
 The system SHALL let the creator choose a poll type at creation: **dates**
-(the default — candidate date options) or **question** — a
-free-form question, carried by the poll's title and description, with two or
-more free-form text options. A question poll SHALL be rejected with a
-validation message when fewer than two non-empty text options are submitted;
-blank option texts SHALL NOT count toward the minimum.
+(the default — candidate date options), **question** — a free-form question,
+carried by the poll's title and description, with two or more free-form text
+options — **rank**, or **highlight** (both text-option types specified in
+their own capabilities). Any text-option poll (question, rank, or highlight)
+SHALL be rejected with a validation message when fewer than two non-empty
+text options are submitted; blank option texts SHALL NOT count toward the
+minimum.
 
 #### Scenario: Create a question poll
 
@@ -43,6 +45,12 @@ blank option texts SHALL NOT count toward the minimum.
   only whitespace, reaches the server
 - THEN the system rejects it with a validation message
 
+#### Scenario: All five types offered at creation
+
+- GIVEN a visitor on the create page
+- WHEN the poll type choice renders
+- THEN dates, question, RSVP, rank, and highlight are all offered
+
 ### Requirement: Poll type is immutable
 
 A poll's type SHALL be fixed at creation. The dashboard SHALL offer no way to
@@ -62,12 +70,12 @@ change it, and the system SHALL reject any request that attempts to change it.
 
 ### Requirement: Manage question options
 
-On a question poll, the system SHALL let the organizer add, edit, remove, and
-reorder text options while the poll is open. An edit or addition with empty
-text SHALL be rejected. Removing an option that has recorded responses SHALL
-warn the organizer before deleting the option and its responses. Options
-added after an invitee answered SHALL be flagged for that invitee exactly as
-newly added dates are on a dates poll.
+On a text-option poll (question, rank, or highlight), the system SHALL let
+the organizer add, edit, remove, and reorder text options while the poll is
+open. An edit or addition with empty text SHALL be rejected. Removing an
+option that has recorded responses SHALL warn the organizer before deleting
+the option and its responses. Options added after an invitee answered SHALL
+be flagged for that invitee exactly as newly added dates are on a dates poll.
 
 #### Scenario: Edit an option's text
 
@@ -102,11 +110,17 @@ newly added dates are on a dates poll.
 - WHEN the organizer moves B up
 - THEN the options are listed in the order B, A, C for everyone
 
+#### Scenario: Rank and highlight options are managed the same way
+
+- GIVEN an open rank poll
+- WHEN the organizer edits an option's text and saves
+- THEN the new text renders on the dashboard, response pages, and results
+
 ### Requirement: Question polls carry no date affordances
 
-A question poll SHALL offer no calendar, no time slots, no timezone setting,
-no timezone note on response pages, and no sort-by-date action. Its options
-are entered and edited as plain text.
+A text-option poll (question, rank, or highlight) SHALL offer no calendar,
+no time slots, no timezone setting, no timezone note on response pages, and
+no sort-by-date action. Its options are entered and edited as plain text.
 
 #### Scenario: Create form swaps date affordances for text options
 
@@ -123,11 +137,19 @@ are entered and edited as plain text.
 - THEN no timezone setting and no sort-by-date action are offered
 - AND options are edited as text, with no date or time fields
 
+#### Scenario: Rank and highlight polls carry no date affordances either
+
+- GIVEN a visitor on the create page
+- WHEN they pick the rank or highlight type
+- THEN the options section offers free-form text entry and no timezone
+  picker is shown
+
 ### Requirement: Question options render as their text everywhere
 
-A question poll SHALL render each option as its text everywhere a dates poll
-renders an option as weekday, date, and time: on response pages (`/r` and
-`/s`), on the organizer's results, and in the closed poll's outcome.
+A text-option poll (question, rank, or highlight) SHALL render each option
+as its text everywhere a dates poll renders an option as weekday, date, and
+time: on response pages (`/r` and `/s`), on the organizer's results, and in
+the closed poll's outcome.
 
 #### Scenario: Response page lists the option texts
 

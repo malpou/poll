@@ -22,10 +22,13 @@ export function id(prefix: string): string {
 // to every count here, so it can never read as "unavailable".
 export const RESULTS_SQL = `
 	SELECT d.id AS id,
-		SUM(CASE WHEN r.preference = 'preferred'   THEN 1 ELSE 0 END) AS preferred,
-		SUM(CASE WHEN r.preference = 'available'   THEN 1 ELSE 0 END) AS available,
-		SUM(CASE WHEN r.preference = 'unavailable' THEN 1 ELSE 0 END) AS unavailable,
-		SUM(CASE WHEN r.preference = 'unsure'      THEN 1 ELSE 0 END) AS unsure
+		SUM(CASE WHEN r.value IS NULL AND r.preference = 'preferred'   THEN 1 ELSE 0 END) AS preferred,
+		SUM(CASE WHEN r.value IS NULL AND r.preference = 'available'   THEN 1 ELSE 0 END) AS available,
+		SUM(CASE WHEN r.value IS NULL AND r.preference = 'unavailable' THEN 1 ELSE 0 END) AS unavailable,
+		SUM(CASE WHEN r.value IS NULL AND r.preference = 'unsure'      THEN 1 ELSE 0 END) AS unsure,
+		COALESCE(SUM(r.value), 0)                                      AS value_sum,
+		COUNT(r.value)                                                 AS value_count,
+		SUM(CASE WHEN r.value = 1 THEN 1 ELSE 0 END)                   AS first_places
 	FROM date_options d
 	LEFT JOIN responses r ON r.date_option_id = d.id
 	WHERE d.event_id = ?

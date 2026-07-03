@@ -62,6 +62,32 @@ test('question poll example reacts to a tap', async ({ page }) => {
 	await expect(question.getByText(`3 ${m.prefAvailableQuestion()}`)).toBeVisible();
 });
 
+test('rank example reacts to a reorder and updates its tally', async ({ page }) => {
+	await page.goto('/');
+	const rank = page.getByTestId('example-rank');
+	// The last option averages position 3.0 until my reorder moves it up one.
+	await expect(rank.getByTestId('rank-tally-2')).toContainText(m.averagePosition({ avg: '3.0' }));
+	await rank.getByTestId('rank-slip-demo-rank-2').getByRole('button', { name: m.moveUp() }).click();
+	await expect(rank.getByTestId('rank-tally-2')).toContainText(m.averagePosition({ avg: '2.7' }));
+});
+
+test('highlight example spends a stroke and updates its tally', async ({ page }) => {
+	await page.goto('/');
+	const highlight = page.getByTestId('example-highlight');
+	await expect(highlight.getByText(m.strokesLeft({ count: 5, budget: 5 }))).toBeVisible();
+	await expect(highlight.getByTestId('highlight-tally-0')).toContainText(
+		m.strokesTotal({ count: 3 })
+	);
+	// A tap marks the option, drops the remaining count, and moves the tally.
+	const optionA = m.landingSampleHighlightOptionA();
+	await highlight.getByRole('button', { name: m.addStroke({ option: optionA }) }).click();
+	await expect(highlight.getByTestId('stroke-count-demo-highlight-0')).toHaveText('×1');
+	await expect(highlight.getByText(m.strokesLeft({ count: 4, budget: 5 }))).toBeVisible();
+	await expect(highlight.getByTestId('highlight-tally-0')).toContainText(
+		m.strokesTotal({ count: 4 })
+	);
+});
+
 test('example answers are not persisted across a reload', async ({ page }) => {
 	const before = { invitees: rows('invitees'), responses: rows('responses') };
 	await page.goto('/');
@@ -161,11 +187,24 @@ test.describe('browser language hint', () => {
 
 	test('hint offered to a mismatched browser, no redirect', async ({ page }) => {
 		await page.goto('/');
-		// The English page renders (no redirect), with a Danish hint linking to /da.
+		// The English page renders (no redirect), with a Danish hint offering /da.
 		expect(new URL(page.url()).pathname).toBe('/');
 		await expect(page.locator('html')).toHaveAttribute('lang', 'en');
 		const hint = page.getByTestId('lang-hint');
-		await expect(hint.getByRole('link', { name: hintText() })).toHaveAttribute('href', '/da');
+		await expect(hint.getByRole('button', { name: hintText() })).toBeVisible();
+	});
+
+	test('picking the hint switches language live without a full reload', async ({ page }) => {
+		await page.goto('/');
+		// A full navigation would wipe this stamp.
+		await page.evaluate(() => ((window as { __live?: number }).__live = 1));
+		await page.getByTestId('lang-hint').getByRole('button', { name: hintText() }).click();
+		await expect(page).toHaveURL(/\/da$/);
+		await expect(page.locator('html')).toHaveAttribute('lang', 'da');
+		await expect(
+			page.getByRole('heading', { name: m.landingTitle({}, { locale: 'da' }) })
+		).toBeVisible();
+		expect(await page.evaluate(() => (window as { __live?: number }).__live)).toBe(1);
 	});
 
 	test('no hint when the page already matches the browser language', async ({ page }) => {

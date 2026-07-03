@@ -54,23 +54,24 @@
 
 <div data-accent={accent} data-testid="landing-root" class="mx-auto max-w-160 px-4 pb-18 pt-7">
 	{#if data.hintLocale && data.hintLocale !== locale && !hintDismissed}
+		{@const hl = data.hintLocale}
 		<div
 			data-testid="lang-hint"
 			class="mb-4 flex items-center gap-2.5 rounded-card border-2 border-border bg-card-alt px-4 py-3 text-sm font-semibold text-ink"
 		>
 			<span class="h-2 w-2 shrink-0 rounded-full bg-ink"></span>
-			<!-- Full page load: the server stamps <html lang> and re-renders every
-			     string in the new language (client-side nav would keep the old). -->
-			<a
-				href={landingUrl(data.hintLocale, data.accent)}
-				data-sveltekit-reload
-				class="underline hover:no-underline"
+			<!-- Written in the browser's language; picking it flips the page's
+			     language in place - the same live switch the picker does, no reload. -->
+			<button
+				type="button"
+				onclick={() => pickLocale(hl)}
+				class="cursor-pointer text-left underline hover:no-underline"
 			>
 				{m.landingHintLink(
 					{ language: langLabel(data.hintLocale, data.hintLocale) },
 					{ locale: data.hintLocale }
 				)}
-			</a>
+			</button>
 			<button
 				type="button"
 				onclick={dismissHint}

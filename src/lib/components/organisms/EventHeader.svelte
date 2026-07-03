@@ -16,7 +16,13 @@
 	import LanguagePicker from '$lib/components/atoms/LanguagePicker.svelte';
 	import { refreshThen } from '$lib/forms/enhance';
 	import { isRichText, toEditorHtml } from '$lib/forms/richtext';
-	import type { Accent, Locale, PollMode, PollType } from '$lib/types';
+	import {
+		isTextPollType,
+		type Accent,
+		type Locale,
+		type PollMode,
+		type PollType
+	} from '$lib/types';
 
 	let {
 		title,
@@ -117,10 +123,10 @@
 					<option value="open">{m.modeOpen()}</option>
 				</SelectField>
 				<!-- Yes/No are never toggles - every event always offers both. Hidden
-				     inputs carry explicit values (see the create page). RSVP polls
-				     are strictly yes/no, so no toggles at all (the server ignores
-				     them for rsvp too). -->
-				{#if pollType !== 'rsvp'}
+				     inputs carry explicit values (see the create page). RSVP is
+				     strictly yes/no and rank/highlight answer by value, so no toggles
+				     for those at all (the server ignores them there too). -->
+				{#if pollType !== 'rsvp' && pollType !== 'rank' && pollType !== 'highlight'}
 					<div class="flex flex-col gap-2">
 						<span class="text-2xs font-bold uppercase tracking-widest text-ink-muted"
 							>{m.fieldChoices()}</span
@@ -150,7 +156,7 @@
 				<!-- Picking a language previews the whole dashboard immediately; saving
 				     persists it, cancelling rolls it back. Same live switch as /. -->
 				<LanguagePicker bind:value={draftLocale} onpick={onpreviewlocale} />
-				{#if pollType !== 'question'}
+				{#if !isTextPollType(pollType)}
 					<!-- Saving re-renders every option's times in the new zone; no live
 					     preview since times are server-rendered. Question polls have no
 					     times, so no zone to set. -->
@@ -189,7 +195,7 @@
 					<span class="sr-only">{m.fieldLanguage()}:</span>
 					<span class="font-semibold text-ink">{localeLabel(eventLocale)}</span>
 				</li>
-				{#if pollType !== 'question'}
+				{#if !isTextPollType(pollType)}
 					<li class="flex items-center gap-1.5">
 						<Clock size={14} aria-hidden="true" />
 						<span class="sr-only">{m.fieldTimezone()}:</span>

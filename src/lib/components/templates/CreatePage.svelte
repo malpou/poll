@@ -24,6 +24,7 @@
 	import AccentPicker from '$lib/components/atoms/AccentPicker.svelte';
 	import LanguagePicker from '$lib/components/atoms/LanguagePicker.svelte';
 	import type { Accent, DateOption, Locale, Participant, PollMode, PollType } from '$lib/types';
+	import { HIGHLIGHT_BUDGET_DEFAULT, isTextPollType } from '$lib/types';
 
 	// The create action's fail() payload; null on first render / success.
 	// suggestedLocale/suggestedAccent seed the pickers from the page URL (the
@@ -67,6 +68,14 @@
 	let rsvpDates = $state<DateOption[]>([]);
 	let textOptions = $state<{ id: string; text: string }[]>([]);
 	let participants = $state<Participant[]>([]);
+	// Highlight's marker-stroke budget; only posts while that type is mounted.
+	let highlightBudget = $state(String(HIGHLIGHT_BUDGET_DEFAULT));
+	// question, rank, and highlight share the text-options editor and carry no
+	// date/timezone affordances; rank and highlight also drop the choice toggles.
+	const textType = $derived(isTextPollType(pollType));
+	const noToggles = $derived(
+		pollType === 'rsvp' || pollType === 'rank' || pollType === 'highlight'
+	);
 
 	// Timezone every option's times are read in. Defaults to the visitor's own
 	// zone; SSR computes the server's, hydration replaces it with the browser's.
@@ -88,7 +97,7 @@
 	// whatever reaches it.
 	const valid = $derived(
 		title.trim().length > 0 &&
-			(pollType === 'question'
+			(textType
 				? textOptions.filter((o) => o.text.trim()).length >= 2
 				: pollType === 'rsvp'
 					? rsvpDates.length === 1
@@ -228,7 +237,10 @@
 				<legend class="mb-3 text-2xs font-bold uppercase tracking-widest text-ink-muted">
 					{m.fieldPollType()}
 				</legend>
-				{#each [{ value: 'dates', label: m.pollTypeDates() }, { value: 'question', label: m.pollTypeQuestion() }, { value: 'rsvp', label: m.pollTypeRsvp() }] as opt (opt.value)}
+				<!-- Dates (the default) leads; the three text-option types cluster in
+				     the middle around question; RSVP, the single-date odd one out,
+				     closes the list. -->
+				{#each [{ value: 'dates', label: m.pollTypeDates() }, { value: 'rank', label: m.pollTypeRank() }, { value: 'question', label: m.pollTypeQuestion() }, { value: 'highlight', label: m.pollTypeHighlight() }, { value: 'rsvp', label: m.pollTypeRsvp() }] as opt (opt.value)}
 					{@const active = pollType === opt.value}
 					<label
 						class="relative flex cursor-pointer items-center gap-3 rounded-control border-2 p-3.5 text-body text-ink transition hover:border-ink {active
@@ -254,7 +266,11 @@
 							? m.pollTypeQuestionHint()
 							: pollType === 'rsvp'
 								? m.pollTypeRsvpHint()
-								: m.pollTypeDatesHint()}
+								: pollType === 'rank'
+									? m.pollTypeRankHint()
+									: pollType === 'highlight'
+										? m.pollTypeHighlightHint()
+										: m.pollTypeDatesHint()}
 					</p>
 				{/key}
 			</fieldset>
@@ -272,11 +288,24 @@
 				<RichTextEditor label={m.fieldDescription()} name="description" bind:value={description} />
 			</div>
 
-			{#if pollType === 'question'}
+			{#if textType}
 				<div class="mb-10">
 					<SectionHeading text={m.optionsSection()} class="mb-1" />
 					<p class="mb-3.5 text-caption text-ink-muted">{m.optionsHint()}</p>
 					<TextOptionList bind:options={textOptions} />
+					{#if pollType === 'highlight'}
+						<div transition:slide={slideParams()} class="mt-6 max-w-40">
+							<TextField
+								label={m.fieldBudget()}
+								name="highlightBudget"
+								type="number"
+								min={1}
+								max={10}
+								bind:value={highlightBudget}
+							/>
+							<p class="mt-2 text-caption leading-relaxed text-ink-muted">{m.budgetHint()}</p>
+						</div>
+					{/if}
 				</div>
 			{:else if pollType === 'rsvp'}
 				<div class="mb-10">
@@ -295,9 +324,9 @@
 			{/if}
 
 			<!-- Hidden inputs carry explicit values so the server never has to guess
-			     an unchecked box's meaning. RSVP is strictly yes/no: no toggles
-			     offered, both posted off. -->
-			{#if pollType === 'rsvp'}
+			     an unchecked box's meaning. RSVP is strictly yes/no and rank/highlight
+			     answer by value: no toggles offered, both posted off. -->
+			{#if noToggles}
 				<input type="hidden" name="allowPreferred" value="0" />
 				<input type="hidden" name="allowUnsure" value="0" />
 			{:else}
@@ -378,7 +407,7 @@
 					<div class="text-center text-caption text-ink-muted">
 						{!title.trim()
 							? m.errorNoTitle()
-							: pollType === 'question'
+							: textType
 								? m.errorTooFewOptions()
 								: pollType === 'rsvp'
 									? m.errorRsvpOneDate()

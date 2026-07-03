@@ -10,6 +10,8 @@
 	import Toast from '$lib/components/atoms/Toast.svelte';
 	import { createToast } from '$lib/components/atoms/create-toast.svelte';
 	import ResponseOutcome from '$lib/components/organisms/ResponseOutcome.svelte';
+	import RankResponse from '$lib/components/organisms/RankResponse.svelte';
+	import HighlightResponse from '$lib/components/organisms/HighlightResponse.svelte';
 	import SubmitBar from '$lib/components/organisms/SubmitBar.svelte';
 	import { m } from '$lib/paraglide/messages';
 	import { getLocale } from '$lib/paraglide/runtime';
@@ -36,6 +38,9 @@
 		choices: Preference[];
 		dates: ResponseDateView[];
 		answers?: Record<string, Preference>;
+		// Rank positions / highlight stroke counts, keyed by option id.
+		values?: Record<string, number>;
+		highlightBudget?: number;
 		note?: string;
 	}
 
@@ -65,7 +70,8 @@
 	let answers = $state<Record<string, Preference | undefined>>({ ...(seed?.answers ?? {}) });
 	let note = $state(seed?.note ?? '');
 	// Frozen from the seed so cards keep their badges/order while the user picks.
-	const hasAnswered = Object.keys(seed?.answers ?? {}).length > 0;
+	const hasAnswered =
+		Object.keys(seed?.answers ?? {}).length > 0 || Object.keys(seed?.values ?? {}).length > 0;
 	const hasNewDates = hasAnswered && (seed?.dates ?? []).some((d) => d.needsAnswer);
 	// Outstanding new dates land the returning respondent straight in edit mode.
 	let submitted = $state(hasAnswered && !hasNewDates);
@@ -75,12 +81,21 @@
 
 	const question = $derived(!!view && view.pollType === 'question');
 	const rsvp = $derived(!!view && view.pollType === 'rsvp');
+	const rank = $derived(!!view && view.pollType === 'rank');
+	const highlight = $derived(!!view && view.pollType === 'highlight');
+	// Highlight's running spend, surfaced by its organism's onchange for the
+	// submit gating; starts from the recorded answer's total.
+	let strokesSpent = $state(Object.values(seed?.values ?? {}).reduce((a, b) => a + b, 0));
 	const nameOk = $derived(mode === 'assigned' || name.trim().length > 0);
 	const allAnswered = $derived(
 		!!view &&
 			nameOk &&
 			view.dates.length > 0 &&
-			view.dates.every((d) => answers[d.id] !== undefined)
+			(rank
+				? true // a rank list is always a full order
+				: highlight
+					? strokesSpent >= 1
+					: view.dates.every((d) => answers[d.id] !== undefined))
 	);
 </script>
 
@@ -169,12 +184,24 @@
 							? m.responseIntroQuestion()
 							: rsvp
 								? m.responseIntroRsvp()
-								: m.responseIntro()}
+								: rank
+									? m.responseIntroRank()
+									: highlight
+										? m.responseIntroHighlight()
+										: m.responseIntro()}
 					</p>
 
 					<div class="flex flex-col gap-3.5">
 						<SectionHeading
-							text={question ? m.optionsQuestion() : rsvp ? m.rsvpQuestion() : m.datesQuestion()}
+							text={question
+								? m.optionsQuestion()
+								: rsvp
+									? m.rsvpQuestion()
+									: rank
+										? m.rankQuestion()
+										: highlight
+											? m.highlightQuestion()
+											: m.datesQuestion()}
 						/>
 						<!-- Only relevant when times exist; date-only and question polls have
 						     no zone to name. -->
@@ -185,25 +212,39 @@
 						{/if}
 						{#if hasNewDates && !closed}
 							<NoticeBanner
-								text={question ? m.newOptionsBanner() : m.newDatesBanner()}
+								text={question || rank || highlight ? m.newOptionsBanner() : m.newDatesBanner()}
 								tone="ink"
 							/>
 						{/if}
-						{#each view.dates as d, i (d.id)}
-							<DateOptionCard
-								id={d.id}
-								weekday={d.weekday}
-								dateLabel={d.dateLabel}
-								timeRange={d.timeRange}
-								label={d.label}
-								index={i}
-								bind:value={answers[d.id]}
-								choices={view.choices}
+						{#if rank}
+							<p class="text-caption text-ink-muted">{m.reorderHint()}</p>
+							<RankResponse options={view.dates} readOnly={closed || submitted} />
+						{:else if highlight}
+							<HighlightResponse
+								options={view.dates}
+								budget={view.highlightBudget ?? 5}
+								values={view.values ?? {}}
+								onchange={(counts: Record<string, number>) =>
+									(strokesSpent = Object.values(counts).reduce((a, b) => a + b, 0))}
 								readOnly={closed || submitted}
-								isNew={d.needsAnswer ?? false}
-								pollType={view.pollType}
 							/>
-						{/each}
+						{:else}
+							{#each view.dates as d, i (d.id)}
+								<DateOptionCard
+									id={d.id}
+									weekday={d.weekday}
+									dateLabel={d.dateLabel}
+									timeRange={d.timeRange}
+									label={d.label}
+									index={i}
+									bind:value={answers[d.id]}
+									choices={view.choices}
+									readOnly={closed || submitted}
+									isNew={d.needsAnswer ?? false}
+									pollType={view.pollType}
+								/>
+							{/each}
+						{/if}
 					</div>
 
 					<div class="mt-1.5 flex flex-col gap-2">

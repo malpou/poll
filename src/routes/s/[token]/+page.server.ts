@@ -3,6 +3,7 @@ import { getProvider } from '$lib/data/provider';
 import { enabledPreferences } from '$lib/logic/choices';
 import { optionDisplay } from '$lib/logic/options';
 import { outcomeFor } from '$lib/logic/results';
+import { parseHighlightAnswers, parseRankAnswers } from '$lib/logic/value-answers';
 import { cachedLoad, invalidateCache } from '$lib/server/cache';
 import { setRequestLocale } from '../../../hooks.server';
 import type { Preference } from '$lib/types';
@@ -40,6 +41,7 @@ export const load: PageServerLoad = async ({ params, platform, cookies, url }) =
 				timezone: ctx.event.timezone,
 				accent: ctx.event.accent,
 				pollType: ctx.event.pollType,
+				highlightBudget: ctx.event.highlightBudget,
 				choices: enabledPreferences(ctx.event),
 				dates: ctx.dateOptions.map((d) => ({
 					id: d.id,
@@ -74,13 +76,25 @@ export const actions = {
 		if (!name) return fail(400, { error: 'name' });
 
 		const optionIds = new Set(ctx.dateOptions.map((d) => d.id));
-		// Trust boundary: only the event's enabled choices are accepted (as on /r).
-		const enabled: ReadonlySet<string> = new Set(enabledPreferences(ctx.event));
-		const answers: ResponseInput[] = [];
-		for (const id of optionIds) {
-			const v = form.get(`pref.${id}`);
-			if (typeof v === 'string' && enabled.has(v)) {
-				answers.push({ dateOptionId: id, preference: v as Preference });
+
+		let answers: ResponseInput[];
+		if (ctx.event.pollType === 'rank' || ctx.event.pollType === 'highlight') {
+			// All-or-nothing, exactly as on /r: bad or stale values reject the submit.
+			const parsed =
+				ctx.event.pollType === 'rank'
+					? parseRankAnswers(form, [...optionIds])
+					: parseHighlightAnswers(form, [...optionIds], ctx.event.highlightBudget);
+			if (!parsed) return fail(400);
+			answers = parsed;
+		} else {
+			// Trust boundary: only the event's enabled choices are accepted (as on /r).
+			const enabled: ReadonlySet<string> = new Set(enabledPreferences(ctx.event));
+			answers = [];
+			for (const id of optionIds) {
+				const v = form.get(`pref.${id}`);
+				if (typeof v === 'string' && enabled.has(v)) {
+					answers.push({ dateOptionId: id, preference: v as Preference });
+				}
 			}
 		}
 		const noteVal = form.get('note');

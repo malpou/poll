@@ -87,6 +87,18 @@ theme token instead.
   uppercase `tracking-wider`); the best-date badge fills with `--hl` and
   tilts slightly. Solid-ink pills (`bg-ink text-card`) mark decided state —
   the chosen-date badge on closed polls.
+- **Rank position badge:** a circled typewriter numeral — a 24px circle with
+  the 2px ink border, 11px bold ink digit — leads each rank slip and always
+  shows the slip's current position; it reuses the badge conventions, no new
+  token.
+- **Stacked marker strokes** (the highlight type's answer): each stroke is
+  one `hl-swipe`-style translucent band over the option's text, each pass
+  nudged a little upward so repeated runs read as separate marker strokes;
+  the overlapping `color-mix` bands deepen the tint as strokes stack. The
+  `hl-strokes` class keeps wrapped lines marked via
+  `box-decoration-break: clone`. The budget renders as a row of marker-cap
+  dots (14px circles, `--hl` fill while unspent) that deplete as strokes are
+  spent.
 - **Status strips** (the `NoticeBanner` atom): a 2px-bordered card-radius
   strip led by an 8px colored dot, in two tones — highlighter tint with an
   `--hl` dot, and neutral `card-alt` with an ink dot.
@@ -165,6 +177,14 @@ theme token instead.
   `--hl` fill with a filled star for preferred, bordered with a check for
   available, a question mark for "I don't know", and struck-through muted
   with an X for unavailable. Best and chosen cards take an ink border.
+- **Value result cards** (rank / highlight) share one shape: a single caption
+  (average position for rank, stroke total for highlight) over the same
+  `wash`-track `--hl` bar the preference cards use, growing on mount. The bar
+  fills by the option's standing — highlight by its share of all strokes,
+  rank by how close its average position is to first place (first place fills
+  it, last empties it) — so both types read as one visual language. The
+  organizer's per-respondent pills carry a locale-neutral `#position` or
+  `×strokes`, with the words in `sr-only` text.
 - Prominent date displays capitalize the weekday via CSS (`capitalize`);
   running text keeps the poll language's own casing (Danish lowercase).
 
@@ -196,6 +216,12 @@ decorative. Animate transform and opacity only — the result bar grows with a
   ~200ms, auto-dismiss ~3s.
 - **Results re-sorts** slide rows to their new position (flip transition,
   ~300ms ease-in-out), never jump.
+- **Lifted slip** (rank reordering): the dragged slip lifts with a soft ink
+  shadow, ~1° rotate and a slight scale (the `slip-lifted` class — transform
+  only), while its siblings glide around it with the standard flip params.
+  Drag starts only on the grip handle so touch scrolling elsewhere is never
+  hijacked; the move up/down buttons are the keyboard and assistive-tech
+  path and always present.
 - **State swaps animate, never cut.** Content replaced in place — a live
   language re-render, a hint that follows a picked type or mode, a
   disclosure opening or closing — fades/slides in with a short ease-out

@@ -5,7 +5,14 @@
 	import { TriangleAlert, Lock } from '@lucide/svelte';
 	import { m } from '$lib/paraglide/messages';
 	import LocaleSwap from '$lib/components/atoms/LocaleSwap.svelte';
-	import type { EventStatus, InviteeView, Locale, PollMode, PollType } from '$lib/types';
+	import {
+		isTextPollType,
+		type EventStatus,
+		type InviteeView,
+		type Locale,
+		type PollMode,
+		type PollType
+	} from '$lib/types';
 
 	// Everything between the header and the results: share link, save-your-link
 	// warning, closed/cancelled status, and the chase-up list for partial answers.
@@ -31,7 +38,7 @@
 		oncopied: () => void;
 	} = $props();
 
-	const question = $derived(pollType === 'question');
+	const question = $derived(isTextPollType(pollType));
 	const rsvp = $derived(pollType === 'rsvp');
 </script>
 

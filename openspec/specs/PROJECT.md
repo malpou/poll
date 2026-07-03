@@ -31,7 +31,7 @@ for this write volume.
 
 ## Data model (D1)
 
-- `events(id, title, description, locale, timezone, poll_mode, allow_preferred, allow_unsure, accent, poll_type, organizer_token, share_token, status, created_at)`
+- `events(id, title, description, locale, timezone, poll_mode, allow_preferred, allow_unsure, accent, poll_type, highlight_budget, organizer_token, share_token, status, created_at)`
   - status ∈ {open, closed, cancelled}. `closed` means the organizer picked the
     final date(s); `cancelled` means they closed without picking (abandoned).
     Reopening returns to `open` and clears any chosen dates
@@ -49,12 +49,19 @@ for this write volume.
     (preferred → available, unsure → unavailable); re-enabling never restores
   - accent ∈ {yellow, pink, green, blue}, default yellow - the poll's
     highlighter color, validated at the form boundary (no SQL CHECK)
-  - poll_type ∈ {dates, question, rsvp}, default dates, validated at the form
-    boundary (no SQL CHECK). Immutable after creation. `question`: the poll
-    asks a free-form question (title/description) over 2+ text options; no
-    timezone surfaced, no calendar, no sort-by-date. `rsvp`: one fixed
-    date/time (exactly one date_options row), strict yes/no answers stored as
-    available/unavailable with both choice toggles forced off
+  - poll_type ∈ {dates, question, rsvp, rank, highlight}, default dates,
+    validated at the form boundary (no SQL CHECK). Immutable after creation.
+    `question`: the poll asks a free-form question (title/description) over
+    2+ text options; no timezone surfaced, no calendar, no sort-by-date.
+    `rsvp`: one fixed date/time (exactly one date_options row), strict yes/no
+    answers stored as available/unavailable with both choice toggles forced
+    off. `rank` and `highlight`: text-option polls like question (same option
+    management, no date affordances) answered by value, not preference -
+    rank stores each invitee's full 1..N order, highlight stores stroke
+    counts against the event's budget; both force the choice toggles off
+  - highlight_budget - the highlight type's marker-stroke budget (1-10,
+    default 5), validated at the form boundary; immutable after creation.
+    Present but unused on other types
 - `date_options(id, event_id, starts_at, ends_at, label, sort_order, selected)`
   - one row per option regardless of poll type. Dates and RSVP polls:
     `starts_at`/`ends_at` set, `label` null. Question polls: `label` holds
@@ -66,11 +73,16 @@ for this write volume.
   - in open mode, an invitee row is created on submit (label = the name the
     submitter typed), so open submitters are ordinary invitees - results and
     aggregation are identical to assigned mode
-- `responses(invitee_id, date_option_id, preference, updated_at)`
+- `responses(invitee_id, date_option_id, preference, value, updated_at)`
   - preference ∈ {preferred, available, unavailable, unsure}
   - primary key (invitee_id, date_option_id)
   - a missing row means "no answer yet" for that date - distinct from
     "unavailable"; `unsure` ("I don't know") is a deliberate recorded answer
+  - value - rank position 1..N or highlight stroke count 0..budget; NULL on
+    the preference-based types. On value rows preference is only the NOT NULL
+    filler: 'available' for invitee-submitted answers, 'unsure' for rank rows
+    the system appended when the organizer added an option (the
+    needs-confirmation marker the response page flags until resubmit)
 
 ## Routes
 

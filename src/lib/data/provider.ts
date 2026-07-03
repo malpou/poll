@@ -21,6 +21,10 @@ export interface CreateResult {
 export interface ResponseInput {
 	dateOptionId: string;
 	preference: Preference;
+	// Rank position / highlight stroke count. When set, preference is only the
+	// NOT NULL filler ('available' for submitted answers, 'unsure' for rank rows
+	// the system appended on option add - the needs-confirmation marker).
+	value?: number;
 }
 // Date + optional times, as the dashboard/create forms hold them before compose.
 export interface DateOptionInput {

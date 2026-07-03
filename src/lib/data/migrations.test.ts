@@ -163,6 +163,25 @@ describe('migration stack', () => {
 		expect(fresh.poll_type).toBe('dates');
 	});
 
+	it('0009 defaults highlight_budget to 5 and leaves responses.value null', () => {
+		const legacy = db.prepare(`SELECT highlight_budget FROM events WHERE id = 'e1'`).get() as {
+			highlight_budget: number;
+		};
+		expect(legacy.highlight_budget).toBe(5);
+		const resp = db
+			.prepare(`SELECT value FROM responses WHERE invitee_id = 'i1' AND date_option_id = 'd1'`)
+			.get() as { value: number | null };
+		expect(resp.value).toBeNull();
+		db.exec(`UPDATE responses SET value = 3 WHERE invitee_id = 'i1' AND date_option_id = 'd1'`);
+		expect(
+			(
+				db
+					.prepare(`SELECT value FROM responses WHERE invitee_id = 'i1' AND date_option_id = 'd1'`)
+					.get() as { value: number | null }
+			).value
+		).toBe(3);
+	});
+
 	it('the rebuild drops no rows from events or any child table', () => {
 		const count = (t: string) =>
 			(db.prepare(`SELECT COUNT(*) AS n FROM ${t}`).get() as { n: number }).n;

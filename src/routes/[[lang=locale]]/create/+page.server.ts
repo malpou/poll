@@ -6,7 +6,14 @@ import { baseLocale, extractLocaleFromHeader, isLocale } from '$lib/paraglide/ru
 import { field, parseIndexed, validateTimes } from '$lib/forms/forms';
 import { richTextIsEmpty, sanitizeRichText } from '$lib/forms/richtext';
 import type { Accent, DateOption, Locale, Participant, PollMode, PollType } from '$lib/types';
-import { ACCENTS, POLL_TYPES } from '$lib/types';
+import {
+	ACCENTS,
+	HIGHLIGHT_BUDGET_DEFAULT,
+	HIGHLIGHT_BUDGET_MAX,
+	HIGHLIGHT_BUDGET_MIN,
+	isTextPollType,
+	POLL_TYPES
+} from '$lib/types';
 import type { Actions, PageServerLoad } from './$types';
 
 /**
@@ -51,9 +58,18 @@ export const actions = {
 			? (typeField as PollType)
 			: 'dates';
 		// Hidden inputs carry explicit '1'/'0'; absence falls back to the defaults.
-		// RSVP is strictly yes/no - both toggles forced off regardless of the form.
-		const allowPreferred = pollType !== 'rsvp' && field(form, 'allowPreferred') !== '0';
-		const allowUnsure = pollType !== 'rsvp' && field(form, 'allowUnsure') === '1';
+		// RSVP is strictly yes/no and rank/highlight answer by value, not
+		// preference - all three force both toggles off regardless of the form.
+		const noToggles = pollType === 'rsvp' || pollType === 'rank' || pollType === 'highlight';
+		const allowPreferred = !noToggles && field(form, 'allowPreferred') !== '0';
+		const allowUnsure = !noToggles && field(form, 'allowUnsure') === '1';
+		// Highlight stroke budget: rejected below when out of range (unlike accent,
+		// which falls back - the budget is a deliberate creator choice).
+		const budgetField = field(form, 'highlightBudget');
+		const highlightBudget =
+			pollType === 'highlight' && budgetField !== ''
+				? Number(budgetField)
+				: HIGHLIGHT_BUDGET_DEFAULT;
 		// Unknown accent falls back to the default, same discipline as locale/timezone.
 		const accentField = field(form, 'accent');
 		const accent: Accent = (ACCENTS as readonly string[]).includes(accentField)
@@ -61,25 +77,23 @@ export const actions = {
 			: 'yellow';
 
 		// Drop rows the user added but never filled with a date.
-		const dates: DateOption[] =
-			pollType === 'question'
-				? []
-				: parseIndexed(form, 'dates')
-						.map((d) => ({
-							id: newToken(),
-							value: d.value ?? '',
-							startTime: d.startTime ?? '',
-							endTime: d.endTime ?? ''
-						}))
-						.filter((d) => d.value !== '');
+		const dates: DateOption[] = isTextPollType(pollType)
+			? []
+			: parseIndexed(form, 'dates')
+					.map((d) => ({
+						id: newToken(),
+						value: d.value ?? '',
+						startTime: d.startTime ?? '',
+						endTime: d.endTime ?? ''
+					}))
+					.filter((d) => d.value !== '');
 
-		// Question options: trimmed by field(); blank rows don't count (or post).
-		const textOptions: string[] =
-			pollType === 'question'
-				? parseIndexed(form, 'options')
-						.map((o) => o.text ?? '')
-						.filter((t) => t !== '')
-				: [];
+		// Text options: trimmed by field(); blank rows don't count (or post).
+		const textOptions: string[] = isTextPollType(pollType)
+			? parseIndexed(form, 'options')
+					.map((o) => o.text ?? '')
+					.filter((t) => t !== '')
+			: [];
 
 		// Open mode has no named list - anyone submits via the shared link.
 		const participants: Participant[] =
@@ -104,6 +118,7 @@ export const actions = {
 			allowUnsure,
 			accent,
 			pollType,
+			highlightBudget,
 			dates,
 			textOptions,
 			participants
@@ -111,7 +126,14 @@ export const actions = {
 
 		let error: string | null = null;
 		if (!title) error = m.errorNoTitle();
-		else if (pollType === 'question') {
+		else if (
+			pollType === 'highlight' &&
+			(!Number.isInteger(highlightBudget) ||
+				highlightBudget < HIGHLIGHT_BUDGET_MIN ||
+				highlightBudget > HIGHLIGHT_BUDGET_MAX)
+		)
+			error = m.errorBudgetRange();
+		else if (isTextPollType(pollType)) {
 			if (textOptions.length < 2) error = m.errorTooFewOptions();
 		} else if (pollType === 'rsvp' && dates.length !== 1) error = m.errorRsvpOneDate();
 		else if (dates.length === 0) error = m.errorNoDates();

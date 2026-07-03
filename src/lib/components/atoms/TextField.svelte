@@ -5,14 +5,18 @@
 		value = $bindable(),
 		type = 'text',
 		placeholder,
-		compact = false
+		compact = false,
+		min,
+		max
 	}: {
 		label?: string;
 		name?: string;
 		value: string;
-		type?: 'text' | 'date' | 'time';
+		type?: 'text' | 'date' | 'time' | 'number';
 		placeholder?: string;
 		compact?: boolean;
+		min?: number;
+		max?: number;
 	} = $props();
 </script>
 
@@ -24,6 +28,8 @@
 		{type}
 		{name}
 		{placeholder}
+		{min}
+		{max}
 		bind:value
 		class="w-full border-b-2 border-border-strong bg-transparent px-0.5 text-body text-ink outline-none placeholder:text-ink-faint focus:border-ink {compact
 			? 'h-10'

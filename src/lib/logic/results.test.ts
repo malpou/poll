@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { buildOutcome, markBest } from './results';
+import { buildOutcome, markBest, markBestRank, markBestStrokes, rankFillPct } from './results';
 import type { DateOptionResult } from '../types';
 
 // buildOutcome drives the participant-facing outcome view on a decided poll
@@ -15,7 +15,17 @@ const result = (
 	unavailable: number,
 	notAnswered: number,
 	unsure = 0
-): DateOptionResult => ({ dateOptionId, preferred, available, unavailable, unsure, notAnswered });
+): DateOptionResult => ({
+	dateOptionId,
+	preferred,
+	available,
+	unavailable,
+	unsure,
+	notAnswered,
+	valueSum: 0,
+	valueCount: 0,
+	firstPlaces: 0
+});
 
 describe('buildOutcome', () => {
 	it('returns null when no option is selected (legacy closed poll)', () => {
@@ -160,5 +170,89 @@ describe('markBest', () => {
 		]);
 		expect(zeros.every((r) => !r.isBest)).toBe(true);
 		expect(markBest([])).toHaveLength(0);
+	});
+});
+
+// markBestRank scores by Borda position sums (lower wins), ties broken by
+// first-place count (openspec/specs/rank-poll Rank results).
+describe('markBestRank', () => {
+	const row = (id: string, valueSum: number, valueCount: number, firstPlaces: number) => ({
+		id,
+		valueSum,
+		valueCount,
+		firstPlaces
+	});
+
+	it('orders options by position sum, lowest first, and flags the best', () => {
+		// Ballots A,B,C and B,A,C: A=3, B=3... use A,B,C + A,C,B: A=2, B=5, C=5.
+		const rows = markBestRank([row('b', 5, 2, 0), row('a', 2, 2, 2), row('c', 5, 2, 0)]);
+		expect(rows[0].id).toBe('a');
+		expect(rows[0].isBest).toBe(true);
+		expect(rows.filter((r) => r.isBest)).toHaveLength(1);
+	});
+
+	it('breaks a score tie by first-place count', () => {
+		// A and B both sum 3 across two ballots; A took first place twice.
+		const rows = markBestRank([row('b', 3, 2, 0), row('a', 3, 2, 2)]);
+		expect(rows.map((r) => r.id)).toEqual(['a', 'b']);
+		expect(rows[0].isBest).toBe(true);
+		expect(rows[1].isBest).toBe(false);
+	});
+
+	it('flags nothing and keeps the incoming order with no ballots', () => {
+		const rows = markBestRank([row('a', 0, 0, 0), row('b', 0, 0, 0)]);
+		expect(rows.map((r) => r.id)).toEqual(['a', 'b']);
+		expect(rows.every((r) => !r.isBest)).toBe(true);
+	});
+});
+
+// markBestStrokes totals strokes, most wins; ties are all highlighted
+// (openspec/specs/highlight-poll Stroke results).
+describe('markBestStrokes', () => {
+	it('orders options by stroke totals and flags the leader', () => {
+		const rows = markBestStrokes([
+			{ id: 'b', valueSum: 2 },
+			{ id: 'a', valueSum: 5 }
+		]);
+		expect(rows.map((r) => r.id)).toEqual(['a', 'b']);
+		expect(rows[0].isBest).toBe(true);
+		expect(rows[1].isBest).toBe(false);
+	});
+
+	it('highlights every option tied for most strokes', () => {
+		const rows = markBestStrokes([
+			{ id: 'a', valueSum: 3 },
+			{ id: 'b', valueSum: 3 },
+			{ id: 'c', valueSum: 1 }
+		]);
+		expect(rows.filter((r) => r.isBest).map((r) => r.id)).toEqual(['a', 'b']);
+	});
+
+	it('flags nothing when no strokes are spent', () => {
+		const rows = markBestStrokes([
+			{ id: 'a', valueSum: 0 },
+			{ id: 'b', valueSum: 0 }
+		]);
+		expect(rows.every((r) => !r.isBest)).toBe(true);
+	});
+});
+
+// rankFillPct maps a rank option's average position to a bar fill: first
+// place fills it, last place empties it, linear in between.
+describe('rankFillPct', () => {
+	it('fills full at first place and empty at last', () => {
+		expect(rankFillPct(1, 3)).toBe(100);
+		expect(rankFillPct(3, 3)).toBe(0);
+	});
+
+	it('scales linearly between the ends', () => {
+		expect(rankFillPct(1.3, 3)).toBe(85);
+		expect(rankFillPct(1.7, 3)).toBe(65);
+		expect(rankFillPct(2, 3)).toBe(50);
+	});
+
+	it('fills nothing with no ballots or a single option', () => {
+		expect(rankFillPct(null, 3)).toBe(0);
+		expect(rankFillPct(1, 1)).toBe(0);
 	});
 });

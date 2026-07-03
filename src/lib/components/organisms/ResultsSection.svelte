@@ -11,7 +11,7 @@
 	import { Lock } from '@lucide/svelte';
 	import { m } from '$lib/paraglide/messages';
 	import { refreshThen, confirmingRefresh } from '$lib/forms/enhance';
-	import type { Locale, PollType, ResultView } from '$lib/types';
+	import { isTextPollType, type Locale, type PollType, type ResultView } from '$lib/types';
 
 	let {
 		results,
@@ -37,8 +37,10 @@
 		pendingNames?: string[];
 	} = $props();
 
-	const question = $derived(pollType === 'question');
+	const question = $derived(isTextPollType(pollType));
 	const rsvp = $derived(pollType === 'rsvp');
+	// Rank/highlight cards show value summaries instead of preference bars.
+	const valueKind = $derived(pollType === 'rank' || pollType === 'highlight' ? pollType : null);
 
 	// Closing flow: each result card gets a checkbox; confirming posts the ids.
 	let picked = $state<Record<string, boolean>>({});
@@ -131,6 +133,15 @@
 								unavailable: r.unavailableNames,
 								unsure: r.unsureNames
 							}}
+							value={valueKind
+								? {
+										kind: valueKind,
+										avgPosition: r.avgPosition,
+										valueSum: r.valueSum,
+										sharePct: r.sharePct,
+										names: r.valueNames
+									}
+								: null}
 						>
 							{#snippet leading()}
 								{#if selecting}

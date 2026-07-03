@@ -1,8 +1,9 @@
 <script lang="ts">
 	import ResultBars from './ResultBars.svelte';
+	import ValueResult from './ValueResult.svelte';
 	import { Star } from '@lucide/svelte';
 	import { m } from '$lib/paraglide/messages';
-	import type { PollType } from '$lib/types';
+	import { isTextPollType, type PollType } from '$lib/types';
 	import type { Snippet } from 'svelte';
 
 	// One option's result card (DESIGN.md "Result cards"), shared by the
@@ -27,6 +28,7 @@
 		showPreferred = true,
 		unsure = undefined,
 		names = null,
+		value = null,
 		leading = undefined
 	}: {
 		weekday: string;
@@ -51,10 +53,19 @@
 			unavailable: string[];
 			unsure?: string[];
 		} | null;
+		// Rank/highlight summary; when set it replaces the preference bars.
+		value?: {
+			kind: 'rank' | 'highlight';
+			avgPosition?: number | null;
+			valueSum: number;
+			sharePct?: number;
+			names?: { name: string; value: number }[];
+		} | null;
 		leading?: Snippet;
 	} = $props();
 
-	const question = $derived(pollType === 'question');
+	// Text-option polls (question, rank, highlight) share the option wording.
+	const question = $derived(isTextPollType(pollType));
 </script>
 
 <div
@@ -92,17 +103,27 @@
 	</div>
 
 	<div class="mt-3">
-		<ResultBars
-			{preferred}
-			{available}
-			{unavailable}
-			{preferredPct}
-			{availablePct}
-			{unavailablePct}
-			{showPreferred}
-			{unsure}
-			{pollType}
-			{names}
-		/>
+		{#if value}
+			<ValueResult
+				kind={value.kind}
+				avgPosition={value.avgPosition ?? null}
+				valueSum={value.valueSum}
+				sharePct={value.sharePct ?? 0}
+				names={value.names ?? []}
+			/>
+		{:else}
+			<ResultBars
+				{preferred}
+				{available}
+				{unavailable}
+				{preferredPct}
+				{availablePct}
+				{unavailablePct}
+				{showPreferred}
+				{unsure}
+				{pollType}
+				{names}
+			/>
+		{/if}
 	</div>
 </div>

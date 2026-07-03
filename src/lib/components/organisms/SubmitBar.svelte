@@ -58,7 +58,11 @@
 						? m.chooseEachQuestion()
 						: pollType === 'rsvp'
 							? m.chooseEachRsvp()
-							: m.chooseEach()}
+							: pollType === 'highlight'
+								? m.errorNoStrokes()
+								: pollType === 'rank'
+									? m.reorderHint()
+									: m.chooseEach()}
 				</div>
 			{/if}
 			<button

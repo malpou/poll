@@ -12,7 +12,13 @@
 	import { X, MessageSquare, Pencil, Save } from '@lucide/svelte';
 	import { m } from '$lib/paraglide/messages';
 	import { refreshThen, confirmingRefresh } from '$lib/forms/enhance';
-	import type { InviteeView, Locale, PollMode, PollType } from '$lib/types';
+	import {
+		isTextPollType,
+		type InviteeView,
+		type Locale,
+		type PollMode,
+		type PollType
+	} from '$lib/types';
 
 	let {
 		invitees,
@@ -42,7 +48,7 @@
 					cls: 'bg-hl-tint text-ink',
 					text:
 						s === 'partial'
-							? pollType === 'question'
+							? isTextPollType(pollType)
 								? m.partialAnsweredQuestion()
 								: m.partialAnswered()
 							: m.pending()

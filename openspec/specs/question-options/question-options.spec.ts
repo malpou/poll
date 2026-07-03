@@ -119,6 +119,19 @@ test('fewer than two non-blank options reaching the server is rejected', async (
 	await expect(page).toHaveURL(/\/create$/);
 });
 
+test('all five poll types are offered at creation', async ({ page }) => {
+	await page.goto('/create');
+	for (const name of [
+		m.pollTypeDates(),
+		m.pollTypeQuestion(),
+		m.pollTypeRsvp(),
+		m.pollTypeRank(),
+		m.pollTypeHighlight()
+	]) {
+		await expect(page.getByRole('radio', { name })).toBeVisible();
+	}
+});
+
 // --- Requirement: Poll type is immutable ---
 
 test('the dashboard settings offer no poll-type control', async ({ page }) => {
@@ -222,6 +235,36 @@ test('moving an option up reorders it for everyone', async ({ page }) => {
 	await expect(page.locator('[data-testid^="date-card-"]').first()).toContainText('Sushi');
 });
 
+// Rank polls reuse this option management; highlight behaves identically
+// (same actions, same provider path).
+const REV = 'e2e-question-rankev';
+
+test('rank and highlight options are managed the same way as question options', async ({
+	page
+}) => {
+	wipeEvent(REV);
+	seedEvent({
+		id: REV,
+		title: 'Rank managed (e2e)',
+		organizerToken: 'e2e-question-rankotok',
+		status: 'open',
+		pollType: 'rank',
+		allowPreferred: false,
+		allowUnsure: false
+	});
+	seedDateOption({ id: 'e2e-question-ro1', eventId: REV, label: 'Museum', sortOrder: 0 });
+	seedDateOption({ id: 'e2e-question-ro2', eventId: REV, label: 'Beach', sortOrder: 1 });
+
+	await page.goto('/e/e2e-question-rankotok');
+	const card = optionsSection(page).locator('div.rounded-card', { hasText: 'Museum' });
+	await card.getByRole('button', { name: m.edit() }).click();
+	const form = page.locator('form[action="?/editOption"]');
+	await form.locator('input[name="label"]').fill('Gallery');
+	await form.getByRole('button', { name: m.save() }).click();
+	await expect.poll(() => optionLabels(REV)).toEqual(['Gallery', 'Beach']);
+	await expect(page.getByText('Gallery').first()).toBeVisible();
+});
+
 // --- Requirement: Question polls carry no date affordances ---
 
 test('picking the question type swaps the calendar and timezone for text entry', async ({
@@ -259,6 +302,18 @@ test('a question poll dashboard offers no timezone, sort-by-date, or time fields
 	const form = page.locator('form[action="?/editOption"]');
 	await expect(form.locator('input[name="label"]')).toBeVisible();
 	await expect(form.locator('input[type="date"], input[type="time"]')).toHaveCount(0);
+});
+
+test('picking the rank or highlight type also swaps to text entry with no timezone', async ({
+	page
+}) => {
+	await page.goto('/create');
+	for (const name of [m.pollTypeRank(), m.pollTypeHighlight()]) {
+		await page.getByRole('radio', { name }).check();
+		await expect(page.getByPlaceholder(m.optionPlaceholder())).toBeVisible();
+		await expect(page.getByRole('button', { name: m.nextMonth() })).toHaveCount(0);
+		await expect(page.locator('input[name="timezone"]')).toHaveCount(0);
+	}
 });
 
 // --- Requirement: Question options render as their text everywhere ---

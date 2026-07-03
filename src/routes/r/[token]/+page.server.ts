@@ -4,6 +4,7 @@ import { enabledPreferences } from '$lib/logic/choices';
 import { optionDisplay } from '$lib/logic/options';
 import { orderForRespondent } from '$lib/logic/participant-status';
 import { outcomeFor } from '$lib/logic/results';
+import { parseHighlightAnswers, parseRankAnswers } from '$lib/logic/value-answers';
 import { cachedLoad, invalidateCache } from '$lib/server/cache';
 import { setRequestLocale } from '../../../hooks.server';
 import type { Preference } from '$lib/types';
@@ -17,7 +18,12 @@ export const load: PageServerLoad = async ({ params, platform, url }) => {
 		if (!ctx) return null;
 
 		const answers: Record<string, Preference> = {};
-		for (const r of ctx.responses) answers[r.dateOptionId] = r.preference;
+		// Rank positions / highlight stroke counts, keyed by option id.
+		const values: Record<string, number> = {};
+		for (const r of ctx.responses) {
+			if (r.value !== null) values[r.dateOptionId] = r.value;
+			else answers[r.dateOptionId] = r.preference;
+		}
 
 		// Returning respondents get dates added since their answer sorted first and
 		// flagged. Closed polls are read-only, so no flags/reorder there.
@@ -25,6 +31,23 @@ export const load: PageServerLoad = async ({ params, platform, url }) => {
 			ctx.event.status === 'open'
 				? new Set(ctx.responses.map((r) => r.dateOptionId))
 				: new Set<string>();
+
+		// Rank keeps the invitee's recorded order (the ballot is a full 1..N, so a
+		// missing-row reorder never applies); options the system appended on an
+		// organizer add carry the 'unsure' marker and get flagged instead.
+		const rankDates = () => {
+			const marker =
+				ctx.event.status === 'open'
+					? new Set(
+							ctx.responses
+								.filter((r) => r.value !== null && r.preference === 'unsure')
+								.map((r) => r.dateOptionId)
+						)
+					: new Set<string>();
+			return [...ctx.dateOptions]
+				.sort((a, b) => (values[a.id] ?? Infinity) - (values[b.id] ?? Infinity))
+				.map((d) => ({ ...d, needsAnswer: marker.has(d.id) }));
+		};
 
 		// Decided poll → chosen dates + count distribution (counts only, never
 		// names); null on a poll closed before decisions existed (openspec/specs/poll-closing).
@@ -42,13 +65,18 @@ export const load: PageServerLoad = async ({ params, platform, url }) => {
 			timezone: ctx.event.timezone,
 			accent: ctx.event.accent,
 			pollType: ctx.event.pollType,
+			highlightBudget: ctx.event.highlightBudget,
 			choices: enabledPreferences(ctx.event),
-			dates: orderForRespondent(ctx.dateOptions, answeredIds).map((d) => ({
+			dates: (ctx.event.pollType === 'rank'
+				? rankDates()
+				: orderForRespondent(ctx.dateOptions, answeredIds)
+			).map((d) => ({
 				id: d.id,
 				needsAnswer: d.needsAnswer,
 				...optionDisplay(d, ctx.event)
 			})),
 			answers,
+			values,
 			note: ctx.invitee.note ?? ''
 		};
 	});
@@ -70,16 +98,28 @@ export const actions = {
 
 		const form = await request.formData();
 		const optionIds = new Set(ctx.dateOptions.map((d) => d.id));
-		// Trust boundary: only the event's enabled choices are accepted - a
-		// disabled choice in a crafted request is dropped, storing nothing.
-		const enabled: ReadonlySet<string> = new Set(enabledPreferences(ctx.event));
 
-		const answers: ResponseInput[] = [];
-		for (const id of optionIds) {
-			const v = form.get(`pref.${id}`);
-			// Unmarked = no field = no row (stays "no answer").
-			if (typeof v === 'string' && enabled.has(v)) {
-				answers.push({ dateOptionId: id, preference: v as Preference });
+		let answers: ResponseInput[];
+		if (ctx.event.pollType === 'rank' || ctx.event.pollType === 'highlight') {
+			// Value submissions are all-or-nothing: a missing/duplicate position,
+			// over-budget total, or stale option set rejects the whole answer.
+			const parsed =
+				ctx.event.pollType === 'rank'
+					? parseRankAnswers(form, [...optionIds])
+					: parseHighlightAnswers(form, [...optionIds], ctx.event.highlightBudget);
+			if (!parsed) return fail(400);
+			answers = parsed;
+		} else {
+			// Trust boundary: only the event's enabled choices are accepted - a
+			// disabled choice in a crafted request is dropped, storing nothing.
+			const enabled: ReadonlySet<string> = new Set(enabledPreferences(ctx.event));
+			answers = [];
+			for (const id of optionIds) {
+				const v = form.get(`pref.${id}`);
+				// Unmarked = no field = no row (stays "no answer").
+				if (typeof v === 'string' && enabled.has(v)) {
+					answers.push({ dateOptionId: id, preference: v as Preference });
+				}
 			}
 		}
 

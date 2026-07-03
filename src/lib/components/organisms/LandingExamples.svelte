@@ -1,8 +1,12 @@
 <script lang="ts">
 	import DateOptionCard from '$lib/components/molecules/DateOptionCard.svelte';
 	import ResultBars from '$lib/components/molecules/ResultBars.svelte';
+	import ValueResult from '$lib/components/molecules/ValueResult.svelte';
+	import RankResponse from '$lib/components/organisms/RankResponse.svelte';
+	import HighlightResponse from '$lib/components/organisms/HighlightResponse.svelte';
 	import { m } from '$lib/paraglide/messages';
 	import { formatDateOption } from '$lib/logic/date';
+	import { rankFillPct } from '$lib/logic/results';
 	import type { Locale, Preference } from '$lib/types';
 
 	// One interactive example per poll type. Client-only toys: tapping an answer
@@ -42,6 +46,41 @@
 		m.landingSampleOptionB(),
 		m.landingSampleOptionC()
 	]);
+	const rankOptions = $derived([
+		m.landingSampleRankOptionA(),
+		m.landingSampleRankOptionB(),
+		m.landingSampleRankOptionC()
+	]);
+	const highlightOptions = $derived([
+		m.landingSampleHighlightOptionA(),
+		m.landingSampleHighlightOptionB(),
+		m.landingSampleHighlightOptionC()
+	]);
+
+	// Rank demo: two pretend-friend ballots (positions per option index) plus
+	// the visitor's live order; the tally shows each option's average position.
+	const RANK_BALLOTS = [
+		[1, 2, 3],
+		[2, 1, 3]
+	];
+	let rankPositions = $state([1, 2, 3]);
+	const rankAvg = $derived(
+		rankPositions.map(
+			(p, i) => (RANK_BALLOTS[0][i] + RANK_BALLOTS[1][i] + p) / (RANK_BALLOTS.length + 1)
+		)
+	);
+	function onRankReorder(ids: string[]) {
+		rankPositions = rankPositions.map((_, i) => ids.indexOf(`demo-rank-${String(i)}`) + 1);
+	}
+
+	// Highlight demo: pretend friends already spent some strokes; the visitor's
+	// strokes join the totals and the share bars follow.
+	const HIGHLIGHT_BASE = [3, 1, 0];
+	let myStrokes = $state<Record<string, number>>({});
+	const strokeTotals = $derived(
+		HIGHLIGHT_BASE.map((base, i) => base + (myStrokes[`demo-highlight-${String(i)}`] ?? 0))
+	);
+	const allStrokes = $derived(strokeTotals.reduce((a, b) => a + b, 0));
 
 	const rsvpFmt = $derived(formatDateOption(samples.rsvp, null, locale, samples.tz));
 	const rsvpTally = $derived(tally(RSVP_BASE, rsvpAnswer));
@@ -91,20 +130,34 @@
 		{/each}
 	</section>
 
-	<section class="flex flex-col gap-3" data-testid="example-rsvp">
-		{@render exampleHeader(m.pollTypeRsvp(), m.landingSampleRsvpTitle())}
-		<div class="flex flex-col gap-2">
-			<DateOptionCard
-				id="demo-rsvp"
-				index={0}
-				weekday={rsvpFmt.weekday}
-				dateLabel={rsvpFmt.dateLabel}
-				timeRange={rsvpFmt.timeRange}
-				choices={['available', 'unavailable']}
-				pollType="rsvp"
-				bind:value={rsvpAnswer}
+	<!-- Order mirrors the create form: dates first, the text-option trio
+	     (rank, question, highlight) in the middle, RSVP last. -->
+	<section class="flex flex-col gap-3" data-testid="example-rank">
+		{@render exampleHeader(m.pollTypeRank(), m.landingSampleRankTitle())}
+		{#key rankOptions}
+			<RankResponse
+				options={rankOptions.map((label, i) => ({
+					id: `demo-rank-${String(i)}`,
+					label,
+					weekday: '',
+					dateLabel: '',
+					timeRange: ''
+				}))}
+				onreorder={onRankReorder}
 			/>
-			<ResultBars {...rsvpTally} showPreferred={false} pollType="rsvp" />
+		{/key}
+		<div class="flex flex-col gap-2">
+			{#each rankOptions as option, i (option)}
+				<div class="flex flex-col gap-1" data-testid="rank-tally-{i}">
+					<span class="text-caption font-semibold text-ink">{option}</span>
+					<ValueResult
+						kind="rank"
+						avgPosition={rankAvg[i]}
+						valueSum={0}
+						sharePct={rankFillPct(rankAvg[i], rankOptions.length)}
+					/>
+				</div>
+			{/each}
 		</div>
 	</section>
 
@@ -127,5 +180,51 @@
 				<ResultBars {...t} showPreferred={false} pollType="question" />
 			</div>
 		{/each}
+	</section>
+
+	<section class="flex flex-col gap-3" data-testid="example-highlight">
+		{@render exampleHeader(m.pollTypeHighlight(), m.landingSampleHighlightTitle())}
+		{#key highlightOptions}
+			<HighlightResponse
+				options={highlightOptions.map((label, i) => ({
+					id: `demo-highlight-${String(i)}`,
+					label,
+					weekday: '',
+					dateLabel: '',
+					timeRange: ''
+				}))}
+				budget={5}
+				onchange={(counts: Record<string, number>) => (myStrokes = counts)}
+			/>
+		{/key}
+		<div class="flex flex-col gap-2">
+			{#each highlightOptions as option, i (option)}
+				<div class="flex flex-col gap-1" data-testid="highlight-tally-{i}">
+					<span class="text-caption font-semibold text-ink">{option}</span>
+					<ValueResult
+						kind="highlight"
+						valueSum={strokeTotals[i]}
+						sharePct={allStrokes ? Math.round((strokeTotals[i] / allStrokes) * 100) : 0}
+					/>
+				</div>
+			{/each}
+		</div>
+	</section>
+
+	<section class="flex flex-col gap-3" data-testid="example-rsvp">
+		{@render exampleHeader(m.pollTypeRsvp(), m.landingSampleRsvpTitle())}
+		<div class="flex flex-col gap-2">
+			<DateOptionCard
+				id="demo-rsvp"
+				index={0}
+				weekday={rsvpFmt.weekday}
+				dateLabel={rsvpFmt.dateLabel}
+				timeRange={rsvpFmt.timeRange}
+				choices={['available', 'unavailable']}
+				pollType="rsvp"
+				bind:value={rsvpAnswer}
+			/>
+			<ResultBars {...rsvpTally} showPreferred={false} pollType="rsvp" />
+		</div>
 	</section>
 </div>
