@@ -109,7 +109,16 @@
 			{/if}
 			<div class="flex flex-col gap-3">
 				{#each results as r, i (r.id)}
-					<div in:fly={flyIn(i)} animate:flip={flipParams()}>
+					<!-- While closing, the whole card is the pick target: a label wraps
+					     the card so a click anywhere toggles its checkbox (native, so
+					     keyboard + a11y come for free, no double-toggle). Inert when not
+					     selecting - the card has no control inside then. -->
+					<svelte:element
+						this={selecting ? 'label' : 'div'}
+						in:fly={flyIn(i)}
+						animate:flip={flipParams()}
+						class={selecting ? 'block cursor-pointer' : 'block'}
+					>
 						<ResultCard
 							weekday={r.weekday}
 							dateLabel={r.dateLabel}
@@ -145,7 +154,8 @@
 						>
 							{#snippet leading()}
 								{#if selecting}
-									<!-- The closing pick: one checkbox per option, posted on confirm. -->
+									<!-- The closing pick: one checkbox per option, posted on confirm.
+									     The wrapping label forwards card clicks to it. -->
 									<input
 										type="checkbox"
 										aria-label={question ? m.selectOptionLabel() : m.selectDateLabel()}
@@ -156,7 +166,7 @@
 								{/if}
 							{/snippet}
 						</ResultCard>
-					</div>
+					</svelte:element>
 				{/each}
 			</div>
 

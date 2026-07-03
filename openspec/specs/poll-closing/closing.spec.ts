@@ -70,6 +70,20 @@ test('closing with one date records it and shows the outcome banner', async ({ p
 	expect(selectedOptionIds(EV)).toEqual([DB]);
 });
 
+test('clicking anywhere on a result card toggles its selection', async ({ page }) => {
+	await enterSelectionMode(page);
+	// Click the card body (the weekday text), not the checkbox: the wrapping
+	// label forwards the click to the checkbox.
+	const sundayCard = page
+		.locator('div.rounded-card', { has: page.getByRole('checkbox', { name: m.selectDateLabel() }) })
+		.filter({ hasText: 'Sunday' });
+	await sundayCard.getByText('Sunday').click();
+	await expect(checkboxFor(page, 'Sunday')).toBeChecked();
+	await page.getByRole('button', { name: m.confirmClose() }).click();
+	await expect.poll(() => eventStatus(EV)).toBe('closed');
+	expect(selectedOptionIds(EV)).toEqual([DB]);
+});
+
 test('closing with several dates flags and badges them all', async ({ page }) => {
 	await enterSelectionMode(page);
 	await checkboxFor(page, 'Saturday').check();

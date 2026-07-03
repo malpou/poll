@@ -88,25 +88,34 @@
 				? 'slip-lifted'
 				: ''}"
 		>
+			<!-- The grip and the position numeral together are the drag handle, so
+			     the whole left region grabs the slip (not just the small grip). Still
+			     handle-only, so vertical touch-scroll elsewhere on the card is never
+			     hijacked. -->
+			{#snippet numeral()}
+				<span
+					aria-hidden="true"
+					class="grid h-6 w-6 shrink-0 place-items-center rounded-full border-2 border-ink text-2xs font-bold text-ink"
+				>
+					{i + 1}
+				</span>
+			{/snippet}
 			{#if !readOnly}
 				<button
 					type="button"
 					aria-label={m.dragToReorder()}
 					onpointerdown={(e) => dragStart(e, id)}
-					class="-m-2 shrink-0 touch-none p-2 text-ink-muted {dragging === id
+					class="-my-2 -ml-2 flex shrink-0 touch-none items-center gap-3 py-2 pl-2 text-ink-muted {dragging ===
+					id
 						? 'cursor-grabbing'
 						: 'cursor-grab'}"
 				>
 					<GripVertical size={16} aria-hidden="true" />
+					{@render numeral()}
 				</button>
+			{:else}
+				{@render numeral()}
 			{/if}
-			<!-- Circled typewriter numeral: the slip's current position (DESIGN.md). -->
-			<span
-				aria-hidden="true"
-				class="grid h-6 w-6 shrink-0 place-items-center rounded-full border-2 border-ink text-2xs font-bold text-ink"
-			>
-				{i + 1}
-			</span>
 			<span class="sr-only">{m.positionLabel({ position: i + 1 })}</span>
 			<div class="flex min-w-0 flex-col gap-1">
 				{#if opt.needsAnswer}

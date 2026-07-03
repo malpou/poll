@@ -83,52 +83,63 @@
 		<div
 			data-testid="highlight-card-{opt.id}"
 			in:fly={flyIn(i)}
-			class="flex flex-col gap-1 rounded-card border-2 border-border bg-card-alt p-4"
+			class="relative flex flex-col gap-1 rounded-card border-2 border-border bg-card-alt p-4"
 		>
-			{#if opt.needsAnswer}
-				<span
-					class="mb-1 w-fit whitespace-nowrap rounded-full bg-hl px-2.5 py-1 text-2xs font-bold text-ink"
-				>
-					{m.newDateBadge()}
-				</span>
-			{/if}
-			<div class="flex items-center gap-3">
-				<button
-					type="button"
-					onclick={() => add(opt.id)}
-					disabled={readOnly || remaining <= 0}
-					aria-label={m.addStroke({ option: opt.label })}
-					class="min-w-0 flex-1 cursor-pointer py-1 text-left disabled:cursor-not-allowed"
-				>
+			<!-- The whole card is the add-a-stroke target (sits behind the content);
+			     the remove button re-enables pointer events to stay clickable. -->
+			<button
+				type="button"
+				onclick={() => add(opt.id)}
+				disabled={readOnly || remaining <= 0}
+				aria-label={m.addStroke({ option: opt.label })}
+				class="absolute inset-0 z-0 rounded-card {readOnly || remaining <= 0
+					? 'cursor-not-allowed'
+					: 'cursor-pointer'}"
+			></button>
+			<div class="pointer-events-none relative z-10 flex flex-col gap-1">
+				{#if opt.needsAnswer}
 					<span
-						class="hl-strokes text-lead font-bold text-ink"
-						style:background-image={strokeBands(counts[opt.id])}>{opt.label}</span
+						class="mb-1 w-fit whitespace-nowrap rounded-full bg-hl px-2.5 py-1 text-2xs font-bold text-ink"
 					>
-				</button>
-				{#if counts[opt.id] > 0}
-					<!-- The spent strokes as marker-cap circles, mirroring the budget
-					     indicator above; the count itself is kept for assistive tech. -->
-					<div
-						data-testid="stroke-dots-{opt.id}"
-						class="flex shrink-0 flex-wrap items-center justify-end gap-1.5"
-						aria-hidden="true"
-					>
-						{#each Array(counts[opt.id])}
-							<span class="h-3.5 w-3.5 rounded-full border-2 border-ink bg-hl"></span>
-						{/each}
-					</div>
-					<span data-testid="stroke-count-{opt.id}" class="sr-only">
-						{m.strokesTotal({ count: counts[opt.id] })}
+						{m.newDateBadge()}
 					</span>
-					{#if !readOnly}
-						<Button
-							variant="ghost"
-							iconOnly
-							label={m.removeStroke({ option: opt.label })}
-							onclick={() => removeOne(opt.id)}><Minus size={16} /></Button
-						>
-					{/if}
 				{/if}
+				<div class="flex items-center gap-3">
+					<!-- flex-1 lives on the wrapper so the stroke bands (an inline
+					     hl-swipe on the span) still hug just the word, not the row. -->
+					<div class="min-w-0 flex-1 py-1">
+						<span
+							class="hl-strokes text-lead font-bold text-ink"
+							style:background-image={strokeBands(counts[opt.id])}>{opt.label}</span
+						>
+					</div>
+					{#if counts[opt.id] > 0}
+						<!-- The spent strokes as marker-cap circles, mirroring the budget
+						     indicator above; the count itself is kept for assistive tech. -->
+						<div
+							data-testid="stroke-dots-{opt.id}"
+							class="flex shrink-0 flex-wrap items-center justify-end gap-1.5"
+							aria-hidden="true"
+						>
+							{#each Array(counts[opt.id])}
+								<span class="h-3.5 w-3.5 rounded-full border-2 border-ink bg-hl"></span>
+							{/each}
+						</div>
+						<span data-testid="stroke-count-{opt.id}" class="sr-only">
+							{m.strokesTotal({ count: counts[opt.id] })}
+						</span>
+						{#if !readOnly}
+							<span class="pointer-events-auto">
+								<Button
+									variant="ghost"
+									iconOnly
+									label={m.removeStroke({ option: opt.label })}
+									onclick={() => removeOne(opt.id)}><Minus size={16} /></Button
+								>
+							</span>
+						{/if}
+					{/if}
+				</div>
 			</div>
 			<input type="hidden" name="value.{opt.id}" value={counts[opt.id]} />
 		</div>

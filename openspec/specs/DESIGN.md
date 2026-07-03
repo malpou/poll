@@ -101,6 +101,9 @@ theme token instead.
   spent; each picked option then carries that same circle motif — one filled
   marker-cap dot per stroke it holds — instead of a numeric count, so the
   spent dots on the cards visibly mirror the depleted dots in the budget row.
+  The whole option card is the tap-to-add-a-stroke target (the remove control
+  stays a distinct button); the marker band itself still hugs just the word,
+  never the full row.
 - **Status strips** (the `NoticeBanner` atom): a 2px-bordered card-radius
   strip led by an 8px colored dot, in two tones — highlighter tint with an
   `--hl` dot, and neutral `card-alt` with an ink dot.
@@ -221,9 +224,10 @@ decorative. Animate transform and opacity only — the result bar grows with a
 - **Lifted slip** (rank reordering): the dragged slip lifts with a soft ink
   shadow, ~1° rotate and a slight scale (the `slip-lifted` class — transform
   only), while its siblings glide around it with the standard flip params.
-  Drag starts only on the grip handle so touch scrolling elsewhere is never
-  hijacked; the move up/down buttons are the keyboard and assistive-tech
-  path and always present.
+  Drag starts on the handle — the grip and the position numeral together, so
+  the whole left region grabs the slip — while touch scrolling elsewhere on
+  the card is never hijacked; the move up/down buttons are the keyboard and
+  assistive-tech path and always present.
 - **State swaps animate, never cut.** Content replaced in place — a live
   language re-render, a hint that follows a picked type or mode, a
   disclosure opening or closing — fades/slides in with a short ease-out
