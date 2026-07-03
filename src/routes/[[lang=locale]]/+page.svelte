@@ -4,6 +4,7 @@
 	import AccentPicker from '$lib/components/atoms/AccentPicker.svelte';
 	import HreflangLinks from '$lib/components/atoms/HreflangLinks.svelte';
 	import LanguagePicker from '$lib/components/atoms/LanguagePicker.svelte';
+	import LocaleSwap from '$lib/components/atoms/LocaleSwap.svelte';
 	import SectionHeading from '$lib/components/atoms/SectionHeading.svelte';
 	import LandingExamples from '$lib/components/organisms/LandingExamples.svelte';
 	import { m } from '$lib/paraglide/messages';
@@ -97,7 +98,7 @@
 		</div>
 
 		<!-- Re-render every m.*() under the newly picked locale. -->
-		{#key locale}
+		<LocaleSwap {locale}>
 			<h1 class="mb-3 text-title font-bold text-ink">
 				<span class="hl-swipe">{m.landingTitle()}</span>
 			</h1>
@@ -120,6 +121,6 @@
 			<div class="mb-2"><SectionHeading text={m.landingExamplesTitle()} /></div>
 			<p class="mb-6 max-w-prose text-caption text-ink-muted">{m.landingExamplesHint()}</p>
 			<LandingExamples {locale} samples={data.samples} />
-		{/key}
+		</LocaleSwap>
 	</div>
 </div>

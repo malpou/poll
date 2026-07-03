@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { fly } from 'svelte/transition';
-	import { flyIn, swapIn } from '$lib/motion';
+	import { flyIn } from '$lib/motion';
+	import LocaleSwap from '$lib/components/atoms/LocaleSwap.svelte';
 	import { enhance } from '$app/forms';
 	import TextField from '$lib/components/atoms/TextField.svelte';
 	import Button from '$lib/components/atoms/Button.svelte';
@@ -39,8 +40,8 @@
 	let addingText = $state('');
 </script>
 
-{#key locale}
-	<section class="mb-10" in:fly={swapIn({ y: 0 })}>
+<LocaleSwap {locale}>
+	<section class="mb-10">
 		<div class="mb-3.5 flex items-center justify-between gap-2.5">
 			<SectionHeading
 				text={question ? m.optionsSection() : rsvp ? m.dateSectionRsvp() : m.datesSection()}
@@ -185,4 +186,4 @@
 			{/if}
 		{/if}
 	</section>
-{/key}
+</LocaleSwap>

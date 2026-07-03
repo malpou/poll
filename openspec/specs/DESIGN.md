@@ -204,7 +204,8 @@ decorative. Animate transform and opacity only — the result bar grows with a
   reduced motion: near-instant opacity fade, disclosures snap.
 - Shared motion params live in `src/lib/motion.ts` — use
   `flyIn`/`flipParams`/`swapIn`/`slideParams` instead of inlining values;
-  they handle reduced motion for you.
+  they handle reduced motion for you. Live locale re-renders wrap in the
+  shared `LocaleSwap` atom rather than hand-rolling `{#key}` + fade.
 - **Accessibility:** honor `prefers-reduced-motion` — drop transforms and
   stagger, keep only near-instant opacity fades. No motion blocks
   interaction.

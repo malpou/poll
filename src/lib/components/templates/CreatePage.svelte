@@ -3,6 +3,7 @@
 	import RichTextEditor from '$lib/components/atoms/RichTextEditor.svelte';
 	import Button from '$lib/components/atoms/Button.svelte';
 	import TimezoneCombobox from '$lib/components/atoms/TimezoneCombobox.svelte';
+	import LocaleSwap from '$lib/components/atoms/LocaleSwap.svelte';
 	import { ArrowRight, Clock, X } from '@lucide/svelte';
 	import SectionHeading from '$lib/components/atoms/SectionHeading.svelte';
 	import CalendarDatePicker from '$lib/components/molecules/CalendarDatePicker.svelte';
@@ -216,189 +217,179 @@
 
 		<!-- Re-render every m.*() under the newly picked locale. Form state (title,
 	     dates, participants) lives in $state above the block, so it survives. -->
-		{#key locale}
-			<div in:fly={swapIn({ y: 0 })}>
-				<h1 class="mb-8 text-title font-bold text-ink">
-					<span class="hl-swipe">{m.createTitle()}</span>
-				</h1>
+		<LocaleSwap {locale}>
+			<h1 class="mb-8 text-title font-bold text-ink">
+				<span class="hl-swipe">{m.createTitle()}</span>
+			</h1>
 
-				<!-- The type decides what the rest of the form asks for, so it leads;
+			<!-- The type decides what the rest of the form asks for, so it leads;
 			     its hint is the single explainer for the picked type. -->
-				<fieldset class="mb-9 flex flex-col gap-2.5">
-					<legend class="mb-3 text-2xs font-bold uppercase tracking-widest text-ink-muted">
-						{m.fieldPollType()}
-					</legend>
-					{#each [{ value: 'dates', label: m.pollTypeDates() }, { value: 'question', label: m.pollTypeQuestion() }, { value: 'rsvp', label: m.pollTypeRsvp() }] as opt (opt.value)}
-						{@const active = pollType === opt.value}
-						<label
-							class="relative flex cursor-pointer items-center gap-3 rounded-control border-2 p-3.5 text-body text-ink transition hover:border-ink {active
-								? 'border-ink bg-hl-tint'
-								: 'border-border-strong bg-card-alt'}"
-						>
-							<input
-								type="radio"
-								name="pollType"
-								value={opt.value}
-								bind:group={pollType}
-								class="peer absolute inset-0 h-full w-full cursor-pointer opacity-0"
-							/>
-							<span
-								class="grid h-4 w-4 shrink-0 place-items-center rounded-full border-2 border-ink"
-							>
-								<span class="h-2 w-2 rounded-full {active ? 'bg-ink' : ''}"></span>
-							</span>
-							{opt.label}
-						</label>
-					{/each}
-					{#key pollType}
-						<p in:fly={swapIn()} class="text-caption leading-relaxed text-ink-muted">
-							{pollType === 'question'
-								? m.pollTypeQuestionHint()
-								: pollType === 'rsvp'
-									? m.pollTypeRsvpHint()
-									: m.pollTypeDatesHint()}
-						</p>
-					{/key}
-				</fieldset>
+			<fieldset class="mb-9 flex flex-col gap-2.5">
+				<legend class="mb-3 text-2xs font-bold uppercase tracking-widest text-ink-muted">
+					{m.fieldPollType()}
+				</legend>
+				{#each [{ value: 'dates', label: m.pollTypeDates() }, { value: 'question', label: m.pollTypeQuestion() }, { value: 'rsvp', label: m.pollTypeRsvp() }] as opt (opt.value)}
+					{@const active = pollType === opt.value}
+					<label
+						class="relative flex cursor-pointer items-center gap-3 rounded-control border-2 p-3.5 text-body text-ink transition hover:border-ink {active
+							? 'border-ink bg-hl-tint'
+							: 'border-border-strong bg-card-alt'}"
+					>
+						<input
+							type="radio"
+							name="pollType"
+							value={opt.value}
+							bind:group={pollType}
+							class="peer absolute inset-0 h-full w-full cursor-pointer opacity-0"
+						/>
+						<span class="grid h-4 w-4 shrink-0 place-items-center rounded-full border-2 border-ink">
+							<span class="h-2 w-2 rounded-full {active ? 'bg-ink' : ''}"></span>
+						</span>
+						{opt.label}
+					</label>
+				{/each}
+				{#key pollType}
+					<p in:fly={swapIn()} class="text-caption leading-relaxed text-ink-muted">
+						{pollType === 'question'
+							? m.pollTypeQuestionHint()
+							: pollType === 'rsvp'
+								? m.pollTypeRsvpHint()
+								: m.pollTypeDatesHint()}
+					</p>
+				{/key}
+			</fieldset>
 
-				<div class="mb-6">
-					<TextField
-						label={m.fieldTitle()}
-						name="title"
-						bind:value={title}
-						placeholder={m.titlePlaceholder()}
-					/>
-				</div>
+			<div class="mb-6">
+				<TextField
+					label={m.fieldTitle()}
+					name="title"
+					bind:value={title}
+					placeholder={m.titlePlaceholder()}
+				/>
+			</div>
 
+			<div class="mb-10">
+				<RichTextEditor label={m.fieldDescription()} name="description" bind:value={description} />
+			</div>
+
+			{#if pollType === 'question'}
 				<div class="mb-10">
-					<RichTextEditor
-						label={m.fieldDescription()}
-						name="description"
-						bind:value={description}
-					/>
+					<SectionHeading text={m.optionsSection()} class="mb-1" />
+					<p class="mb-3.5 text-caption text-ink-muted">{m.optionsHint()}</p>
+					<TextOptionList bind:options={textOptions} />
 				</div>
+			{:else if pollType === 'rsvp'}
+				<div class="mb-10">
+					<SectionHeading text={m.dateSectionRsvp()} class="mb-1" />
+					<p class="mb-3.5 text-caption text-ink-muted">{m.dateHintRsvp()}</p>
+					{@render timezoneField()}
+					<CalendarDatePicker bind:dates={rsvpDates} {locale} single />
+				</div>
+			{:else}
+				<div class="mb-10">
+					<SectionHeading text={m.datesSection()} class="mb-1" />
+					<p class="mb-3.5 text-caption text-ink-muted">{m.datesHint()}</p>
+					{@render timezoneField()}
+					<CalendarDatePicker bind:dates {locale} />
+				</div>
+			{/if}
 
-				{#if pollType === 'question'}
-					<div class="mb-10">
-						<SectionHeading text={m.optionsSection()} class="mb-1" />
-						<p class="mb-3.5 text-caption text-ink-muted">{m.optionsHint()}</p>
-						<TextOptionList bind:options={textOptions} />
-					</div>
-				{:else if pollType === 'rsvp'}
-					<div class="mb-10">
-						<SectionHeading text={m.dateSectionRsvp()} class="mb-1" />
-						<p class="mb-3.5 text-caption text-ink-muted">{m.dateHintRsvp()}</p>
-						{@render timezoneField()}
-						<CalendarDatePicker bind:dates={rsvpDates} {locale} single />
-					</div>
-				{:else}
-					<div class="mb-10">
-						<SectionHeading text={m.datesSection()} class="mb-1" />
-						<p class="mb-3.5 text-caption text-ink-muted">{m.datesHint()}</p>
-						{@render timezoneField()}
-						<CalendarDatePicker bind:dates {locale} />
-					</div>
-				{/if}
-
-				<!-- Hidden inputs carry explicit values so the server never has to guess
+			<!-- Hidden inputs carry explicit values so the server never has to guess
 			     an unchecked box's meaning. RSVP is strictly yes/no: no toggles
 			     offered, both posted off. -->
-				{#if pollType === 'rsvp'}
-					<input type="hidden" name="allowPreferred" value="0" />
-					<input type="hidden" name="allowUnsure" value="0" />
-				{:else}
-					<div class="mb-9 flex flex-col gap-2">
-						<span class="text-2xs font-bold uppercase tracking-widest text-ink-muted"
-							>{m.fieldChoices()}</span
-						>
-						<p class="text-caption leading-relaxed text-ink-muted">{m.choicesHint()}</p>
-						<label class="flex items-center gap-2 text-body text-ink">
-							<input
-								type="checkbox"
-								bind:checked={allowPreferred}
-								class="h-5 w-5 cursor-pointer accent-ink"
-							/>
-							{m.prefPreferred()}
-						</label>
-						<label class="flex items-center gap-2 text-body text-ink">
-							<input
-								type="checkbox"
-								bind:checked={allowUnsure}
-								class="h-5 w-5 cursor-pointer accent-ink"
-							/>
-							{m.prefUnsure()}
-						</label>
-						<input type="hidden" name="allowPreferred" value={allowPreferred ? '1' : '0'} />
-						<input type="hidden" name="allowUnsure" value={allowUnsure ? '1' : '0'} />
-					</div>
-				{/if}
-
-				<fieldset class="mb-9 flex flex-col gap-2.5">
-					<legend class="mb-3 text-2xs font-bold uppercase tracking-widest text-ink-muted">
-						{m.fieldMode()}
-					</legend>
-					{#each [{ value: 'open', label: m.modeOpen() }, { value: 'assigned', label: m.modeAssigned() }] as opt (opt.value)}
-						{@const active = pollMode === opt.value}
-						<label
-							class="relative flex cursor-pointer items-center gap-3 rounded-control border-2 p-3.5 text-body text-ink transition hover:border-ink {active
-								? 'border-ink bg-hl-tint'
-								: 'border-border-strong bg-card-alt'}"
-						>
-							<input
-								type="radio"
-								name="pollMode"
-								value={opt.value}
-								bind:group={pollMode}
-								class="peer absolute inset-0 h-full w-full cursor-pointer opacity-0"
-							/>
-							<span
-								class="grid h-4 w-4 shrink-0 place-items-center rounded-full border-2 border-ink"
-							>
-								<span class="h-2 w-2 rounded-full {active ? 'bg-ink' : ''}"></span>
-							</span>
-							{opt.label}
-						</label>
-					{/each}
-					{#key pollMode}
-						<p in:fly={swapIn()} class="text-caption leading-relaxed text-ink-muted">
-							{pollMode === 'open' ? m.modeOpenHint() : m.modeAssignedHint()}
-						</p>
-					{/key}
-				</fieldset>
-
-				{#if pollMode === 'assigned'}
-					<div class="mb-9">
-						<ParticipantList
-							bind:participants
-							onadd={addParticipant}
-							onremove={removeParticipant}
-							oncopied={() => toast.show(m.linkCopied())}
-						/>
-					</div>
-				{/if}
-
-				<div class="mt-2 flex flex-col gap-3.5">
-					{#if form?.error}
-						<div class="text-sm font-semibold text-bad">{form.error}</div>
-					{/if}
-					{#if !valid}
-						<!-- Name the first missing thing so the disabled button explains itself. -->
-						<div class="text-center text-caption text-ink-muted">
-							{!title.trim()
-								? m.errorNoTitle()
-								: pollType === 'question'
-									? m.errorTooFewOptions()
-									: pollType === 'rsvp'
-										? m.errorRsvpOneDate()
-										: m.errorNoDates()}
-						</div>
-					{/if}
-					<Button variant="primary" type="submit" disabled={!valid}
-						>{m.create()}<ArrowRight size={17} /></Button
+			{#if pollType === 'rsvp'}
+				<input type="hidden" name="allowPreferred" value="0" />
+				<input type="hidden" name="allowUnsure" value="0" />
+			{:else}
+				<div class="mb-9 flex flex-col gap-2">
+					<span class="text-2xs font-bold uppercase tracking-widest text-ink-muted"
+						>{m.fieldChoices()}</span
 					>
+					<p class="text-caption leading-relaxed text-ink-muted">{m.choicesHint()}</p>
+					<label class="flex items-center gap-2 text-body text-ink">
+						<input
+							type="checkbox"
+							bind:checked={allowPreferred}
+							class="h-5 w-5 cursor-pointer accent-ink"
+						/>
+						{m.prefPreferred()}
+					</label>
+					<label class="flex items-center gap-2 text-body text-ink">
+						<input
+							type="checkbox"
+							bind:checked={allowUnsure}
+							class="h-5 w-5 cursor-pointer accent-ink"
+						/>
+						{m.prefUnsure()}
+					</label>
+					<input type="hidden" name="allowPreferred" value={allowPreferred ? '1' : '0'} />
+					<input type="hidden" name="allowUnsure" value={allowUnsure ? '1' : '0'} />
 				</div>
+			{/if}
+
+			<fieldset class="mb-9 flex flex-col gap-2.5">
+				<legend class="mb-3 text-2xs font-bold uppercase tracking-widest text-ink-muted">
+					{m.fieldMode()}
+				</legend>
+				{#each [{ value: 'open', label: m.modeOpen() }, { value: 'assigned', label: m.modeAssigned() }] as opt (opt.value)}
+					{@const active = pollMode === opt.value}
+					<label
+						class="relative flex cursor-pointer items-center gap-3 rounded-control border-2 p-3.5 text-body text-ink transition hover:border-ink {active
+							? 'border-ink bg-hl-tint'
+							: 'border-border-strong bg-card-alt'}"
+					>
+						<input
+							type="radio"
+							name="pollMode"
+							value={opt.value}
+							bind:group={pollMode}
+							class="peer absolute inset-0 h-full w-full cursor-pointer opacity-0"
+						/>
+						<span class="grid h-4 w-4 shrink-0 place-items-center rounded-full border-2 border-ink">
+							<span class="h-2 w-2 rounded-full {active ? 'bg-ink' : ''}"></span>
+						</span>
+						{opt.label}
+					</label>
+				{/each}
+				{#key pollMode}
+					<p in:fly={swapIn()} class="text-caption leading-relaxed text-ink-muted">
+						{pollMode === 'open' ? m.modeOpenHint() : m.modeAssignedHint()}
+					</p>
+				{/key}
+			</fieldset>
+
+			{#if pollMode === 'assigned'}
+				<div class="mb-9">
+					<ParticipantList
+						bind:participants
+						onadd={addParticipant}
+						onremove={removeParticipant}
+						oncopied={() => toast.show(m.linkCopied())}
+					/>
+				</div>
+			{/if}
+
+			<div class="mt-2 flex flex-col gap-3.5">
+				{#if form?.error}
+					<div class="text-sm font-semibold text-bad">{form.error}</div>
+				{/if}
+				{#if !valid}
+					<!-- Name the first missing thing so the disabled button explains itself. -->
+					<div class="text-center text-caption text-ink-muted">
+						{!title.trim()
+							? m.errorNoTitle()
+							: pollType === 'question'
+								? m.errorTooFewOptions()
+								: pollType === 'rsvp'
+									? m.errorRsvpOneDate()
+									: m.errorNoDates()}
+					</div>
+				{/if}
+				<Button variant="primary" type="submit" disabled={!valid}
+					>{m.create()}<ArrowRight size={17} /></Button
+				>
 			</div>
-		{/key}
+		</LocaleSwap>
 	</div>
 </form>
 

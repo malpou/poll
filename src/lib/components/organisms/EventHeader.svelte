@@ -1,7 +1,6 @@
 <script lang="ts">
 	import { enhance } from '$app/forms';
-	import { fly } from 'svelte/transition';
-	import { swapIn } from '$lib/motion';
+	import LocaleSwap from '$lib/components/atoms/LocaleSwap.svelte';
 	import TextField from '$lib/components/atoms/TextField.svelte';
 	import RichTextEditor from '$lib/components/atoms/RichTextEditor.svelte';
 	import Button from '$lib/components/atoms/Button.svelte';
@@ -93,8 +92,8 @@
 	}
 </script>
 
-{#key locale}
-	<div class="mb-8" in:fly={swapIn({ y: 0 })}>
+<LocaleSwap {locale}>
+	<div class="mb-8">
 		<SectionHeading text={m.dashboardTitle()} />
 
 		<!-- Title + description own their block; the edit button sits below, not
@@ -229,4 +228,4 @@
 			</span>
 		</div>
 	</div>
-{/key}
+</LocaleSwap>

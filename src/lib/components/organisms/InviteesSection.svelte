@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { fly } from 'svelte/transition';
-	import { flyIn, swapIn } from '$lib/motion';
+	import { flyIn } from '$lib/motion';
+	import LocaleSwap from '$lib/components/atoms/LocaleSwap.svelte';
 	import { enhance } from '$app/forms';
 	import TextField from '$lib/components/atoms/TextField.svelte';
 	import Button from '$lib/components/atoms/Button.svelte';
@@ -77,8 +78,8 @@
 	{/if}
 {/snippet}
 
-{#key locale}
-	<section in:fly={swapIn({ y: 0 })}>
+<LocaleSwap {locale}>
+	<section>
 		<SectionHeading text={m.participantsSection()} class="mb-3.5" />
 
 		{#if pollMode === 'open'}
@@ -178,4 +179,4 @@
 			{/if}
 		{/if}
 	</section>
-{/key}
+</LocaleSwap>
