@@ -106,10 +106,19 @@
 					>
 				</button>
 				{#if counts[opt.id] > 0}
-					<!-- The tally symbol is locale-neutral; the remove button's label
-					     carries the words for assistive tech. -->
-					<span data-testid="stroke-count-{opt.id}" class="shrink-0 text-caption text-ink-muted">
-						×{counts[opt.id]}
+					<!-- The spent strokes as marker-cap circles, mirroring the budget
+					     indicator above; the count itself is kept for assistive tech. -->
+					<div
+						data-testid="stroke-dots-{opt.id}"
+						class="flex shrink-0 flex-wrap items-center justify-end gap-1.5"
+						aria-hidden="true"
+					>
+						{#each Array(counts[opt.id])}
+							<span class="h-3.5 w-3.5 rounded-full border-2 border-ink bg-hl"></span>
+						{/each}
+					</div>
+					<span data-testid="stroke-count-{opt.id}" class="sr-only">
+						{m.strokesTotal({ count: counts[opt.id] })}
 					</span>
 					{#if !readOnly}
 						<Button

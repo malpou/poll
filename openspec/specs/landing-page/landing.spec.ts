@@ -81,7 +81,9 @@ test('highlight example spends a stroke and updates its tally', async ({ page })
 	// A tap marks the option, drops the remaining count, and moves the tally.
 	const optionA = m.landingSampleHighlightOptionA();
 	await highlight.getByRole('button', { name: m.addStroke({ option: optionA }) }).click();
-	await expect(highlight.getByTestId('stroke-count-demo-highlight-0')).toHaveText('×1');
+	await expect(highlight.getByTestId('stroke-dots-demo-highlight-0').locator('span')).toHaveCount(
+		1
+	);
 	await expect(highlight.getByText(m.strokesLeft({ count: 4, budget: 5 }))).toBeVisible();
 	await expect(highlight.getByTestId('highlight-tally-0')).toContainText(
 		m.strokesTotal({ count: 4 })

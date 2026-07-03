@@ -98,7 +98,9 @@ theme token instead.
   `hl-strokes` class keeps wrapped lines marked via
   `box-decoration-break: clone`. The budget renders as a row of marker-cap
   dots (14px circles, `--hl` fill while unspent) that deplete as strokes are
-  spent.
+  spent; each picked option then carries that same circle motif — one filled
+  marker-cap dot per stroke it holds — instead of a numeric count, so the
+  spent dots on the cards visibly mirror the depleted dots in the budget row.
 - **Status strips** (the `NoticeBanner` atom): a 2px-bordered card-radius
   strip led by an 8px colored dot, in two tones — highlighter tint with an
   `--hl` dot, and neutral `card-alt` with an ink dot.

@@ -157,10 +157,11 @@ test('a stroke can be taken back and the remaining count goes up', async ({ page
 	await page.goto(`/r/${RTOK}`);
 	await addStroke(page, 'Lasagna').click();
 	await addStroke(page, 'Lasagna').click();
-	await expect(page.getByTestId(`stroke-count-${O1}`)).toHaveText('×2');
+	// Two strokes render as two marker-cap circles on the card.
+	await expect(page.getByTestId(`stroke-dots-${O1}`).locator('span')).toHaveCount(2);
 	await expect(strokesLeft(page, 3)).toBeVisible();
 	await removeStroke(page, 'Lasagna').click();
-	await expect(page.getByTestId(`stroke-count-${O1}`)).toHaveText('×1');
+	await expect(page.getByTestId(`stroke-dots-${O1}`).locator('span')).toHaveCount(1);
 	await expect(strokesLeft(page, 4)).toBeVisible();
 });
 
