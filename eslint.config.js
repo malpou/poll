@@ -34,6 +34,7 @@ const noHardcodedText = {
 export default defineConfig(
 	{
 		ignores: [
+			'.claude/',
 			'.svelte-kit/',
 			'.wrangler/',
 			'build/',
