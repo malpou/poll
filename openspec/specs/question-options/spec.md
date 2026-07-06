@@ -171,7 +171,7 @@ The system SHALL render question polls with question wording wherever a
 dates poll's copy names dates: the response scale's choice labels, result
 tally labels, section headings, the response prompt, chosen-outcome headings,
 and new-option notices. The Available and Unavailable choices SHALL be
-labeled in works-for-me / doesn't-work terms. All such copy SHALL render in
+labeled in yes / no terms. All such copy SHALL render in
 the poll's language, and dates polls SHALL keep their current wording.
 
 #### Scenario: Choice labels read in question wording
@@ -185,8 +185,8 @@ the poll's language, and dates polls SHALL keep their current wording.
 
 - GIVEN a question poll with responses
 - WHEN the organizer opens the dashboard
-- THEN each option's count row is labeled in works-for-me / doesn't-work
-  terms, not the date wording
+- THEN each option's count row is labeled in yes / no terms, not the date
+  wording
 
 #### Scenario: Dates polls keep date wording
 
