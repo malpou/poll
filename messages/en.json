@@ -180,7 +180,7 @@
 	"removeStroke": "Remove a point from {option}",
 	"errorNoStrokes": "Spend at least one point first",
 	"strokesTotal": "Points: {count}",
-	"averagePosition": "Average position {avg}",
+	"averagePosition": "Average ranking {avg}",
 	"landingTitle": "Ask everyone, decide together",
 	"landingIntro": "Trying to get everyone to agree? Create a poll, share it, and see every answer in one place. No accounts, no apps: everyone answers through a simple link.",
 	"landingIntroTypes": "Find a date, count who's coming to an event, settle any question with your own options, rank the choices, or spend points on favorites.",

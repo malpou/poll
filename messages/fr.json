@@ -180,7 +180,7 @@
 	"removeStroke": "Retirer un point de {option}",
 	"errorNoStrokes": "Utilisez d’abord au moins un point",
 	"strokesTotal": "Points : {count}",
-	"averagePosition": "Position moyenne {avg}",
+	"averagePosition": "Classement moyen {avg}",
 	"landingTitle": "Demandez à tous, décidez ensemble",
 	"landingIntro": "Besoin de vous mettre d'accord ? Créez un sondage, partagez-le et retrouvez toutes les réponses au même endroit. Pas de compte, pas d'application : chacun répond par un simple lien.",
 	"landingIntroTypes": "Trouvez une date, comptez qui vient à un événement, tranchez n’importe quelle question avec vos propres options, classez les choix, ou répartissez des points sur vos préférés.",
