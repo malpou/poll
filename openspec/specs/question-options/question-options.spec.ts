@@ -405,7 +405,7 @@ test("the choice controls read in the poll's language in question wording", asyn
 test('result tallies read in question wording on the dashboard', async ({ page }) => {
 	seed();
 	await page.goto(`/e/${OTOK}`);
-	// Pizza: Anna alone can make it - the count row reads works-for-me, not date terms.
+	// Pizza: Anna alone can make it - the count row reads yes/no, not date terms.
 	await expect(page.getByText(`1 ${m.prefAvailableQuestion()}`).first()).toBeVisible();
 	await expect(page.getByText(`1 ${m.prefUnavailableQuestion()}`).first()).toBeVisible();
 	await expect(page.getByText(m.prefAvailable())).toHaveCount(0);

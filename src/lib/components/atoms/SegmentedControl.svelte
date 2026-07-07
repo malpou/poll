@@ -14,7 +14,7 @@
 		// The event's enabled choices, in display order (see $lib/logic/choices).
 		choices?: Preference[];
 		readOnly?: boolean;
-		// Question polls label the fixed pair in works-for-me/doesn't-work terms.
+		// Question polls label the fixed pair in yes/no terms.
 		pollType?: PollType;
 	} = $props();
 

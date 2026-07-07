@@ -19,7 +19,7 @@
 		showPreferred?: boolean;
 		unsure?: number;
 		// Wording for the count row follows the poll type everywhere (RSVP
-		// yes/no, question works-for-me, dates preference labels).
+		// yes/no, question yes/no, dates preference labels).
 		pollType?: PollType;
 		names?: {
 			preferred: string[];
