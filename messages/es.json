@@ -180,7 +180,7 @@
 	"removeStroke": "Quitar un punto de {option}",
 	"errorNoStrokes": "Usa al menos un punto primero",
 	"strokesTotal": "Puntos: {count}",
-	"averagePosition": "Posición media {avg}",
+	"averagePosition": "Clasificación media {avg}",
 	"landingTitle": "Pregunta a todos, decidid juntos",
 	"landingIntro": "¿Tenéis que poneros de acuerdo? Crea una encuesta, compártela y mira todas las respuestas en un solo sitio. Sin cuentas ni aplicaciones: todos responden a través de un simple enlace.",
 	"landingIntroTypes": "Encuentra una fecha, cuenta quién viene a un evento, resuelve cualquier pregunta con tus propias opciones, clasifícalas por orden, o reparte puntos entre favoritas.",

@@ -180,7 +180,7 @@
 	"removeStroke": "Fjern et point fra {option}",
 	"errorNoStrokes": "Brug mindst ét point først",
 	"strokesTotal": "Point: {count}",
-	"averagePosition": "Gennemsnitlig plads {avg}",
+	"averagePosition": "Gennemsnitlig rangering {avg}",
 	"landingTitle": "Spørg alle, beslut sammen",
 	"landingIntro": "Skal I blive enige om noget? Opret en afstemning, del den, og se alle svar ét sted. Ingen konti, ingen apps: alle svarer gennem et simpelt link.",
 	"landingIntroTypes": "Find en dato, tæl hvem der kommer til en begivenhed, afgør et spørgsmål med dine egne svarmuligheder, prioriter mulighederne, eller fordel point på favoritterne.",
