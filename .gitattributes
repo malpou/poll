@@ -15,12 +15,10 @@ internal/db/db.go linguist-generated=true -diff
 internal/db/models.go linguist-generated=true -diff
 internal/db/queries.sql.go linguist-generated=true -diff
 
-# src/ is entirely generated - nothing there is hand-written. The e2e specs
-# import these two modules by relative path, which is the only reason the tree
-# exists: Paraglide compiles messages/{da,en,fr}.json into the typed m.*()
-# module, and scripts/gen-types.sh derives the spec-side types.
+# Paraglide compiles messages/{da,en,fr}.json into the typed m.*() module the
+# e2e specs import. It lives under src/ because the specs import it by that
+# relative path.
 src/lib/paraglide/** linguist-generated=true -diff
-src/lib/types.ts linguist-generated=true -diff
 
 # Tailwind -> CSS, and the vendored JS libraries.
 static/app.css linguist-generated=true -diff

@@ -76,10 +76,10 @@ make run        # brings up Postgres, builds, serves on http://localhost:8787
 Useful targets:
 
 ```sh
-make build      # templ generate + tailwind + vendor JS + go build
+make build      # generate (templ, sqlc, messages) + tailwind + vendor JS + go build
 make test       # Go unit tests
-make db         # just bring up/migrate the local Postgres
-sqlc generate   # regenerate DB code after editing internal/db/queries.sql
+make db         # bring up Postgres and apply the schema
+make clean      # drop generated artifacts and the database container
 ```
 
 ## Testing
@@ -90,7 +90,7 @@ bun run test:e2e   # Playwright: full journey against the real server + Postgres
 ```
 
 `test:e2e` boots the Go server against a throwaway Postgres container
-(`scripts/pg.sh`), applies the schema, and drives the real create → dashboard →
+(`compose.yaml`), applies the schema, and drives the real create → dashboard →
 respond → results journey. Specs seed and read the database through one shared
 helper (`e2e/db.ts`) - no raw SQL in the tests themselves.
 

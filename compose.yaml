@@ -1,0 +1,15 @@
+# The database for local dev and the e2e suite. `make db` and Playwright both
+# bring this up; it's idempotent, so repeat runs reuse the running container.
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: poll
+    ports:
+      - '55432:5432'
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U postgres -d poll']
+      interval: 1s
+      timeout: 5s
+      retries: 30

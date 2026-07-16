@@ -13,7 +13,7 @@ jobs:
       DATABASE_URL: postgres://postgres:postgres@localhost:55432/poll
 
     # The e2e harness talks to this service, so the specs and the app share one
-    # database - the same shape as local dev (scripts/pg.sh).
+    # database - the same shape compose.yaml gives local dev.
     services:
       postgres:
         image: postgres:16-alpine
@@ -78,15 +78,16 @@ jobs:
       - name: Unit tests
         run: go test ./...
 
-      # The Postgres service is already up and healthy, so the schema applies
-      # directly; SKIP_DOCKER_PG tells the server command not to start its own.
+      # The service above is already up and healthy, so the schema applies directly.
       - name: Apply schema
         run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f internal/db/migrations/0001_init.sql
 
+      # DB_READY: the Postgres service above is already up with the schema applied,
+      # so the server command must not try to start one of its own.
       - name: E2E tests
         run: bunx playwright test
         env:
-          SKIP_DOCKER_PG: '1'
+          DB_READY: '1'
 
       - name: Upload Playwright report
         if: failure()
