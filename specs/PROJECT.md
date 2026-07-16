@@ -74,10 +74,10 @@ natural GROUP BY; KV would push that logic into app code.
   and by the e2e specs (via Paraglide's typed `m.*()`) to assert, so the two
   cannot drift. Weekdays/months render in the poll's language, lowercase.
 - Timezone: store `starts_at`/`ends_at` as UTC ISO text; render in
-  Europe/Copenhagen. Go has no CLDR data, so `internal/domain/date.go` carries a
-  transcription of the exact `Intl.DateTimeFormat` output the app used to
-  produce - including Danish's dot time separator (`kl. 10.00`) against en/fr's
-  colon (`at 10:00`). `date_test.go` pins those strings.
+  Europe/Copenhagen. The Go stdlib ships no CLDR data, so
+  `internal/domain/date.go` spells out the weekday/month names and the per-locale
+  date and time shapes, including Danish's dot time separator (`kl. 10.00`)
+  against en/fr's colon (`at 10:00`). `date_test.go` pins every string.
 - Motion: user-facing UI follows the animations.dev principles (ease-out enter/exit,
   ease-in-out for on-screen movement, spring for the state selector, staggered list
   entrance, transform/opacity only) and honors `prefers-reduced-motion`. See the

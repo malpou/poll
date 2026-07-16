@@ -1,6 +1,10 @@
-// Store is the Go port of src/lib/data/d1.ts - the single home for app data
-// access. Every method mirrors one DataProvider method from the original, so the
-// handlers read the same way the SvelteKit load/actions did.
+// Store is the single home for app data access.
+//
+// The row types (Event, DateOption, Invitee, Response) are sqlc's, generated
+// from the schema into this same package, so there is no second set of
+// hand-written structs to keep in step. Nullable columns therefore surface as
+// pgtype.Text; the small accessors below unwrap them so callers deal in plain
+// strings.
 package db
 
 import (
@@ -12,25 +16,24 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/jackc/pgx/v5/pgxpool"
 
-	"github.com/malpou/poll/internal/db/sqlc"
 	"github.com/malpou/poll/internal/domain"
 	"github.com/malpou/poll/internal/i18n"
 )
 
 type Store struct {
 	pool *pgxpool.Pool
-	q    *sqlc.Queries
+	q    *Queries
 }
 
-func New(pool *pgxpool.Pool) *Store {
-	return &Store{pool: pool, q: sqlc.New(pool)}
+func NewStore(pool *pgxpool.Pool) *Store {
+	return &Store{pool: pool, q: New(pool)}
 }
 
 func text(s string) pgtype.Text {
 	return pgtype.Text{String: s, Valid: true}
 }
 
-// nullable maps "" to SQL NULL, mirroring the original's `x || null`.
+// nullable maps "" to SQL NULL, so a blank field clears the column.
 func nullable(s string) pgtype.Text {
 	if s == "" {
 		return pgtype.Text{}
@@ -40,66 +43,17 @@ func nullable(s string) pgtype.Text {
 
 func nowISO() string { return time.Now().UTC().Format("2006-01-02T15:04:05.000Z") }
 
-// --- Domain row types (mirror src/lib/types.ts) ---
-
-type Event struct {
-	ID             string
-	Title          string
-	Description    string
-	Locale         i18n.Locale
-	PollMode       string // assigned | open
-	OrganizerToken string
-	ShareToken     string
-	Status         string // open | closed
-	CreatedAt      string
-}
-
-type DateOption struct {
-	ID        string
-	EventID   string
-	StartsAt  string
-	EndsAt    string
-	SortOrder int32
-}
-
-type Invitee struct {
-	ID        string
-	EventID   string
-	Label     string
-	Token     string
-	Note      string
-	CreatedAt string
-}
-
-type Response struct {
-	InviteeID    string
-	DateOptionID string
-	Preference   string
-	UpdatedAt    string
-}
-
-func mapEvent(e sqlc.Event) Event {
-	return Event{
-		ID: e.ID, Title: e.Title, Description: e.Description.String,
-		Locale: i18n.Locale(e.Locale), PollMode: e.PollMode,
-		OrganizerToken: e.OrganizerToken, ShareToken: e.ShareToken.String,
-		Status: e.Status, CreatedAt: e.CreatedAt,
-	}
-}
-
-func mapDateOption(d sqlc.DateOption) DateOption {
-	return DateOption{ID: d.ID, EventID: d.EventID, StartsAt: d.StartsAt.String, EndsAt: d.EndsAt.String, SortOrder: d.SortOrder}
-}
-
-func mapInvitee(i sqlc.Invitee) Invitee {
-	return Invitee{ID: i.ID, EventID: i.EventID, Label: i.Label, Token: i.Token, Note: i.Note.String, CreatedAt: i.CreatedAt}
-}
-
-func mapResponse(r sqlc.Response) Response {
-	return Response{InviteeID: r.InviteeID, DateOptionID: r.DateOptionID, Preference: r.Preference, UpdatedAt: r.UpdatedAt}
-}
-
 func notFound(err error) bool { return errors.Is(err, pgx.ErrNoRows) }
+
+// --- Accessors for the nullable columns on sqlc's row types ---
+
+func (e Event) Desc() string        { return e.Description.String }
+func (e Event) Loc() i18n.Locale    { return i18n.Locale(e.Locale) }
+func (e Event) Share() string       { return e.ShareToken.String }
+func (e Event) IsClosed() bool      { return e.Status == "closed" }
+func (d DateOption) Starts() string { return d.StartsAt.String }
+func (d DateOption) Ends() string   { return d.EndsAt.String }
+func (i Invitee) NoteText() string  { return i.Note.String }
 
 // --- Inputs ---
 
@@ -158,14 +112,7 @@ func (s *Store) EventByOrganizerToken(ctx context.Context, token string) (*Event
 	if err != nil {
 		return nil, err
 	}
-	out := &EventWithDetails{Event: mapEvent(e)}
-	for _, d := range dates {
-		out.DateOptions = append(out.DateOptions, mapDateOption(d))
-	}
-	for _, i := range invitees {
-		out.Invitees = append(out.Invitees, mapInvitee(i))
-	}
-	return out, nil
+	return &EventWithDetails{Event: e, DateOptions: dates, Invitees: invitees}, nil
 }
 
 type InviteeContext struct {
@@ -198,14 +145,7 @@ func (s *Store) InviteeContext(ctx context.Context, token string) (*InviteeConte
 	if err != nil {
 		return nil, err
 	}
-	out := &InviteeContext{Invitee: mapInvitee(inv), Event: mapEvent(ev)}
-	for _, d := range dates {
-		out.DateOptions = append(out.DateOptions, mapDateOption(d))
-	}
-	for _, r := range resp {
-		out.Responses = append(out.Responses, mapResponse(r))
-	}
-	return out, nil
+	return &InviteeContext{Invitee: inv, Event: ev, DateOptions: dates, Responses: resp}, nil
 }
 
 type ShareContext struct {
@@ -216,14 +156,13 @@ type ShareContext struct {
 // ShareContext resolves an open-mode shared link. Nil if unknown OR the poll is
 // not in open mode - a non-open share token must read as "link not found".
 func (s *Store) ShareContext(ctx context.Context, shareToken string) (*ShareContext, error) {
-	e, err := s.q.EventByShareToken(ctx, text(shareToken))
+	ev, err := s.q.EventByShareToken(ctx, text(shareToken))
 	if err != nil {
 		if notFound(err) {
 			return nil, nil
 		}
 		return nil, err
 	}
-	ev := mapEvent(e)
 	if ev.PollMode != "open" {
 		return nil, nil
 	}
@@ -231,11 +170,7 @@ func (s *Store) ShareContext(ctx context.Context, shareToken string) (*ShareCont
 	if err != nil {
 		return nil, err
 	}
-	out := &ShareContext{Event: ev}
-	for _, d := range dates {
-		out.DateOptions = append(out.DateOptions, mapDateOption(d))
-	}
-	return out, nil
+	return &ShareContext{Event: ev, DateOptions: dates}, nil
 }
 
 // --- Writes ---
@@ -253,7 +188,7 @@ func (s *Store) CreateEvent(ctx context.Context, d Draft) (organizerToken string
 	organizerToken = domain.NewToken()
 	shareToken := domain.NewToken()
 
-	if err = q.InsertEvent(ctx, sqlc.InsertEventParams{
+	if err = q.InsertEvent(ctx, InsertEventParams{
 		ID: eventID, Title: d.Title, Description: nullable(d.Description),
 		Locale: string(d.Locale), PollMode: d.PollMode,
 		OrganizerToken: organizerToken, ShareToken: text(shareToken), CreatedAt: now,
@@ -263,7 +198,7 @@ func (s *Store) CreateEvent(ctx context.Context, d Draft) (organizerToken string
 
 	for i, dt := range d.Dates {
 		starts, ends := dt.instants()
-		if err = q.InsertDateOption(ctx, sqlc.InsertDateOptionParams{
+		if err = q.InsertDateOption(ctx, InsertDateOptionParams{
 			ID: domain.ID("date"), EventID: eventID, StartsAt: starts, EndsAt: ends, SortOrder: int32(i),
 		}); err != nil {
 			return "", err
@@ -271,7 +206,7 @@ func (s *Store) CreateEvent(ctx context.Context, d Draft) (organizerToken string
 	}
 
 	for _, p := range d.Participants {
-		if err = q.InsertInvitee(ctx, sqlc.InsertInviteeParams{
+		if err = q.InsertInvitee(ctx, InsertInviteeParams{
 			ID: domain.ID("p"), EventID: eventID, Label: p.Name, Token: p.Token, CreatedAt: now,
 		}); err != nil {
 			return "", err
@@ -289,7 +224,7 @@ func (s *Store) CreateEvent(ctx context.Context, d Draft) (organizerToken string
 func (s *Store) SubmitOpenResponse(ctx context.Context, eventID, name string, answers []ResponseInput, note string) (string, error) {
 	token := domain.NewToken()
 	inviteeID := domain.ID("p")
-	if err := s.q.InsertInvitee(ctx, sqlc.InsertInviteeParams{
+	if err := s.q.InsertInvitee(ctx, InsertInviteeParams{
 		ID: inviteeID, EventID: eventID, Label: name, Token: token,
 		Note: nullable(note), CreatedAt: nowISO(),
 	}); err != nil {
@@ -307,7 +242,7 @@ func (s *Store) SaveResponses(ctx context.Context, inviteeID string, answers []R
 	}
 	now := nowISO()
 	for _, a := range answers {
-		if err := s.q.UpsertResponse(ctx, sqlc.UpsertResponseParams{
+		if err := s.q.UpsertResponse(ctx, UpsertResponseParams{
 			InviteeID: inviteeID, DateOptionID: a.DateOptionID,
 			Preference: a.Preference, UpdatedAt: now,
 		}); err != nil {
@@ -318,23 +253,23 @@ func (s *Store) SaveResponses(ctx context.Context, inviteeID string, answers []R
 }
 
 func (s *Store) SaveNote(ctx context.Context, inviteeID, note string) error {
-	return s.q.SaveNote(ctx, sqlc.SaveNoteParams{ID: inviteeID, Note: nullable(note)})
+	return s.q.SaveNote(ctx, SaveNoteParams{ID: inviteeID, Note: nullable(note)})
 }
 
 func (s *Store) SetPollMode(ctx context.Context, eventID, mode string) error {
-	return s.q.SetPollMode(ctx, sqlc.SetPollModeParams{ID: eventID, PollMode: mode})
+	return s.q.SetPollMode(ctx, SetPollModeParams{ID: eventID, PollMode: mode})
 }
 
 func (s *Store) SetEventStatus(ctx context.Context, eventID, status string) error {
-	return s.q.SetEventStatus(ctx, sqlc.SetEventStatusParams{ID: eventID, Status: status})
+	return s.q.SetEventStatus(ctx, SetEventStatusParams{ID: eventID, Status: status})
 }
 
 func (s *Store) SetEventLocale(ctx context.Context, eventID string, l i18n.Locale) error {
-	return s.q.SetEventLocale(ctx, sqlc.SetEventLocaleParams{ID: eventID, Locale: string(l)})
+	return s.q.SetEventLocale(ctx, SetEventLocaleParams{ID: eventID, Locale: string(l)})
 }
 
 func (s *Store) UpdateEventDetails(ctx context.Context, eventID, title, description string) error {
-	return s.q.UpdateEventDetails(ctx, sqlc.UpdateEventDetailsParams{
+	return s.q.UpdateEventDetails(ctx, UpdateEventDetailsParams{
 		ID: eventID, Title: title, Description: nullable(description),
 	})
 }
@@ -350,17 +285,17 @@ func (s *Store) AddDateOption(ctx context.Context, eventID string, d DateInput) 
 		next = v + 1
 	}
 	starts, ends := d.instants()
-	return s.q.InsertDateOptionAppend(ctx, sqlc.InsertDateOptionAppendParams{
+	return s.q.InsertDateOptionAppend(ctx, InsertDateOptionAppendParams{
 		ID: domain.ID("date"), EventID: eventID, StartsAt: starts, EndsAt: ends, SortOrder: next,
 	})
 }
 
 func (s *Store) UpdateDateOption(ctx context.Context, optionID string, d DateInput) error {
 	starts, ends := d.instants()
-	return s.q.UpdateDateOption(ctx, sqlc.UpdateDateOptionParams{ID: optionID, StartsAt: starts, EndsAt: ends})
+	return s.q.UpdateDateOption(ctx, UpdateDateOptionParams{ID: optionID, StartsAt: starts, EndsAt: ends})
 }
 
-// RemoveDateOption clears responses first - no FK cascade, same as the original.
+// RemoveDateOption clears responses first: there is no FK cascade.
 func (s *Store) RemoveDateOption(ctx context.Context, optionID string) error {
 	if err := s.q.DeleteResponsesForOption(ctx, optionID); err != nil {
 		return err
@@ -370,13 +305,13 @@ func (s *Store) RemoveDateOption(ctx context.Context, optionID string) error {
 
 func (s *Store) AddInvitee(ctx context.Context, eventID, label string) (string, error) {
 	token := domain.NewToken()
-	return token, s.q.InsertInvitee(ctx, sqlc.InsertInviteeParams{
+	return token, s.q.InsertInvitee(ctx, InsertInviteeParams{
 		ID: domain.ID("p"), EventID: eventID, Label: label, Token: token, CreatedAt: nowISO(),
 	})
 }
 
 func (s *Store) RenameInvitee(ctx context.Context, inviteeID, label string) error {
-	return s.q.RenameInvitee(ctx, sqlc.RenameInviteeParams{ID: inviteeID, Label: label})
+	return s.q.RenameInvitee(ctx, RenameInviteeParams{ID: inviteeID, Label: label})
 }
 
 func (s *Store) RemoveInvitee(ctx context.Context, inviteeID string) error {
@@ -394,9 +329,9 @@ type OptionResult struct {
 	NotAnswered int
 }
 
-// Results mirrors getResults(): counts per option, with notAnswered derived from
-// the invitee total so a missing responses row reads as "no answer", never as
-// "unavailable".
+// Results returns per-option counts. notAnswered is derived from the invitee
+// total rather than counted, so a missing responses row reads as "no answer" and
+// can never be mistaken for "unavailable".
 func (s *Store) Results(ctx context.Context, eventID string) ([]OptionResult, error) {
 	total, err := s.q.CountInvitees(ctx, eventID)
 	if err != nil {
@@ -431,13 +366,5 @@ func (s *Store) AnsweredInviteeIDs(ctx context.Context, eventID string) (map[str
 }
 
 func (s *Store) EventResponses(ctx context.Context, eventID string) ([]Response, error) {
-	rows, err := s.q.EventResponses(ctx, eventID)
-	if err != nil {
-		return nil, err
-	}
-	out := make([]Response, 0, len(rows))
-	for _, r := range rows {
-		out = append(out, mapResponse(r))
-	}
-	return out, nil
+	return s.q.EventResponses(ctx, eventID)
 }

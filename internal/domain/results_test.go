@@ -2,8 +2,8 @@ package domain
 
 import "testing"
 
-// The same three cases the original results.ts demo() asserted, which map onto
-// the dashboard.spec.ts results tests (clear winner / tie / no responses).
+// The three cases the dashboard's results view has to get right: a clear winner,
+// a tie, and a board with no responses at all.
 func TestMarkBest(t *testing.T) {
 	type row struct {
 		id string

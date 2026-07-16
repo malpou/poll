@@ -1,7 +1,6 @@
 // Best-option ranking (specs/results/spec.md): rank by fewest Unavailable, then
 // most Preferred. Ties => every row matching the top (unavailable, preferred)
-// pair is flagged best, leaving the final call to the organizer. Ported from
-// src/lib/results.ts.
+// pair is flagged best, leaving the final call to the organizer.
 package domain
 
 import "sort"

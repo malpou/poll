@@ -3,7 +3,7 @@
 # Everything generated is committed (see .gitattributes); CI runs `make generate`
 # and fails if the tree is dirty afterwards, so these stay honest.
 #   templ    -> *_templ.go
-#   sqlc     -> internal/db/sqlc/
+#   sqlc     -> internal/db/{db,models,queries.sql}.go
 #   paraglide-> src/lib/paraglide/  (the module the e2e specs import)
 #   gen-types-> src/lib/types.ts    (the types the e2e specs import)
 generate:
@@ -43,3 +43,6 @@ test:
 clean:
 	rm -f static/app.css static/htmx.min.js static/alpine.min.js
 	find . -name '*_templ.go' -delete
+	# sqlc's output shares internal/db/ with the hand-written store.go, so remove
+	# it by exact name - never a wildcard over that directory.
+	rm -f internal/db/db.go internal/db/models.go internal/db/queries.sql.go

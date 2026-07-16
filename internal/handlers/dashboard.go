@@ -40,7 +40,7 @@ func (a *App) dashboardPage(w http.ResponseWriter, r *http.Request) {
 }
 
 // dashboardView assembles the whole dashboard payload: results + counts + who
-// chose what, the option list, and the invitee list. Mirrors the original load().
+// chose what, the option list, and the invitee list.
 func (a *App) dashboardView(r *http.Request, ev *db.EventWithDetails, token string) (views.DashboardView, error) {
 	ctx := r.Context()
 	results, err := a.store.Results(ctx, ev.ID)
@@ -55,7 +55,7 @@ func (a *App) dashboardView(r *http.Request, ev *db.EventWithDetails, token stri
 	if err != nil {
 		return views.DashboardView{}, err
 	}
-	l := ev.Locale
+	l := ev.Loc()
 	totalInvitees := len(ev.Invitees)
 
 	// Who chose what, per option: group responder names by preference so the
@@ -88,7 +88,7 @@ func (a *App) dashboardView(r *http.Request, ev *db.EventWithDetails, token stri
 	rows := make([]views.ResultView, 0, len(ev.DateOptions))
 	for _, d := range ev.DateOptions {
 		c := countsByID[d.ID]
-		f := domain.FormatDateOption(d.StartsAt, d.EndsAt, l)
+		f := domain.FormatDateOption(d.Starts(), d.Ends(), l)
 		rows = append(rows, views.ResultView{
 			ID:               d.ID,
 			Preferred:        c.Preferred,
@@ -115,12 +115,12 @@ func (a *App) dashboardView(r *http.Request, ev *db.EventWithDetails, token stri
 	options := make([]views.OptionView, 0, len(ev.DateOptions))
 	for _, d := range ev.DateOptions {
 		c := countsByID[d.ID]
-		f := domain.FormatDateOption(d.StartsAt, d.EndsAt, l)
+		f := domain.FormatDateOption(d.Starts(), d.Ends(), l)
 		// Copenhagen wall-clock parts for the edit form's native inputs.
-		value, startTime := domain.UTCToZonedParts(d.StartsAt)
+		value, startTime := domain.UTCToZonedParts(d.Starts())
 		endTime := ""
-		if d.EndsAt != "" {
-			_, endTime = domain.UTCToZonedParts(d.EndsAt)
+		if d.Ends() != "" {
+			_, endTime = domain.UTCToZonedParts(d.Ends())
 		}
 		options = append(options, views.OptionView{
 			ID: d.ID, Value: value, StartTime: startTime, EndTime: endTime,
@@ -133,7 +133,7 @@ func (a *App) dashboardView(r *http.Request, ev *db.EventWithDetails, token stri
 	for _, inv := range ev.Invitees {
 		invitees = append(invitees, views.InviteeView{
 			ID: inv.ID, Label: inv.Label, URL: inviteeURL(r, inv.Token),
-			Answered: answered[inv.ID], Note: inv.Note,
+			Answered: answered[inv.ID], Note: inv.NoteText(),
 		})
 	}
 
@@ -148,11 +148,11 @@ func (a *App) dashboardView(r *http.Request, ev *db.EventWithDetails, token stri
 		Locale:         l,
 		Token:          token,
 		OrganizerURL:   organizerURL(r, token),
-		ShareURL:       shareURL(r, ev.ShareToken),
+		ShareURL:       shareURL(r, ev.Share()),
 		Title:          ev.Title,
-		Description:    ev.Description,
+		Description:    ev.Desc(),
 		PollMode:       ev.PollMode,
-		Closed:         ev.Status == "closed",
+		Closed:         ev.IsClosed(),
 		RespondedLabel: respondedLabel,
 		Results:        sorted,
 		Options:        options,
@@ -179,7 +179,7 @@ func (a *App) dashboardSubmit(w http.ResponseWriter, r *http.Request) {
 	}
 
 	ctx := r.Context()
-	l := ev.Locale
+	l := ev.Loc()
 	status := http.StatusOK
 
 	switch action(r) {
@@ -196,7 +196,7 @@ func (a *App) dashboardSubmit(w http.ResponseWriter, r *http.Request) {
 		// Language + mode live in the same edit block; apply them here too. Mode
 		// switching keeps every existing invitee and response - it only changes how
 		// new people submit.
-		if loc := field(r, "locale"); i18n.IsLocale(loc) && i18n.Locale(loc) != ev.Locale {
+		if loc := field(r, "locale"); i18n.IsLocale(loc) && i18n.Locale(loc) != ev.Loc() {
 			err = a.store.SetEventLocale(ctx, ev.ID, i18n.Locale(loc))
 		}
 		if mode := field(r, "pollMode"); (mode == "assigned" || mode == "open") && mode != ev.PollMode && err == nil {
@@ -276,8 +276,7 @@ func (a *App) dashboardSubmit(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Re-read and re-render so the page reflects the change - the original's
-	// `update()` after a successful enhance submit.
+	// Re-read and re-render so the page reflects the change.
 	fresh, err := a.store.EventByOrganizerToken(ctx, token)
 	if err != nil || fresh == nil {
 		http.Error(w, "internal error", http.StatusInternalServerError)

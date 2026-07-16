@@ -2,8 +2,8 @@ package views
 
 import "github.com/malpou/poll/internal/i18n"
 
-// CreateView drives the create page (/). Values survive a failed submit so the
-// organizer never retypes, mirroring the original's fail(400, {values}).
+// CreateView drives the create page (/). Values survive a rejected submit so the
+// organizer never has to retype.
 type CreateView struct {
 	Locale      i18n.Locale
 	Title       string
@@ -25,15 +25,13 @@ type PersonRowData struct {
 	Token string
 }
 
-// CreatePage. The language picker switches the whole form live with no reload:
-// changing #locale re-fetches this page in the new language and swaps #create-form
-// (HTMX), while Alpine holds the typed values so nothing is lost - the same
-// promise the Svelte {#key locale} block made.
+// CreatePage. The language picker switches the whole form live, with no reload:
+// changing #locale re-fetches this page in the new language and swaps
+// #create-form, and anything already typed is carried across.
 templ CreatePage(v CreateView) {
 	@Layout(v.Locale, i18n.M(v.Locale, "createTitle")+" · "+i18n.M(v.Locale, "appName")) {
-		// hx-post intercepts the submit so a validation failure re-renders in place
-		// and the URL stays "/" - what use:enhance did in the original. The action
-		// attribute keeps SvelteKit's ?/create convention the specs select on.
+		// hx-post intercepts the submit so a rejected form re-renders in place and
+		// the URL stays "/". The action attribute names the handler.
 		<form
 			method="POST"
 			action="?/create"

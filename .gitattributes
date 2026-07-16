@@ -9,8 +9,11 @@
 # templ -> Go
 *_templ.go linguist-generated=true -diff
 
-# sqlc -> Go (from internal/db/queries.sql + the schema)
-internal/db/sqlc/** linguist-generated=true -diff
+# sqlc -> Go, generated from internal/db/queries.sql + the schema. These land in
+# internal/db/ next to the hand-written store.go, so they're marked by name.
+internal/db/db.go linguist-generated=true -diff
+internal/db/models.go linguist-generated=true -diff
+internal/db/queries.sql.go linguist-generated=true -diff
 
 # src/ is entirely generated - nothing there is hand-written. The e2e specs
 # import these two modules by relative path, which is the only reason the tree

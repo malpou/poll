@@ -1,5 +1,5 @@
--- Ported 1:1 from src/lib/data/d1.ts. Every app SQL statement lives here, the
--- single home for query-building (mirroring the original's discipline).
+-- Every SQL statement the app runs lives here; sqlc compiles this file into the
+-- typed Go in this package. Query-building has exactly one home.
 
 -- name: InsertEvent :exec
 INSERT INTO events (id, title, description, locale, poll_mode, organizer_token, share_token, status, created_at)

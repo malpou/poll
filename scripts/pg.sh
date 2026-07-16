@@ -38,7 +38,7 @@ for _ in $(seq 1 60); do
 	sleep 1
 done
 
-# Fresh schema each run, matching the old "migrate a clean local D1" behaviour.
+# Fresh schema each run, so a reused container never carries state between runs.
 psql "$URL" -v ON_ERROR_STOP=1 -X -q -c 'DROP SCHEMA public CASCADE; CREATE SCHEMA public;'
 psql "$URL" -v ON_ERROR_STOP=1 -X -q -f "$SCHEMA"
 echo "postgres ready on :${PORT}"

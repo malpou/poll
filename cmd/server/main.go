@@ -40,7 +40,7 @@ func main() {
 
 	srv := &http.Server{
 		Addr:              ":" + port,
-		Handler:           handlers.Router(db.New(pool)),
+		Handler:           handlers.Router(db.NewStore(pool)),
 		ReadHeaderTimeout: 10 * time.Second,
 	}
 	log.Printf("listening on :%s", port)

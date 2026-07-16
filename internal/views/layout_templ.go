@@ -10,9 +10,9 @@ import templruntime "github.com/a-h/templ/runtime"
 
 import "github.com/malpou/poll/internal/i18n"
 
-// Layout mirrors src/app.html. <html lang> carries the resolved locale - the
-// specs assert it on both the poll pages (poll locale) and the create page
-// (live-switched client-side).
+// Layout is the page shell. <html lang> carries the resolved locale: the poll's
+// stored language on /e, /r and /s, and whatever the picker last chose on the
+// create page, where it updates without a reload.
 func Layout(locale i18n.Locale, title string) templ.Component {
 	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
 		templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
@@ -77,7 +77,8 @@ func Layout(locale i18n.Locale, title string) templ.Component {
 }
 
 // NotFound is the friendly "link doesn't exist" page shared by /e, /r and /s.
-// Reveals nothing about the event - same discipline as the original.
+// Reveals nothing about the event: an unknown token must not confirm that any
+// particular poll exists.
 func NotFound(locale i18n.Locale) templ.Component {
 	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
 		templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
@@ -106,7 +107,7 @@ func NotFound(locale i18n.Locale) templ.Component {
 		var templ_7745c5c3_Var5 string
 		templ_7745c5c3_Var5, templ_7745c5c3_Err = templ.JoinStringErrs(i18n.M(locale, "linkNotFound"))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/views/layout.templ`, Line: 39, Col: 103}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/views/layout.templ`, Line: 40, Col: 103}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var5))
 		if templ_7745c5c3_Err != nil {
@@ -119,7 +120,7 @@ func NotFound(locale i18n.Locale) templ.Component {
 		var templ_7745c5c3_Var6 string
 		templ_7745c5c3_Var6, templ_7745c5c3_Err = templ.JoinStringErrs(i18n.M(locale, "linkNotFoundSub"))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/views/layout.templ`, Line: 40, Col: 105}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/views/layout.templ`, Line: 41, Col: 105}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var6))
 		if templ_7745c5c3_Err != nil {
@@ -182,8 +183,8 @@ func NotFoundPage(locale i18n.Locale) templ.Component {
 	})
 }
 
-// Toast mirrors the copy-confirmation toast. Listens for the poll-toast event
-// any copy button dispatches.
+// Toast confirms a copy. Listens for the poll-toast event any copy button
+// dispatches.
 func Toast() templ.Component {
 	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
 		templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context

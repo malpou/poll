@@ -13,8 +13,7 @@ type CardData struct {
 	TimeRange string
 }
 
-// ResponseView drives /r (assigned) and /s (open) - one template, two modes,
-// mirroring the original ResponsePage.svelte.
+// ResponseView drives /r (assigned) and /s (open): one template, two modes.
 type ResponseView struct {
 	Locale      i18n.Locale
 	Mode        string // "assigned" | "open"
@@ -30,10 +29,10 @@ type ResponseView struct {
 	EditURL     string // open mode: personal edit link handed back after submit
 }
 
-// alpineState seeds the x-data object: the client-side state the original held
-// in Svelte runes (answers, name, submitted, editUrl), plus allAnswered() - the
-// submit gate. Emitted as `responsePage({...})`, an Alpine.data component whose
-// methods live in static/app.js.
+// alpineState seeds the x-data object: the client-side state (answers, name,
+// submitted, editUrl) plus allAnswered(), the submit gate. Emitted as
+// `responsePage({...})`, an Alpine.data component whose methods live in
+// static/app.js.
 func (v ResponseView) alpineState() string {
 	answers := v.Answers
 	if answers == nil {
@@ -66,10 +65,10 @@ func prefOptions(l i18n.Locale) []struct{ Pref, Label, Color string } {
 	}
 }
 
-// SegmentedControl mirrors atoms/SegmentedControl.svelte: three <button type=button>
-// whose visible text is the accessible name, disabled when read-only, aria-pressed
-// marking the selection. Selection is client-side (Alpine), as in the original -
-// no server round-trip per click.
+// SegmentedControl is the three-way preference picker: one <button type=button>
+// per choice, its visible text serving as the accessible name, disabled when the
+// poll is closed, aria-pressed marking the selection. Picking is client-side, so
+// there is no server round-trip per click.
 templ SegmentedControl(v ResponseView, card CardData) {
 	<div class="relative flex h-11 w-full rounded-xl bg-card-alt p-[3px]">
 		// The thumb sits behind the active segment and slides between the three.
@@ -156,7 +155,7 @@ templ ResponsePage(v ResponseView) {
 				</div>
 				<div class="flex flex-col gap-5">
 					if v.Mode == "open" {
-						// Wrapping <label> so getByLabel(namePrompt) resolves, same as TextField.svelte.
+						// Wrapping <label> so the field is reachable by its visible label text.
 						<label class="flex min-w-0 flex-1 flex-col gap-2">
 							<span class="text-sm font-semibold text-ink">{ i18n.M(v.Locale, "namePrompt") }</span>
 							<input
@@ -204,8 +203,8 @@ templ ResponsePage(v ResponseView) {
 	}
 }
 
-// The saved/edit bar: shown once an answer exists. "Rediger" flips back to the
-// submit bar client-side, exactly like the original's `submitted` state.
+// The saved/edit bar: shown once an answer exists. The edit button flips back to
+// the submit bar client-side.
 templ savedBar(v ResponseView) {
 	<div x-show="submitted" x-cloak class="flex flex-col gap-3">
 		<div class="flex items-center gap-3">
@@ -266,8 +265,7 @@ templ LinkChip(text string) {
 	</div>
 }
 
-// CopyButton mirrors Button(variant=ghost, iconOnly, label) - the label becomes
-// aria-label, which is what getByRole('button', {name: copyLink}) matches.
+// CopyButton is icon-only, so its label becomes the aria-label that names it.
 templ CopyButton(l i18n.Locale, url string) {
 	<button
 		type="button"

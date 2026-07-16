@@ -1,7 +1,8 @@
 package views
 
-// Lucide icons, inlined as SVG (the original imported @lucide/svelte). Same
-// 24x24 viewBox and stroke settings Lucide ships, so they render identically.
+// Lucide icons, inlined as SVG with the 24x24 viewBox and stroke settings Lucide
+// ships. Inlined rather than pulled from a package: it's a dozen paths, and this
+// keeps the icons out of the dependency tree.
 
 templ icon(size int, paths templ.Component) {
 	<svg

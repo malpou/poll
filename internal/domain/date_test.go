@@ -6,9 +6,9 @@ import (
 	"github.com/malpou/poll/internal/i18n"
 )
 
-// Expected values transcribed from the original Intl.DateTimeFormat output
-// (da-DK/en-GB/fr-FR, Europe/Copenhagen). These are the strings the Playwright
-// specs assert on, so they are the contract.
+// The exact strings each locale renders (da-DK/en-GB/fr-FR, Europe/Copenhagen).
+// The e2e specs assert on these, so they are the contract: pin them here and a
+// formatting regression fails fast, in milliseconds, instead of in the browser.
 func TestFormatDateOption(t *testing.T) {
 	cases := []struct {
 		name             string

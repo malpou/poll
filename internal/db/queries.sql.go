@@ -3,7 +3,7 @@
 //   sqlc v1.29.0
 // source: queries.sql
 
-package sqlc
+package db
 
 import (
 	"context"
@@ -273,8 +273,8 @@ type InsertEventParams struct {
 	CreatedAt      string
 }
 
-// Ported 1:1 from src/lib/data/d1.ts. Every app SQL statement lives here, the
-// single home for query-building (mirroring the original's discipline).
+// Every SQL statement the app runs lives here; sqlc compiles this file into the
+// typed Go in this package. Query-building has exactly one home.
 func (q *Queries) InsertEvent(ctx context.Context, arg InsertEventParams) error {
 	_, err := q.db.Exec(ctx, insertEvent,
 		arg.ID,

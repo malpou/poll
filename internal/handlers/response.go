@@ -19,7 +19,7 @@ func cookieName(eventID string) string { return "edit_" + eventID }
 func cards(dates []db.DateOption, l i18n.Locale) []views.CardData {
 	out := make([]views.CardData, 0, len(dates))
 	for _, d := range dates {
-		f := domain.FormatDateOption(d.StartsAt, d.EndsAt, l)
+		f := domain.FormatDateOption(d.Starts(), d.Ends(), l)
 		out = append(out, views.CardData{
 			ID: d.ID, Weekday: f.Weekday, DateLabel: f.DateLabel, TimeRange: f.TimeRange,
 		})
@@ -65,16 +65,16 @@ func (a *App) responsePage(w http.ResponseWriter, r *http.Request) {
 	}
 
 	v := views.ResponseView{
-		Locale:      ctx.Event.Locale,
+		Locale:      ctx.Event.Loc(),
 		Mode:        "assigned",
 		Action:      "?/save",
-		Closed:      ctx.Event.Status == "closed",
+		Closed:      ctx.Event.IsClosed(),
 		Name:        ctx.Invitee.Label,
 		Title:       ctx.Event.Title,
-		Description: ctx.Event.Description,
-		Dates:       cards(ctx.DateOptions, ctx.Event.Locale),
+		Description: ctx.Event.Desc(),
+		Dates:       cards(ctx.DateOptions, ctx.Event.Loc()),
 		Answers:     answers,
-		Note:        ctx.Invitee.Note,
+		Note:        ctx.Invitee.NoteText(),
 		Submitted:   len(answers) > 0,
 	}
 	render(w, r, views.ResponsePage(v))
@@ -94,7 +94,7 @@ func (a *App) responseSubmit(w http.ResponseWriter, r *http.Request) {
 		renderNotFound(w, r)
 		return
 	}
-	if ctx.Event.Status == "closed" {
+	if ctx.Event.IsClosed() {
 		w.WriteHeader(http.StatusForbidden)
 		return
 	}
@@ -119,13 +119,13 @@ func (a *App) responseSubmit(w http.ResponseWriter, r *http.Request) {
 		answered[ans.DateOptionID] = ans.Preference
 	}
 	v := views.ResponseView{
-		Locale:      ctx.Event.Locale,
+		Locale:      ctx.Event.Loc(),
 		Mode:        "assigned",
 		Action:      "?/save",
 		Name:        ctx.Invitee.Label,
 		Title:       ctx.Event.Title,
-		Description: ctx.Event.Description,
-		Dates:       cards(ctx.DateOptions, ctx.Event.Locale),
+		Description: ctx.Event.Desc(),
+		Dates:       cards(ctx.DateOptions, ctx.Event.Loc()),
 		Answers:     answered,
 		Note:        strings.TrimSpace(r.FormValue("note")),
 		Submitted:   true,
@@ -153,13 +153,13 @@ func (a *App) sharePage(w http.ResponseWriter, r *http.Request) {
 	}
 
 	v := views.ResponseView{
-		Locale:      ctx.Event.Locale,
+		Locale:      ctx.Event.Loc(),
 		Mode:        "open",
 		Action:      "?/submit",
-		Closed:      ctx.Event.Status == "closed",
+		Closed:      ctx.Event.IsClosed(),
 		Title:       ctx.Event.Title,
-		Description: ctx.Event.Description,
-		Dates:       cards(ctx.DateOptions, ctx.Event.Locale),
+		Description: ctx.Event.Desc(),
+		Dates:       cards(ctx.DateOptions, ctx.Event.Loc()),
 		Answers:     map[string]string{},
 	}
 	render(w, r, views.ResponsePage(v))
@@ -176,7 +176,7 @@ func (a *App) shareSubmit(w http.ResponseWriter, r *http.Request) {
 		renderNotFound(w, r)
 		return
 	}
-	if ctx.Event.Status == "closed" {
+	if ctx.Event.IsClosed() {
 		w.WriteHeader(http.StatusForbidden)
 		return
 	}
@@ -214,13 +214,13 @@ func (a *App) shareSubmit(w http.ResponseWriter, r *http.Request) {
 		answered[ans.DateOptionID] = ans.Preference
 	}
 	v := views.ResponseView{
-		Locale:      ctx.Event.Locale,
+		Locale:      ctx.Event.Loc(),
 		Mode:        "open",
 		Action:      "?/submit",
 		Name:        name,
 		Title:       ctx.Event.Title,
-		Description: ctx.Event.Description,
-		Dates:       cards(ctx.DateOptions, ctx.Event.Locale),
+		Description: ctx.Event.Desc(),
+		Dates:       cards(ctx.DateOptions, ctx.Event.Loc()),
 		Answers:     answered,
 		Note:        note,
 		Submitted:   true,

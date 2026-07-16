@@ -5,8 +5,8 @@ sql:
     queries: 'internal/db/queries.sql'
     gen:
       go:
-        package: 'sqlc'
-        out: 'internal/db/sqlc'
+        package: 'db'
+        out: 'internal/db'
         sql_package: 'pgx/v5'
         emit_json_tags: false
         emit_interface: false

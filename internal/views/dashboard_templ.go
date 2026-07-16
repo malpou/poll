@@ -1976,8 +1976,8 @@ func inviteeRow(v DashboardView, inv InviteeView) templ.Component {
 	})
 }
 
-// x-if, not x-show: the original rendered the note only once expanded, so it
-// must be absent from the DOM until the toggle - not just visually hidden.
+// x-if, not x-show: the note must be absent from the DOM until expanded, not
+// merely hidden, or a collapsed row still leaks its contents.
 func noteBody(note string) templ.Component {
 	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
 		templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
@@ -2096,10 +2096,10 @@ func noteToggle(l i18n.Locale) templ.Component {
 	})
 }
 
-// --- shared button shapes (mirror atoms/Button.svelte + IconButton.svelte) ---
+// --- shared button shapes ---
 
-// A ghost button whose accessible name comes from aria-label when given one,
-// otherwise from its own text - exactly how Button.svelte behaved.
+// A ghost button. Its accessible name comes from aria-label when one is given,
+// otherwise from its own text.
 func ghostButton(label string, click string) templ.Component {
 	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
 		templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context

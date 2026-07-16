@@ -1,6 +1,7 @@
--- Postgres port of the original D1 schema. Timestamps stay TEXT (UTC ISO), same
--- as the SQLite original, so the app's date.ts-equivalent formatting round-trips
--- byte-for-byte. starts_at/ends_at nullable; ends_at requires starts_at.
+-- Timestamps are TEXT holding UTC ISO instants rather than timestamptz: the app
+-- renders them in Europe/Copenhagen itself (internal/domain/date.go) and stores
+-- exactly what it formatted, so nothing is reinterpreted on the way back out.
+-- starts_at/ends_at nullable; ends_at requires starts_at.
 
 CREATE TABLE events (
 	id              TEXT PRIMARY KEY,

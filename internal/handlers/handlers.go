@@ -1,7 +1,8 @@
-// HTTP layer. Routes mirror the original SvelteKit app 1:1, including its form
-// -action convention: a POST to `?/save` carries the action in the query string
-// (`form action="?/save"`). The e2e specs select forms by that exact attribute,
-// so the convention is part of the contract, not an implementation detail.
+// HTTP layer.
+//
+// Forms name their action in the query string - a POST to `?/save` is handled by
+// the "save" case, and the form carries `action="?/save"`. The e2e specs select
+// forms by that attribute, so the naming is part of the contract.
 package handlers
 
 import (
@@ -26,10 +27,10 @@ func render(w http.ResponseWriter, r *http.Request, c templ.Component) {
 	}
 }
 
-// redirect sends the browser to a new page. Forms post through HTMX (so a
-// validation failure re-renders in place without changing the URL, as
-// use:enhance did), and HTMX swallows a 303 - HX-Redirect is how you ask it to
-// navigate for real. Plain requests still get an ordinary 303.
+// redirect sends the browser to a new page. Forms post through HTMX so that a
+// rejected submit re-renders in place without changing the URL, and HTMX
+// swallows a 303 - HX-Redirect is how you ask it to navigate for real. Plain
+// requests still get an ordinary 303.
 func redirect(w http.ResponseWriter, r *http.Request, to string) {
 	if r.Header.Get("HX-Request") == "true" {
 		w.Header().Set("HX-Redirect", to)
@@ -55,7 +56,7 @@ func Router(store *db.Store) http.Handler {
 	return mux
 }
 
-// action reads SvelteKit's `?/name` form-action convention off the query string.
+// action reads the `?/name` form action off the query string.
 func action(r *http.Request) string {
 	for k := range r.URL.Query() {
 		if strings.HasPrefix(k, "/") {
@@ -65,13 +66,13 @@ func action(r *http.Request) string {
 	return ""
 }
 
-// field reads one trimmed string field; "" when absent. Port of forms.ts field().
+// field reads one trimmed string field; "" when absent.
 func field(r *http.Request, key string) string {
 	return strings.TrimSpace(r.FormValue(key))
 }
 
-// validateTimes ports forms.ts validateTimes(): end requires start, end must not
-// precede start. Returns a localised error string or "".
+// validateTimes checks a date option's optional times: end requires start, and
+// end must not precede start. Returns a localised error string or "".
 func validateTimes(l i18n.Locale, startTime, endTime string) string {
 	if endTime != "" && startTime == "" {
 		return i18n.M(l, "errorEndNeedsStart")

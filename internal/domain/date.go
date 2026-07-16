@@ -1,10 +1,10 @@
-// Locale-aware date rendering for date options, Europe/Copenhagen. Ported from
-// the original src/lib/date.ts, which used Intl.DateTimeFormat. Go's stdlib has
-// no CLDR data, so the weekday/month names and the per-locale date/time shapes
-// below are transcribed from the exact Intl output for da-DK/en-GB/fr-FR (see
-// the table in date_test.go, which pins them). Danish renders time with a dot
-// separator (10.00) and en/fr with a colon (10:00) - an Intl quirk that is part
-// of the contract, not a typo.
+// Locale-aware date rendering for date options, Europe/Copenhagen.
+//
+// The stdlib carries no CLDR data, so the weekday/month names and the per-locale
+// date/time shapes below are spelled out here for da-DK, en-GB and fr-FR;
+// date_test.go pins every string. Note Danish writes the time with a dot
+// (kl. 10.00) where en/fr use a colon (at 10:00) - a real locale difference, not
+// a typo.
 package domain
 
 import (
@@ -62,7 +62,7 @@ func dateLabel(t time.Time, l i18n.Locale) string {
 	return fmt.Sprintf("%d %s %d", t.Day(), mo, t.Year())
 }
 
-// "10.00" (da) / "10:00" (en, fr) - 2-digit, 24h, per Intl per-locale separator.
+// "10.00" (da) / "10:00" (en, fr) - 2-digit, 24h, separator per locale.
 func timeLabel(t time.Time, l i18n.Locale) string {
 	sep := ":"
 	if loc(l) == i18n.Da {
@@ -72,8 +72,7 @@ func timeLabel(t time.Time, l i18n.Locale) string {
 }
 
 // ZonedToUTC turns a yyyy-mm-dd + hh:mm Copenhagen wall-clock into a UTC ISO
-// instant. Blank date => empty (NULL). Blank time => midnight, same as the
-// original's `time || '00:00'`.
+// instant. Blank date => empty (NULL). Blank time => local midnight.
 func ZonedToUTC(value, timeStr string) (string, bool) {
 	if value == "" {
 		return "", false
@@ -99,8 +98,8 @@ func UTCToZonedParts(iso string) (value, timeStr string) {
 	return z.Format("2006-01-02"), z.Format("15:04")
 }
 
-// Stored instants are whatever the app or a seed wrote: RFC3339 with or without
-// millis. Accept both rather than force a single shape on seeds.
+// Stored instants are RFC3339, with or without millis depending on whether the
+// app or a test seed wrote them. Accept both rather than force one shape.
 func parseISO(iso string) (time.Time, bool) {
 	if iso == "" {
 		return time.Time{}, false
@@ -113,8 +112,9 @@ func parseISO(iso string) (time.Time, bool) {
 	return time.Time{}, false
 }
 
-// FormatDateOption mirrors formatDateOption(). A missing startsAt renders blank
-// rather than crashing (defensive - the create form requires a date).
+// FormatDateOption renders one date option's labels. A missing startsAt renders
+// blank rather than crashing; the create form requires a date, so this is only
+// reached if the data is malformed.
 func FormatDateOption(startsAt, endsAt string, l i18n.Locale) FormattedDate {
 	start, ok := parseISO(startsAt)
 	if !ok {

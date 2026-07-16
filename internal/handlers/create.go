@@ -60,7 +60,7 @@ func localeFromHeader(header string) i18n.Locale {
 var indexedRe = regexp.MustCompile(`^(\w+)\.(\d+)\.(\w+)$`)
 
 // parseIndexed rebuilds the dates/participants arrays from indexed named inputs
-// (dates.0.value, participants.1.token). Port of +page.server.ts parseIndexed().
+// (dates.0.value, participants.1.token).
 func parseIndexed(r *http.Request, prefix string) []map[string]string {
 	rows := map[int]map[string]string{}
 	maxIdx := -1
@@ -122,8 +122,8 @@ func dateRowsFrom(r *http.Request) []views.DateRowData {
 	return out
 }
 
-// personRowsFrom echoes submitted participants back, or one blank row (with a
-// fresh token) on a first render - the original's blankParticipant().
+// personRowsFrom echoes submitted participants back, or one blank row with a
+// fresh token on a first render.
 func personRowsFrom(r *http.Request) []views.PersonRowData {
 	rows := parseIndexed(r, "participants")
 	if len(rows) == 0 {
@@ -184,7 +184,7 @@ func (a *App) createSubmit(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	// Same validation order as the original: title, then dates, then times.
+	// Validation order: title, then dates, then times.
 	errMsg := ""
 	switch {
 	case title == "":

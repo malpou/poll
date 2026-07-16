@@ -89,9 +89,9 @@ damping: 32`, or an equivalent snappy-but-soft feel). Think Dynamic-Island
 - Don't animate anything a user sees dozens of times per session (no animating on
   every keystroke, no looping effects).
 
-Eventual stack is SvelteKit on Cloudflare, so keep animations achievable with CSS
-transitions / Svelte transitions / Motion - nothing that depends on a heavy 3D or
-canvas library.
+Pages are server-rendered and the client carries only HTMX and Alpine, so keep
+animations achievable with CSS transitions and Alpine's own transition helpers -
+nothing that depends on a heavy 3D or canvas library.
 
 ## Screen details
 

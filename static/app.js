@@ -1,11 +1,11 @@
 // Client glue. HTMX owns everything that talks to the server; Alpine owns the
-// in-page state the original kept client-side (preferences, submit gate, edit
-// toggle, live locale switch). State lives in the markup's x-data; the shared
-// component definitions live here.
+// in-page state that doesn't need a round-trip: preferences, the submit gate,
+// the edit toggle, the live locale switch. State lives in the markup's x-data;
+// the shared component definitions live here.
 
 document.addEventListener('alpine:init', () => {
 	// The response page (/r and /s). Seeded server-side with the stored answers,
-	// so a revisit pre-selects exactly as the Svelte version did.
+	// so a revisit pre-selects what the invitee last chose.
 	Alpine.data('responsePage', (seed) => ({
 		answers: seed.answers || {},
 		ids: seed.ids || [],
@@ -14,8 +14,8 @@ document.addEventListener('alpine:init', () => {
 		submitted: !!seed.submitted,
 		editUrl: seed.editUrl || '',
 
-		// Submit stays disabled until every date is answered - and, in open mode,
-		// until a name is typed. Mirrors the original's `allAnswered` derived.
+		// Submit stays disabled until every date is answered and, in open mode,
+		// until a name is typed.
 		allAnswered() {
 			if (this.ids.length === 0) return false;
 			if (this.mode === 'open' && this.name.trim() === '') return false;
@@ -63,7 +63,7 @@ document.addEventListener('alpine:init', () => {
 			if (!first) return;
 			const row = first.cloneNode(true);
 			row.querySelectorAll('[data-field]').forEach((el) => {
-				// A fresh participant needs its own token, as blankParticipant() did.
+				// A fresh participant needs its own token.
 				el.value = el.getAttribute('data-field') === 'token' ? randomToken() : '';
 			});
 			list.appendChild(row);
@@ -101,8 +101,9 @@ document.addEventListener('alpine:init', () => {
 	}));
 });
 
-// >=128 bits of entropy, base62 - the client-side half of the original's
-// blankParticipant(). The server regenerates any token it doesn't receive.
+// >=128 bits of entropy, base62, matching the server's own token minting. A row
+// added in the browser carries its token with it; the server regenerates any it
+// doesn't receive.
 function randomToken() {
 	const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
 	const bytes = new Uint8Array(22);
@@ -112,8 +113,8 @@ function randomToken() {
 	return out;
 }
 
-// Confirm-before-submit for destructive dashboard actions. Mirrors the original's
-// confirmingRefresh(): warn first, cancel cleanly on dismiss.
+// Confirm-before-submit for destructive dashboard actions: warn first, cancel
+// cleanly on dismiss.
 document.addEventListener('htmx:confirm', (e) => {
 	const msg = e.detail.elt.getAttribute('data-confirm');
 	if (!msg) return;
@@ -121,9 +122,9 @@ document.addEventListener('htmx:confirm', (e) => {
 	if (confirm(msg)) e.detail.issueRequest(true);
 });
 
-// A rejected submit answers 400 with the re-rendered form (SvelteKit's
-// fail(400) did the same). HTMX only swaps 2xx by default, so opt 4xx in -
-// otherwise validation errors would silently never appear.
+// A rejected submit answers 400 with the re-rendered form. HTMX only swaps 2xx
+// by default, so opt 4xx in; otherwise validation errors would silently never
+// appear.
 document.addEventListener('htmx:beforeSwap', (e) => {
 	if (e.detail.xhr.status === 400 || e.detail.xhr.status === 403) {
 		e.detail.shouldSwap = true;

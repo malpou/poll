@@ -1,6 +1,7 @@
-// Messages come from the same messages/{da,en,fr}.json the e2e specs import via
-// Paraglide. One source of truth, two consumers: Go renders them, the tests
-// assert them. Keep the JSON files authoritative - never hardcode copy here.
+// User-facing copy. Everything comes from messages/{da,en,fr}.json, which the
+// e2e specs also read - one source of truth, two consumers, so copy can't drift
+// between what the app renders and what the tests assert. Never hardcode copy
+// here.
 package i18n
 
 import (
@@ -17,7 +18,7 @@ const (
 	Da   Locale = "da"
 	En   Locale = "en"
 	Fr   Locale = "fr"
-	Base Locale = Da // baseLocale in paraglide runtime
+	Base Locale = Da // the fallback when nothing else is resolved
 )
 
 var Locales = []Locale{Da, En, Fr}
@@ -54,7 +55,7 @@ func init() {
 }
 
 // M renders one message in the given locale, substituting {name} placeholders.
-// Falls back to the base locale, then to the key itself, mirroring paraglide.
+// Falls back to the base locale, then to the key itself.
 func M(l Locale, key string, args ...any) string {
 	msgs, ok := bundles[l]
 	if !ok {

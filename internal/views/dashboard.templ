@@ -299,8 +299,8 @@ templ resultBar(label string, count, pct int, color string, names []string) {
 		<div class="text-right text-xs font-bold text-ink">{ count }</div>
 	</div>
 	if len(names) > 0 {
-		// x-if, not x-show: the original rendered this only when expanded, so the
-		// names must be absent from the DOM until then - not merely hidden.
+		// x-if, not x-show: the names must be absent from the DOM until expanded,
+		// not merely hidden, or a collapsed card still leaks who answered.
 		<template x-if="open">
 			<div class="pl-[102px] text-[13px] text-ink-muted">
 				{ joinNames(names) }
@@ -572,8 +572,8 @@ templ inviteeRow(v DashboardView, inv InviteeView) {
 	</div>
 }
 
-// x-if, not x-show: the original rendered the note only once expanded, so it
-// must be absent from the DOM until the toggle - not just visually hidden.
+// x-if, not x-show: the note must be absent from the DOM until expanded, not
+// merely hidden, or a collapsed row still leaks its contents.
 templ noteBody(note string) {
 	<template x-if="noteOpen">
 		<div class="mt-2.5 rounded-lg bg-card-alt px-3 py-2 text-[13px] leading-relaxed text-ink-muted">
@@ -595,10 +595,10 @@ templ noteToggle(l i18n.Locale) {
 	</button>
 }
 
-// --- shared button shapes (mirror atoms/Button.svelte + IconButton.svelte) ---
+// --- shared button shapes ---
 
-// A ghost button whose accessible name comes from aria-label when given one,
-// otherwise from its own text - exactly how Button.svelte behaved.
+// A ghost button. Its accessible name comes from aria-label when one is given,
+// otherwise from its own text.
 templ ghostButton(label string, click string) {
 	<button
 		type="button"
