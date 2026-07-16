@@ -5,15 +5,43 @@ on:
   pull_request:
 
 jobs:
-  # One job, no matrix - single app, chromium-only per iteration 7.
+  # One job, no matrix - single app, chromium-only.
   check-and-test:
     runs-on: ubuntu-latest
     env:
       CI: 'true'
+      DATABASE_URL: postgres://postgres:postgres@localhost:55432/poll
+
+    # The e2e harness talks to this service, so the specs and the app share one
+    # database - the same shape as local dev (scripts/pg.sh).
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: poll
+        ports:
+          - 55432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d poll"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
     steps:
       - uses: actions/checkout@v4
 
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.25'
+          cache: true
+
       - uses: oven-sh/setup-bun@v2
+
+      - name: Install code generators
+        run: |
+          go install github.com/a-h/templ/cmd/templ@v0.3.1001
+          go install github.com/sqlc-dev/sqlc/cmd/sqlc@v1.29.0
 
       - name: Install dependencies
         run: bun install --frozen-lockfile
@@ -21,16 +49,44 @@ jobs:
       - name: Install Playwright browser
         run: bunx playwright install --with-deps chromium
 
-      - name: Type-check
-        run: bun run check
+      - name: Build (regenerates everything)
+        run: make build
+
+      # Generated code is committed, so regenerating it must be a no-op. If this
+      # fails, someone edited generated output by hand or changed a source
+      # (queries.sql, a .templ, messages/*.json) without running `make build`.
+      - name: Generated code is up to date
+        run: |
+          if [ -n "$(git status --porcelain)" ]; then
+            echo "::error::Generated files are stale. Run 'make build' and commit the result."
+            git status --porcelain
+            git diff
+            exit 1
+          fi
+
+      - name: Format
+        run: |
+          gofmt -l . | grep -v '_templ\.go' > /tmp/unformatted || true
+          if [ -s /tmp/unformatted ]; then
+            echo "::error::Not gofmt'd:"; cat /tmp/unformatted; exit 1
+          fi
+          bun run format:check
+
+      - name: Vet
+        run: go vet ./...
 
       - name: Unit tests
-        run: bun run test
+        run: go test ./...
 
-      # test:e2e applies migrations (globalSetup) and boots `bun run preview`
-      # (vite build && wrangler dev) against a fresh local D1 in the runner.
+      # The Postgres service is already up and healthy, so the schema applies
+      # directly; SKIP_DOCKER_PG tells the server command not to start its own.
+      - name: Apply schema
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f internal/db/migrations/0001_init.sql
+
       - name: E2E tests
-        run: bun run test:e2e
+        run: bunx playwright test
+        env:
+          SKIP_DOCKER_PG: '1'
 
       - name: Upload Playwright report
         if: failure()

@@ -1,0 +1,281 @@
+package views
+
+import (
+	"encoding/json"
+
+	"github.com/malpou/poll/internal/i18n"
+)
+
+type CardData struct {
+	ID        string
+	Weekday   string
+	DateLabel string
+	TimeRange string
+}
+
+// ResponseView drives /r (assigned) and /s (open) - one template, two modes,
+// mirroring the original ResponsePage.svelte.
+type ResponseView struct {
+	Locale      i18n.Locale
+	Mode        string // "assigned" | "open"
+	Action      string // "?/save" | "?/submit"
+	Closed      bool
+	Name        string // assigned: the invitee's label
+	Title       string
+	Description string
+	Dates       []CardData
+	Answers     map[string]string // dateOptionID -> preference
+	Note        string
+	Submitted   bool   // an answer already exists -> show the saved bar
+	EditURL     string // open mode: personal edit link handed back after submit
+}
+
+// alpineState seeds the x-data object: the client-side state the original held
+// in Svelte runes (answers, name, submitted, editUrl), plus allAnswered() - the
+// submit gate. Emitted as `responsePage({...})`, an Alpine.data component whose
+// methods live in static/app.js.
+func (v ResponseView) alpineState() string {
+	answers := v.Answers
+	if answers == nil {
+		answers = map[string]string{}
+	}
+	ids := make([]string, 0, len(v.Dates))
+	for _, d := range v.Dates {
+		ids = append(ids, d.ID)
+	}
+	seed := map[string]any{
+		"answers":   answers,
+		"ids":       ids,
+		"name":      v.Name,
+		"mode":      v.Mode,
+		"submitted": v.Submitted,
+		"editUrl":   v.EditURL,
+	}
+	b, err := json.Marshal(seed)
+	if err != nil {
+		return "responsePage({})"
+	}
+	return "responsePage(" + string(b) + ")"
+}
+
+func prefOptions(l i18n.Locale) []struct{ Pref, Label, Color string } {
+	return []struct{ Pref, Label, Color string }{
+		{"preferred", i18n.M(l, "prefPreferred"), "var(--color-amber)"},
+		{"available", i18n.M(l, "prefAvailable"), "var(--color-good)"},
+		{"unavailable", i18n.M(l, "prefUnavailable"), "var(--color-bad)"},
+	}
+}
+
+// SegmentedControl mirrors atoms/SegmentedControl.svelte: three <button type=button>
+// whose visible text is the accessible name, disabled when read-only, aria-pressed
+// marking the selection. Selection is client-side (Alpine), as in the original -
+// no server round-trip per click.
+templ SegmentedControl(v ResponseView, card CardData) {
+	<div class="relative flex h-11 w-full rounded-xl bg-card-alt p-[3px]">
+		// The thumb sits behind the active segment and slides between the three.
+		<div
+			x-show={ "answers['" + card.ID + "']" }
+			x-cloak
+			class="pointer-events-none absolute bottom-[3px] top-[3px] rounded-[9px] transition-all duration-200"
+			style="left:3px; width:calc((100% - 6px) / 3);"
+			:style={ "'transform: translateX(calc(' + (ids && ['preferred','available','unavailable'].indexOf(answers['" + card.ID + "'])) + ' * 100%)); background:' + ({'preferred':'var(--color-amber)','available':'var(--color-good)','unavailable':'var(--color-bad)'}[answers['" + card.ID + "']] || 'transparent')" }
+		></div>
+		for _, opt := range prefOptions(v.Locale) {
+			<button
+				type="button"
+				disabled?={ v.Closed }
+				if !v.Closed {
+					@click={ "answers['" + card.ID + "'] = '" + opt.Pref + "'" }
+				}
+				:aria-pressed={ "answers['" + card.ID + "'] === '" + opt.Pref + "'" }
+				:class={ "answers['" + card.ID + "'] === '" + opt.Pref + "' ? 'text-white' : 'text-ink-muted'" }
+				class={ "relative z-10 flex-1 rounded-[9px] border-none bg-transparent px-1 py-[11px] text-sm font-semibold transition-colors duration-150 " +
+					ternary(v.Closed, "cursor-default", "cursor-pointer") }
+			>
+				{ opt.Label }
+			</button>
+		}
+	</div>
+	// Only submits a row when marked; unmarked = no field = no response row.
+	<template x-if={ "answers['" + card.ID + "']" }>
+		<input type="hidden" name={ "pref." + card.ID } :value={ "answers['" + card.ID + "']" }/>
+	</template>
+}
+
+templ DateOptionCard(v ResponseView, card CardData) {
+	<div
+		data-testid={ "date-card-" + card.ID }
+		class="flex flex-col gap-3.5 rounded-2xl border border-border bg-card p-[18px] shadow-[0_1px_2px_var(--shadow-toast)]"
+	>
+		<div class="flex flex-col gap-0.5">
+			<div class="text-lg font-bold capitalize tracking-[-0.01em] text-ink">{ card.Weekday }</div>
+			<div class="text-sm text-ink-muted">{ card.DateLabel }</div>
+			if card.TimeRange != "" {
+				<div class="text-[13px] font-semibold text-ink-muted">{ card.TimeRange }</div>
+			}
+		</div>
+		@SegmentedControl(v, card)
+	</div>
+}
+
+templ ResponsePage(v ResponseView) {
+	@Layout(v.Locale, v.Title+" · "+i18n.M(v.Locale, "appName")) {
+		<div x-data={ v.alpineState() }>
+			<form
+				method="POST"
+				action={ templ.SafeURL(v.Action) }
+				hx-post={ v.Action }
+				hx-target="body"
+				hx-swap="outerHTML"
+				class="mx-auto max-w-[480px] px-5 pb-32 pt-8"
+			>
+				if v.Closed {
+					<div class="mb-[22px] flex items-center gap-2.5 rounded-xl border border-border bg-amber-tint px-4 py-3 text-sm font-semibold text-amber">
+						<span class="h-2 w-2 shrink-0 rounded-full bg-amber"></span>
+						{ i18n.M(v.Locale, "closedBanner") }
+					</div>
+				}
+				<div class="mb-[30px] flex flex-col gap-1.5">
+					if v.Mode == "assigned" {
+						<div class="text-[15px] font-semibold text-primary">
+							{ i18n.M(v.Locale, "greeting", "name", v.Name) }
+						</div>
+					} else {
+						// Open mode greets the submitter live as they type their name.
+						<div
+							class="text-[15px] font-semibold text-primary"
+							x-show="name.trim()"
+							x-cloak
+							x-text={ "'" + jsEscape(i18n.M(v.Locale, "greeting", "name", "\x00")) + "'.replace('\\u0000', name.trim())" }
+						></div>
+					}
+					<h1 class="text-[30px] font-extrabold tracking-[-0.02em] text-ink">{ v.Title }</h1>
+					if v.Description != "" {
+						<p class="mt-1.5 whitespace-pre-line text-base leading-relaxed text-ink-muted">{ v.Description }</p>
+					}
+				</div>
+				<div class="flex flex-col gap-5">
+					if v.Mode == "open" {
+						// Wrapping <label> so getByLabel(namePrompt) resolves, same as TextField.svelte.
+						<label class="flex min-w-0 flex-1 flex-col gap-2">
+							<span class="text-sm font-semibold text-ink">{ i18n.M(v.Locale, "namePrompt") }</span>
+							<input
+								type="text"
+								name="name"
+								x-model="name"
+								placeholder={ i18n.M(v.Locale, "name") }
+								class="w-full rounded-[10px] border border-border bg-card px-3.5 h-[46px] text-[15px] text-ink outline-none placeholder:text-ink-muted/70 focus:border-primary"
+							/>
+						</label>
+					}
+					<p class="text-[17px] font-semibold text-ink">{ i18n.M(v.Locale, "responseIntro") }</p>
+					<div class="flex flex-col gap-3.5">
+						<div class="text-[13px] font-bold uppercase tracking-[0.06em] text-ink-muted">
+							{ i18n.M(v.Locale, "datesQuestion") }
+						</div>
+						for _, card := range v.Dates {
+							@DateOptionCard(v, card)
+						}
+					</div>
+					<div class="mt-1.5 flex flex-col gap-2">
+						<label class="flex flex-col gap-2">
+							<span class="text-sm font-semibold text-ink">{ i18n.M(v.Locale, "noteLabel") }</span>
+							<textarea
+								rows="3"
+								name="note"
+								placeholder={ i18n.M(v.Locale, "notePlaceholder") }
+								disabled?={ v.Closed }
+								class="min-h-[84px] w-full resize-none rounded-[10px] border border-border bg-card px-3.5 py-3 text-[15px] leading-normal text-ink outline-none placeholder:text-ink-muted/70 focus:border-primary disabled:opacity-70"
+							>{ v.Note }</textarea>
+						</label>
+					</div>
+				</div>
+				if !v.Closed {
+					<div class="fixed inset-x-0 bottom-0 z-[80] flex justify-center border-t border-border bg-paper px-5 pb-[calc(14px+env(safe-area-inset-bottom))] pt-3.5">
+						<div class="w-full max-w-[480px]">
+							@savedBar(v)
+							@submitBar(v)
+						</div>
+					</div>
+				}
+			</form>
+			@Toast()
+		</div>
+	}
+}
+
+// The saved/edit bar: shown once an answer exists. "Rediger" flips back to the
+// submit bar client-side, exactly like the original's `submitted` state.
+templ savedBar(v ResponseView) {
+	<div x-show="submitted" x-cloak class="flex flex-col gap-3">
+		<div class="flex items-center gap-3">
+			<div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-good-tint text-good">
+				@iconCheck(18)
+			</div>
+			<div class="flex min-w-0 flex-1 flex-col gap-0.5">
+				<div class="text-[15px] font-bold text-ink">{ i18n.M(v.Locale, "savedTitle") }</div>
+				<div class="text-[13px] leading-snug text-ink-muted">{ i18n.M(v.Locale, "savedSub") }</div>
+			</div>
+			<button
+				type="button"
+				@click="submitted = false"
+				class="shrink-0 cursor-pointer border-none bg-transparent p-2 text-[13px] font-semibold text-primary"
+			>
+				{ i18n.M(v.Locale, "editAnswer") }
+			</button>
+		</div>
+		<div x-show="editUrl" x-cloak class="rounded-xl border border-border bg-card-alt px-3.5 py-3">
+			<div class="text-[13px] font-semibold text-ink">{ i18n.M(v.Locale, "editLinkTitle") }</div>
+			<p class="mt-1 text-[13px] leading-relaxed text-ink-muted">{ i18n.M(v.Locale, "editLinkHint") }</p>
+			<div class="mt-2 flex flex-wrap items-center gap-2.5">
+				<div class="min-w-[180px] flex-1 overflow-hidden text-ellipsis whitespace-nowrap rounded-lg bg-card-alt px-3 py-2 text-[13px] text-ink-muted" x-text="editUrl.replace(/^https?:\/\//, '')"></div>
+				<button
+					type="button"
+					aria-label={ i18n.M(v.Locale, "copyLink") }
+					title={ i18n.M(v.Locale, "copyLink") }
+					@click={ "copy(editUrl, '" + jsEscape(i18n.M(v.Locale, "linkCopied")) + "')" }
+					class="inline-flex cursor-pointer items-center justify-center gap-1.5 whitespace-nowrap transition-colors duration-150 h-9 rounded-[9px] border border-border bg-card text-primary text-[13px] font-semibold hover:bg-primary-tint w-9 px-0"
+				>
+					@iconCopy(16)
+				</button>
+			</div>
+		</div>
+	</div>
+}
+
+// Submit is disabled until every date is answered (and, in open mode, a name is
+// typed) - the mockup rule the specs lean on.
+templ submitBar(v ResponseView) {
+	<div x-show="!submitted" class="flex flex-col gap-1.5">
+		<div x-show="!allAnswered()" class="text-center text-xs text-ink-muted">{ i18n.M(v.Locale, "chooseEach") }</div>
+		<button
+			type="submit"
+			:disabled="!allAnswered()"
+			:class="allAnswered() ? 'cursor-pointer bg-primary text-white' : 'cursor-default bg-border text-ink-muted'"
+			class="flex h-[52px] w-full items-center justify-center gap-2 rounded-[14px] text-base font-bold transition-colors duration-150"
+		>
+			@iconSend(18)
+			{ i18n.M(v.Locale, "sendAnswer") }
+		</button>
+	</div>
+}
+
+templ LinkChip(text string) {
+	<div class="min-w-[180px] flex-1 overflow-hidden text-ellipsis whitespace-nowrap rounded-lg bg-card-alt px-3 py-2 text-[13px] text-ink-muted">
+		{ text }
+	</div>
+}
+
+// CopyButton mirrors Button(variant=ghost, iconOnly, label) - the label becomes
+// aria-label, which is what getByRole('button', {name: copyLink}) matches.
+templ CopyButton(l i18n.Locale, url string) {
+	<button
+		type="button"
+		aria-label={ i18n.M(l, "copyLink") }
+		title={ i18n.M(l, "copyLink") }
+		@click={ "copy('" + jsEscape(url) + "', '" + jsEscape(i18n.M(l, "linkCopied")) + "')" }
+		class="inline-flex cursor-pointer items-center justify-center gap-1.5 whitespace-nowrap transition-colors duration-150 h-9 rounded-[9px] border border-border bg-card text-primary text-[13px] font-semibold hover:bg-primary-tint w-9 px-0"
+	>
+		@iconCopy(16)
+	</button>
+}

@@ -1,0 +1,28 @@
+# Generated files. All of these are committed so a plain `go build` and `bunx
+# playwright test` work on a fresh clone without the generator toolchain, but
+# they are never hand-edited - regenerate instead, and CI enforces that
+# regenerating produces no diff.
+#
+# linguist-generated: collapse them in PR diffs and exclude from language stats.
+# -diff: don't produce a textual diff for them by default.
+
+# templ -> Go
+*_templ.go linguist-generated=true -diff
+
+# sqlc -> Go (from internal/db/queries.sql + the schema)
+internal/db/sqlc/** linguist-generated=true -diff
+
+# src/ is entirely generated - nothing there is hand-written. The e2e specs
+# import these two modules by relative path, which is the only reason the tree
+# exists: Paraglide compiles messages/{da,en,fr}.json into the typed m.*()
+# module, and scripts/gen-types.sh derives the spec-side types.
+src/lib/paraglide/** linguist-generated=true -diff
+src/lib/types.ts linguist-generated=true -diff
+
+# Tailwind -> CSS, and the vendored JS libraries.
+static/app.css linguist-generated=true -diff
+static/htmx.min.js linguist-vendored=true -diff
+static/alpine.min.js linguist-vendored=true -diff
+
+# Lockfile
+bun.lock linguist-generated=true -diff

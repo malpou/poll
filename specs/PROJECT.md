@@ -1,4 +1,4 @@
-# Project: family-date-poll
+# Project: poll
 
 ## Purpose
 
@@ -9,14 +9,15 @@ text, etc.). No participant accounts.
 
 ## Stack
 
-- SvelteKit with `@sveltejs/adapter-cloudflare`
-- Cloudflare Workers/Pages for hosting, served at `poll.malpou.io`
-- Cloudflare D1 (SQLite) for storage, bound as `platform.env.DB`
-- Tokens generated with `crypto.getRandomValues` (≥128 bits entropy, base62)
+- Go, with templ for server-rendered HTML
+- HTMX for server round-trips (form actions, mutations); Alpine.js for the
+  in-page state that never needed a round-trip (preference selector, submit
+  gate, inline edit/expand toggles)
+- Postgres via pgx/v5, with sqlc compiling `internal/db/queries.sql` to typed Go
+- Tokens generated with `crypto/rand` (≥128 bits entropy, base62)
 
-D1 over KV: results aggregation ("how many prefer each date") is a natural SQL
-GROUP BY. KV would push that logic into app code. Durable Objects are overkill
-for this write volume.
+SQL over a KV store: results aggregation ("how many prefer each date") is a
+natural GROUP BY; KV would push that logic into app code.
 
 ## Security model
 
@@ -29,7 +30,7 @@ for this write volume.
   a secret. Decision: capability URL only for v1 - no passphrase. Mitigate leak
   risk by keeping tokens out of logs, referrers, and analytics.
 
-## Data model (D1)
+## Data model (Postgres)
 
 - `events(id, title, description, locale, poll_mode, organizer_token, share_token, status, created_at)`
   - status ∈ {open, closed}
@@ -63,12 +64,20 @@ for this write volume.
 
 ## Conventions
 
-- Mutations use SvelteKit form actions; token is validated in every load/action.
+- Mutations post to `?/{action}` (e.g. `?/addOption`) - the form-action naming
+  the app has always used. HTMX intercepts the submit so a rejected form
+  re-renders in place without changing the URL. The token is re-resolved
+  server-side in every handler; never trust the client for ids or status.
 - Language: polls render in Danish, English, or French, chosen per poll (the
   `locale` column) at creation and changeable on the dashboard. User-facing
-  strings live in `messages/{da,en,fr}.json`, compiled to typed `m.*()` via
-  Paraglide. Weekdays/months render in the poll's language, lowercase.
-- Timezone: store `starts_at`/`ends_at` as UTC ISO; render in Europe/Copenhagen.
+  strings live in `messages/{da,en,fr}.json` - read by the Go server to render
+  and by the e2e specs (via Paraglide's typed `m.*()`) to assert, so the two
+  cannot drift. Weekdays/months render in the poll's language, lowercase.
+- Timezone: store `starts_at`/`ends_at` as UTC ISO text; render in
+  Europe/Copenhagen. Go has no CLDR data, so `internal/domain/date.go` carries a
+  transcription of the exact `Intl.DateTimeFormat` output the app used to
+  produce - including Danish's dot time separator (`kl. 10.00`) against en/fr's
+  colon (`at 10:00`). `date_test.go` pins those strings.
 - Motion: user-facing UI follows the animations.dev principles (ease-out enter/exit,
   ease-in-out for on-screen movement, spring for the state selector, staggered list
   entrance, transform/opacity only) and honors `prefers-reduced-motion`. See the

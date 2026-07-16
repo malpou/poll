@@ -1,0 +1,262 @@
+package views
+
+import "github.com/malpou/poll/internal/i18n"
+
+// CreateView drives the create page (/). Values survive a failed submit so the
+// organizer never retypes, mirroring the original's fail(400, {values}).
+type CreateView struct {
+	Locale      i18n.Locale
+	Title       string
+	Description string
+	PollMode    string
+	Dates       []DateRowData
+	People      []PersonRowData
+	Error       string
+}
+
+type DateRowData struct {
+	Value     string
+	StartTime string
+	EndTime   string
+}
+
+type PersonRowData struct {
+	Name  string
+	Token string
+}
+
+// CreatePage. The language picker switches the whole form live with no reload:
+// changing #locale re-fetches this page in the new language and swaps #create-form
+// (HTMX), while Alpine holds the typed values so nothing is lost - the same
+// promise the Svelte {#key locale} block made.
+templ CreatePage(v CreateView) {
+	@Layout(v.Locale, i18n.M(v.Locale, "createTitle")+" · "+i18n.M(v.Locale, "appName")) {
+		// hx-post intercepts the submit so a validation failure re-renders in place
+		// and the URL stays "/" - what use:enhance did in the original. The action
+		// attribute keeps SvelteKit's ?/create convention the specs select on.
+		<form
+			method="POST"
+			action="?/create"
+			hx-post="?/create"
+			hx-target="body"
+			hx-swap="outerHTML"
+			class="mx-auto max-w-[640px] px-6 pb-24 pt-10"
+			x-data="createPage"
+		>
+			// The picker sits outside the swapped region so re-rendering doesn't steal
+			// focus from the <select>.
+			<label class="mb-10 flex flex-col gap-2">
+				<span class="text-sm font-semibold text-ink">{ i18n.M(v.Locale, "fieldLanguage") }</span>
+				<select
+					id="locale"
+					name="locale"
+					hx-get="/"
+					hx-target="#create-form"
+					hx-select="#create-form"
+					hx-swap="outerHTML"
+					hx-include="closest form"
+					hx-trigger="change"
+					@htmx:config-request="document.documentElement.lang = $el.value"
+					class="h-[46px] w-full rounded-[10px] border border-border bg-card px-3.5 text-[15px] text-ink outline-none focus:border-primary"
+				>
+					for _, l := range i18n.Locales {
+						<option value={ string(l) } selected?={ v.Locale == l }>{ i18n.M(v.Locale, localeKey(l)) }</option>
+					}
+				</select>
+			</label>
+			@createFormBody(v)
+		</form>
+		@Toast()
+	}
+}
+
+// localeKey maps a locale to its message key (langDa / langEn / langFr).
+func localeKey(l i18n.Locale) string {
+	switch l {
+	case i18n.En:
+		return "langEn"
+	case i18n.Fr:
+		return "langFr"
+	default:
+		return "langDa"
+	}
+}
+
+// Everything that re-renders on a language switch.
+templ createFormBody(v CreateView) {
+	<div id="create-form">
+		<h1 class="mb-3 text-[28px] font-extrabold tracking-[-0.02em] text-ink">{ i18n.M(v.Locale, "createTitle") }</h1>
+		<p class="mb-8 max-w-[52ch] text-[15px] leading-relaxed text-ink-muted">{ i18n.M(v.Locale, "createIntro") }</p>
+		<div class="mb-6">
+			<label class="flex min-w-0 flex-1 flex-col gap-2">
+				<span class="text-sm font-semibold text-ink">{ i18n.M(v.Locale, "fieldTitle") }</span>
+				<input
+					type="text"
+					name="title"
+					value={ v.Title }
+					class="w-full rounded-[10px] border border-border bg-card px-3.5 h-[46px] text-[15px] text-ink outline-none placeholder:text-ink-muted/70 focus:border-primary"
+				/>
+			</label>
+		</div>
+		<div class="mb-10">
+			<label class="flex flex-col gap-2">
+				<span class="text-sm font-semibold text-ink">{ i18n.M(v.Locale, "fieldDescription") }</span>
+				<textarea
+					rows="3"
+					name="description"
+					class="min-h-[84px] w-full resize-none rounded-[10px] border border-border bg-card px-3.5 py-3 text-[15px] leading-normal text-ink outline-none placeholder:text-ink-muted/70 focus:border-primary"
+				>{ v.Description }</textarea>
+			</label>
+		</div>
+		// --- Dates ---
+		<div class="mb-10">
+			<div>
+				<div class="mb-1 text-[13px] font-bold uppercase tracking-[0.06em] text-ink-muted">{ i18n.M(v.Locale, "datesSection") }</div>
+				<p class="mb-3.5 text-[13px] text-ink-muted">{ i18n.M(v.Locale, "datesHint") }</p>
+				<div class="flex flex-col gap-2.5" x-ref="dateList">
+					for i, d := range v.Dates {
+						@dateRow(v.Locale, i, d)
+					}
+				</div>
+				<button
+					type="button"
+					@click="addDate($refs.dateList)"
+					class="inline-flex cursor-pointer items-center justify-center gap-1.5 whitespace-nowrap text-[15px] transition-colors duration-150 mt-2.5 h-[42px] px-4 rounded-[10px] border border-dashed border-border text-primary font-semibold hover:bg-primary-tint hover:border-primary"
+				>
+					@iconPlus(16)
+					{ i18n.M(v.Locale, "addDate") }
+				</button>
+			</div>
+		</div>
+		// --- Poll mode ---
+		<input type="hidden" name="pollMode" :value="pollMode"/>
+		<div class="mb-9 flex flex-col gap-2">
+			<span class="text-sm font-semibold text-ink">{ i18n.M(v.Locale, "fieldMode") }</span>
+			<select
+				x-model="pollMode"
+				class="h-[46px] w-full rounded-[10px] border border-border bg-card px-3.5 text-[15px] text-ink outline-none focus:border-primary"
+			>
+				<option value="assigned" selected?={ v.PollMode != "open" }>{ i18n.M(v.Locale, "modeAssigned") }</option>
+				<option value="open" selected?={ v.PollMode == "open" }>{ i18n.M(v.Locale, "modeOpen") }</option>
+			</select>
+			<p
+				class="text-[13px] leading-relaxed text-ink-muted"
+				x-text={ "pollMode === 'open' ? '" + jsEscape(i18n.M(v.Locale, "modeOpenHint")) + "' : '" + jsEscape(i18n.M(v.Locale, "modeAssignedHint")) + "'" }
+			>
+				{ i18n.M(v.Locale, "modeAssignedHint") }
+			</p>
+		</div>
+		// --- Participants (assigned mode only) ---
+		<div class="mb-9" x-show="pollMode === 'assigned'">
+			<div>
+				<div class="mb-1 text-[13px] font-bold uppercase tracking-[0.06em] text-ink-muted">{ i18n.M(v.Locale, "participantsSection") }</div>
+				<p class="mb-3.5 text-[13px] text-ink-muted">{ i18n.M(v.Locale, "participantsHint") }</p>
+				<div class="flex flex-col gap-2.5" x-ref="peopleList">
+					for i, p := range v.People {
+						@personRow(v.Locale, i, p)
+					}
+				</div>
+				<button
+					type="button"
+					@click="addPerson($refs.peopleList)"
+					class="inline-flex cursor-pointer items-center justify-center gap-1.5 whitespace-nowrap text-[15px] transition-colors duration-150 mt-2.5 h-[42px] px-4 rounded-[10px] border border-dashed border-border text-primary font-semibold hover:bg-primary-tint hover:border-primary"
+				>
+					@iconPlus(16)
+					{ i18n.M(v.Locale, "addParticipant") }
+				</button>
+			</div>
+		</div>
+		<div class="mt-2 flex items-center gap-3.5">
+			<button
+				type="submit"
+				class="inline-flex cursor-pointer items-center justify-center gap-1.5 whitespace-nowrap text-[15px] transition-colors duration-150 h-[50px] px-6 rounded-xl bg-primary text-white font-bold hover:bg-primary-hover"
+			>
+				@iconCheck(18)
+				{ i18n.M(v.Locale, "create") }
+			</button>
+			if v.Error != "" {
+				<div class="text-sm font-semibold text-bad">{ v.Error }</div>
+			}
+		</div>
+	</div>
+}
+
+// Indexed input names (dates.0.value, ...) - the server rebuilds the array from
+// them, and the specs address them directly.
+templ dateRow(l i18n.Locale, i int, d DateRowData) {
+	<div class="rounded-xl border border-border bg-card p-3" data-row>
+		<div class="flex items-center gap-2.5">
+			<label class="flex min-w-0 flex-1 flex-col gap-2">
+				<input
+					type="date"
+					name={ indexedName("dates", i, "value") }
+					data-field="value"
+					value={ d.Value }
+					class="w-full rounded-[10px] border border-border bg-card px-3.5 h-[46px] text-[15px] text-ink outline-none focus:border-primary"
+				/>
+			</label>
+			<button
+				type="button"
+				aria-label={ i18n.M(l, "remove") }
+				title={ i18n.M(l, "remove") }
+				@click="removeRow($el, $refs.dateList, 'dates')"
+				class="inline-flex h-9 w-9 shrink-0 cursor-pointer items-center justify-center rounded-[9px] border border-border bg-card text-ink-muted transition-colors duration-150 hover:bg-card-alt"
+			>
+				@iconX(16)
+			</button>
+		</div>
+		<div class="mt-2.5 flex items-center gap-3.5">
+			<div class="flex min-w-0 flex-1 items-center gap-2">
+				<span class="shrink-0 text-xs font-semibold text-ink-muted">{ i18n.M(l, "from") }</span>
+				<label class="flex min-w-0 flex-1 flex-col gap-2">
+					<input
+						type="time"
+						name={ indexedName("dates", i, "startTime") }
+						data-field="startTime"
+						value={ d.StartTime }
+						class="w-full rounded-[10px] border border-border bg-card px-3.5 h-10 text-[15px] text-ink outline-none focus:border-primary"
+					/>
+				</label>
+			</div>
+			<div class="flex min-w-0 flex-1 items-center gap-2">
+				<span class="shrink-0 text-xs font-semibold text-ink-muted">{ i18n.M(l, "to") }</span>
+				<label class="flex min-w-0 flex-1 flex-col gap-2">
+					<input
+						type="time"
+						name={ indexedName("dates", i, "endTime") }
+						data-field="endTime"
+						value={ d.EndTime }
+						class="w-full rounded-[10px] border border-border bg-card px-3.5 h-10 text-[15px] text-ink outline-none focus:border-primary"
+					/>
+				</label>
+			</div>
+		</div>
+	</div>
+}
+
+templ personRow(l i18n.Locale, i int, p PersonRowData) {
+	<div class="rounded-xl border border-border bg-card p-3" data-row>
+		<div class="flex items-center gap-2.5">
+			<input type="hidden" name={ indexedName("participants", i, "token") } data-field="token" value={ p.Token }/>
+			<label class="flex min-w-0 flex-1 flex-col gap-2">
+				<input
+					type="text"
+					name={ indexedName("participants", i, "name") }
+					data-field="name"
+					value={ p.Name }
+					placeholder={ i18n.M(l, "name") }
+					class="w-full rounded-[10px] border border-border bg-card px-3.5 h-[46px] text-[15px] text-ink outline-none placeholder:text-ink-muted/70 focus:border-primary"
+				/>
+			</label>
+			<button
+				type="button"
+				aria-label={ i18n.M(l, "remove") }
+				title={ i18n.M(l, "remove") }
+				@click="removeRow($el, $refs.peopleList, 'participants')"
+				class="inline-flex h-9 w-9 shrink-0 cursor-pointer items-center justify-center rounded-[9px] border border-border bg-card text-ink-muted transition-colors duration-150 hover:bg-card-alt"
+			>
+				@iconX(16)
+			</button>
+		</div>
+	</div>
+}

@@ -3,11 +3,19 @@
 # (run automatically by the "prepare" script on `bun install`).
 set -e
 
+echo "▶ gofmt"
+unformatted=$(gofmt -l . 2>/dev/null | grep -v '_templ\.go' || true)
+if [ -n "$unformatted" ]; then
+	echo "not gofmt'd:"
+	echo "$unformatted"
+	exit 1
+fi
+
+echo "▶ go vet"
+go vet ./...
+
+echo "▶ go test"
+go test ./...
+
 echo "▶ format:check"
 bun run format:check
-
-echo "▶ lint"
-bun run lint
-
-echo "▶ check (svelte-check)"
-bun run check

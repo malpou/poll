@@ -1,38 +1,28 @@
 {
-	"extends": "./.svelte-kit/tsconfig.json",
+	// The app is Go. TypeScript now covers only the Playwright specs and the
+	// Paraglide-compiled messages they import.
 	"compilerOptions": {
-		"rewriteRelativeImportExtensions": true,
+		"target": "ES2022",
+		"module": "ESNext",
+		"lib": ["ES2022", "DOM"],
 		"allowJs": true,
-		"checkJs": true,
+		"checkJs": false,
 		"esModuleInterop": true,
 		"forceConsistentCasingInFileNames": true,
 		"resolveJsonModule": true,
 		"skipLibCheck": true,
-		"sourceMap": true,
 		"strict": true,
+		"noEmit": true,
 		"moduleResolution": "bundler",
 		"types": ["node"]
 	},
-	// The generated config includes src/ and tests/ but not e2e/ - add it so the
-	// Playwright specs (which import node: builtins) type-check in the editor.
 	"include": [
-		".svelte-kit/ambient.d.ts",
-		".svelte-kit/non-ambient.d.ts",
-		".svelte-kit/types/**/$types.d.ts",
-		"vite.config.ts",
-		"src/**/*.js",
-		"src/**/*.ts",
-		"src/**/*.svelte",
-		"tests/**/*.ts",
-		"e2e/**/*.ts"
+		"e2e/**/*.ts",
+		"src/lib/types.ts",
+		"src/lib/paraglide/**/*.js",
+		"playwright.config.ts"
 	],
-	// Paraglide's generated server.js trips checkJs against Cloudflare's Request
-	// type; we don't import it (locale is resolved in hooks.server.ts). The typed
-	// m.*() functions and runtime are still checked where our code imports them.
+	// Paraglide's generated server.js targets a Request type we never use - the app
+	// resolves locale in Go. The typed m.*() functions are still available.
 	"exclude": ["src/lib/paraglide/server.js"]
-	// Path aliases are handled by https://svelte.dev/docs/kit/configuration#alias
-	// except $lib which is handled by https://svelte.dev/docs/kit/configuration#files
-	//
-	// To make changes to top-level options such as include and exclude, we recommend extending
-	// the generated config; see https://svelte.dev/docs/kit/configuration#typescript
 }

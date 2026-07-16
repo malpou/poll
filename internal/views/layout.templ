@@ -1,0 +1,64 @@
+package views
+
+import "github.com/malpou/poll/internal/i18n"
+
+// Layout mirrors src/app.html. <html lang> carries the resolved locale - the
+// specs assert it on both the poll pages (poll locale) and the create page
+// (live-switched client-side).
+templ Layout(locale i18n.Locale, title string) {
+	<!DOCTYPE html>
+	<html lang={ string(locale) } dir="ltr">
+		<head>
+			<meta charset="utf-8"/>
+			<meta name="viewport" content="width=device-width, initial-scale=1"/>
+			<meta name="text-scale" content="scale"/>
+			<link rel="preconnect" href="https://fonts.googleapis.com"/>
+			<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+			<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet"/>
+			<link rel="stylesheet" href="/static/app.css"/>
+			<link rel="icon" href="/static/favicon.svg"/>
+			<script src="/static/htmx.min.js" defer></script>
+			<script src="/static/app.js" defer></script>
+			// Alpine must load after app.js so its alpine:init listener is registered.
+			<script src="/static/alpine.min.js" defer></script>
+			<title>{ title }</title>
+		</head>
+		<body>
+			<div style="display: contents">
+				{ children... }
+			</div>
+		</body>
+	</html>
+}
+
+// NotFound is the friendly "link doesn't exist" page shared by /e, /r and /s.
+// Reveals nothing about the event - same discipline as the original.
+templ NotFound(locale i18n.Locale) {
+	<div class="flex min-h-screen flex-col items-center justify-center gap-4 px-6 py-10 text-center">
+		<div class="h-[52px] w-[52px] rotate-45 rounded-[14px] border border-border bg-card-alt"></div>
+		<h1 class="mt-3 text-2xl font-extrabold tracking-[-0.01em] text-ink">{ i18n.M(locale, "linkNotFound") }</h1>
+		<p class="max-w-[300px] text-[15px] leading-relaxed text-ink-muted">{ i18n.M(locale, "linkNotFoundSub") }</p>
+	</div>
+}
+
+// NotFoundPage is NotFound inside the layout - what /e, /r and /s serve on an
+// unknown token.
+templ NotFoundPage(locale i18n.Locale) {
+	@Layout(locale, i18n.M(locale, "linkNotFound")+" · "+i18n.M(locale, "appName")) {
+		@NotFound(locale)
+	}
+}
+
+// Toast mirrors the copy-confirmation toast. Listens for the poll-toast event
+// any copy button dispatches.
+templ Toast() {
+	<div
+		x-data="toast"
+		@poll-toast.window="show($event.detail)"
+		x-show="text"
+		x-cloak
+		x-transition.opacity
+		class="pointer-events-none fixed bottom-6 left-1/2 z-[100] -translate-x-1/2 rounded-full bg-ink px-4 py-2.5 text-[13px] font-semibold text-white shadow-[0_8px_24px_var(--shadow-toast)]"
+		x-text="text"
+	></div>
+}

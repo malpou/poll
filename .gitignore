@@ -1,18 +1,14 @@
 node_modules
 
-# Output
-.output
-.vercel
-.netlify
-.wrangler
-/.svelte-kit
-/build
+# Go build output
+/poll
+/bin
 
-# Paraglide (generated from messages/*.json + project.inlang)
-/src/lib/paraglide
+# Generated code is committed - see .gitattributes. A fresh clone builds and
+# runs the tests without templ/sqlc/tailwind installed, and CI checks that
+# regenerating produces no diff. So nothing generated is ignored here.
 
 # Test artifacts
-.playwright-mcp
 test-results
 playwright-report
 
@@ -29,7 +25,3 @@ Thumbs.db
 .env.*
 !.env.example
 !.env.test
-
-# Vite
-vite.config.js.timestamp-*
-vite.config.ts.timestamp-*

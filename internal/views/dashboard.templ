@@ -1,0 +1,650 @@
+package views
+
+import "github.com/malpou/poll/internal/i18n"
+
+// DashboardView drives /e/{organizer_token}.
+type DashboardView struct {
+	Locale         i18n.Locale
+	Token          string
+	OrganizerURL   string
+	ShareURL       string
+	Title          string
+	Description    string
+	PollMode       string
+	Closed         bool
+	RespondedLabel string
+	Results        []ResultView
+	Options        []OptionView
+	Invitees       []InviteeView
+}
+
+type ResultView struct {
+	ID              string
+	Preferred       int
+	Available       int
+	Unavailable     int
+	PreferredPct    int
+	AvailablePct    int
+	UnavailablePct  int
+	PreferredNames  []string
+	AvailableNames  []string
+	UnavailableNames []string
+	IsBest          bool
+	Weekday         string
+	DateLabel       string
+	TimeRange       string
+}
+
+type OptionView struct {
+	ID           string
+	Value        string
+	StartTime    string
+	EndTime      string
+	HasResponses bool
+	Weekday      string
+	DateLabel    string
+	TimeRange    string
+}
+
+type InviteeView struct {
+	ID       string
+	Label    string
+	URL      string
+	Answered bool
+	Note     string
+}
+
+templ DashboardPage(v DashboardView) {
+	@Layout(v.Locale, v.Title+" · "+i18n.M(v.Locale, "appName")) {
+		<div class="mx-auto max-w-[640px] px-6 pb-24 pt-10" x-data="dashboard">
+			@dashHeader(v)
+			if v.PollMode == "open" {
+				@shareLinkBanner(v)
+			}
+			@organizerLinkBanner(v)
+			if v.Closed {
+				<div class="mb-6 flex items-center gap-2.5 rounded-xl border border-border bg-amber-tint px-4 py-3 text-sm font-semibold text-amber">
+					<span class="h-2 w-2 shrink-0 rounded-full bg-amber"></span>
+					{ i18n.M(v.Locale, "closedBanner") }
+				</div>
+			}
+			if len(v.Results) > 0 {
+				@resultsSection(v)
+			}
+			@optionsSection(v)
+			@inviteesSection(v)
+		</div>
+		@Toast()
+	}
+}
+
+templ dashHeader(v DashboardView) {
+	<div class="mb-8">
+		<div class="text-[13px] font-bold uppercase tracking-[0.06em] text-ink-muted">
+			{ i18n.M(v.Locale, "dashboardTitle") }
+		</div>
+		// Read view. The edit button sits below the (wrapping) title, not beside it.
+		<div x-show="!editingDetails">
+			<h1 class="mt-1 text-[28px] font-extrabold tracking-[-0.02em] text-ink">{ v.Title }</h1>
+			if v.Description != "" {
+				<p class="mt-1.5 whitespace-pre-line text-[15px] leading-relaxed text-ink-muted">{ v.Description }</p>
+			}
+			<div class="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-[13px] text-ink-muted">
+				<span>
+					{ i18n.M(v.Locale, "fieldMode") }:
+					<span class="font-semibold text-ink">{ modeLabel(v.Locale, v.PollMode) }</span>
+				</span>
+				<span>
+					{ i18n.M(v.Locale, "fieldLanguage") }:
+					<span class="font-semibold text-ink">{ i18n.M(v.Locale, localeKey(v.Locale)) }</span>
+				</span>
+			</div>
+			if !v.Closed {
+				<div class="mt-3">
+					@ghostButton(i18n.M(v.Locale, "edit"), "editingDetails = true") {
+						@iconPencil(14)
+						{ i18n.M(v.Locale, "edit") }
+					}
+				</div>
+			}
+		</div>
+		// Edit view: title, description, mode and language save together.
+		<form
+			x-show="editingDetails"
+			x-cloak
+			method="POST"
+			action="?/saveDetails"
+			hx-post="?/saveDetails"
+			hx-target="body"
+			hx-swap="outerHTML"
+			class="mt-2 flex flex-col gap-2.5"
+		>
+			<label class="flex min-w-0 flex-1 flex-col gap-2">
+				<span class="text-sm font-semibold text-ink">{ i18n.M(v.Locale, "fieldTitle") }</span>
+				<input
+					type="text"
+					name="title"
+					value={ v.Title }
+					class="w-full rounded-[10px] border border-border bg-card px-3.5 h-[46px] text-[15px] text-ink outline-none focus:border-primary"
+				/>
+			</label>
+			<label class="flex flex-col gap-2">
+				<span class="text-sm font-semibold text-ink">{ i18n.M(v.Locale, "fieldDescription") }</span>
+				<textarea
+					rows="3"
+					name="description"
+					class="min-h-[84px] w-full resize-none rounded-[10px] border border-border bg-card px-3.5 py-3 text-[15px] leading-normal text-ink outline-none focus:border-primary"
+				>{ v.Description }</textarea>
+			</label>
+			<label class="flex flex-col gap-2">
+				<span class="text-sm font-semibold text-ink">{ i18n.M(v.Locale, "fieldMode") }</span>
+				<select
+					name="pollMode"
+					class="h-[46px] w-full rounded-[10px] border border-border bg-card px-3.5 text-[15px] text-ink outline-none focus:border-primary"
+				>
+					<option value="assigned" selected?={ v.PollMode != "open" }>{ i18n.M(v.Locale, "modeAssigned") }</option>
+					<option value="open" selected?={ v.PollMode == "open" }>{ i18n.M(v.Locale, "modeOpen") }</option>
+				</select>
+			</label>
+			<label class="flex flex-col gap-2">
+				<span class="text-sm font-semibold text-ink">{ i18n.M(v.Locale, "fieldLanguage") }</span>
+				<select
+					name="locale"
+					class="h-[46px] w-full rounded-[10px] border border-border bg-card px-3.5 text-[15px] text-ink outline-none focus:border-primary"
+				>
+					for _, l := range i18n.Locales {
+						<option value={ string(l) } selected?={ v.Locale == l }>{ i18n.M(v.Locale, localeKey(l)) }</option>
+					}
+				</select>
+			</label>
+			<div class="flex items-center gap-2.5">
+				@ghostSubmit(i18n.M(v.Locale, "save")) {
+					@iconCheck(16)
+				}
+				@iconButton(i18n.M(v.Locale, "remove"), "editingDetails = false") {
+					@iconX(16)
+				}
+			</div>
+		</form>
+		// Poll controls on their own row.
+		<div class="mt-5 flex flex-wrap items-center gap-2.5">
+			<form
+				method="POST"
+				action={ templ.SafeURL(ternary(v.Closed, "?/reopen", "?/close")) }
+				hx-post={ ternary(v.Closed, "?/reopen", "?/close") }
+				hx-target="body"
+				hx-swap="outerHTML"
+			>
+				<button
+					type="submit"
+					class="inline-flex cursor-pointer items-center justify-center gap-1.5 whitespace-nowrap transition-colors duration-150 h-9 rounded-[9px] border border-border bg-card text-primary text-[13px] font-semibold hover:bg-primary-tint px-3.5"
+				>
+					if v.Closed {
+						@iconLockOpen(14)
+						{ i18n.M(v.Locale, "reopenPoll") }
+					} else {
+						@iconLock(14)
+						{ i18n.M(v.Locale, "closePoll") }
+					}
+				</button>
+			</form>
+		</div>
+	</div>
+}
+
+func modeLabel(l i18n.Locale, mode string) string {
+	if mode == "open" {
+		return i18n.M(l, "modeOpen")
+	}
+	return i18n.M(l, "modeAssigned")
+}
+
+// The link to hand out in open mode: kept at the top and visually primary, since
+// the organizer /e link below is private.
+templ shareLinkBanner(v DashboardView) {
+	<div class="mb-4 rounded-xl border border-primary bg-primary-tint px-4 py-3.5">
+		<div class="text-sm font-bold text-primary">{ i18n.M(v.Locale, "shareLinkTitle") }</div>
+		<p class="mt-1.5 text-[13px] leading-relaxed text-ink">{ i18n.M(v.Locale, "shareLinkHint") }</p>
+		<div class="mt-2.5 flex flex-wrap items-center gap-2.5">
+			@LinkChip(stripScheme(v.ShareURL))
+			@CopyButton(v.Locale, v.ShareURL)
+		</div>
+	</div>
+}
+
+// Save-your-link warning: the /e URL is the only way back to the results and is
+// private - never the link to share. The specs locate this by div.border-amber.
+templ organizerLinkBanner(v DashboardView) {
+	<div class="mb-6 rounded-xl border border-amber bg-amber-tint px-4 py-3.5">
+		<div class="flex items-center gap-2 text-sm font-bold text-amber">
+			@iconTriangleAlert(16)
+			{ i18n.M(v.Locale, "organizerLinkTitle") }
+		</div>
+		<p class="mt-1.5 text-[13px] leading-relaxed text-ink">{ i18n.M(v.Locale, "organizerLinkWarning") }</p>
+		<div class="mt-2.5 flex flex-wrap items-center gap-2.5">
+			@LinkChip(stripScheme(v.OrganizerURL))
+			@CopyButton(v.Locale, v.OrganizerURL)
+		</div>
+	</div>
+}
+
+templ resultsSection(v DashboardView) {
+	<section class="mb-10">
+		<div class="mb-1 text-[13px] font-bold uppercase tracking-[0.06em] text-ink-muted">
+			{ i18n.M(v.Locale, "resultsSection") }
+		</div>
+		// One "who answered" summary for the whole poll, not per card.
+		<div class="mb-3.5 text-[13px] font-semibold text-ink-muted">{ v.RespondedLabel }</div>
+		<div class="flex flex-col gap-3">
+			for _, r := range v.Results {
+				@resultCard(v, r)
+			}
+		</div>
+	</section>
+}
+
+templ resultCard(v DashboardView, r ResultView) {
+	<div class="rounded-xl border border-border bg-card p-4" x-data="{ open: false }">
+		<div class="flex flex-wrap items-center justify-between gap-2.5">
+			<div class="flex items-center gap-2.5">
+				<div>
+					<div class="text-[15px] font-bold capitalize text-ink">{ r.Weekday }</div>
+					<div class="text-[13px] text-ink-muted">
+						{ r.DateLabel }
+						if r.TimeRange != "" {
+							{ " · " + r.TimeRange }
+						}
+					</div>
+				</div>
+				if r.IsBest {
+					<span class="whitespace-nowrap rounded-full bg-amber-tint px-2.5 py-1 text-[11px] font-bold uppercase tracking-[0.04em] text-amber">
+						{ i18n.M(v.Locale, "bestDate") }
+					</span>
+				}
+			</div>
+			<div class="flex items-center gap-2">
+				if r.Preferred+r.Available+r.Unavailable > 0 {
+					<button
+						type="button"
+						@click="open = !open"
+						:aria-label={ "open ? '" + jsEscape(i18n.M(v.Locale, "hideWho")) + "' : '" + jsEscape(i18n.M(v.Locale, "showWho")) + "'" }
+						:title={ "open ? '" + jsEscape(i18n.M(v.Locale, "hideWho")) + "' : '" + jsEscape(i18n.M(v.Locale, "showWho")) + "'" }
+						aria-label={ i18n.M(v.Locale, "showWho") }
+						class="inline-flex h-9 w-9 shrink-0 cursor-pointer items-center justify-center rounded-[9px] border border-border bg-card text-ink-muted transition-colors duration-150 hover:bg-card-alt"
+					>
+						<span x-show="!open">
+							@iconChevronDown(16)
+						</span>
+						<span x-show="open" x-cloak>
+							@iconChevronUp(16)
+						</span>
+					</button>
+				}
+			</div>
+		</div>
+		<div class="mt-4 flex flex-col gap-2">
+			@resultBar(i18n.M(v.Locale, "prefPreferred"), r.Preferred, r.PreferredPct, "bg-amber", r.PreferredNames)
+			@resultBar(i18n.M(v.Locale, "prefAvailable"), r.Available, r.AvailablePct, "bg-good", r.AvailableNames)
+			@resultBar(i18n.M(v.Locale, "prefUnavailable"), r.Unavailable, r.UnavailablePct, "bg-bad", r.UnavailableNames)
+		</div>
+	</div>
+}
+
+templ resultBar(label string, count, pct int, color string, names []string) {
+	<div class="grid grid-cols-[92px_1fr_22px] items-center gap-2.5">
+		<div class="text-xs font-semibold text-ink-muted">{ label }</div>
+		<div class="h-2.5 overflow-hidden rounded-md bg-card-alt">
+			<div class={ "h-full rounded-md " + color } style={ "width:" + pctStyle(pct) + "; transition: width 450ms cubic-bezier(0.16,1,0.3,1);" }></div>
+		</div>
+		<div class="text-right text-xs font-bold text-ink">{ count }</div>
+	</div>
+	if len(names) > 0 {
+		// x-if, not x-show: the original rendered this only when expanded, so the
+		// names must be absent from the DOM until then - not merely hidden.
+		<template x-if="open">
+			<div class="pl-[102px] text-[13px] text-ink-muted">
+				{ joinNames(names) }
+			</div>
+		</template>
+	}
+}
+
+templ optionsSection(v DashboardView) {
+	<section class="mb-10">
+		<div class="mb-3.5 text-[13px] font-bold uppercase tracking-[0.06em] text-ink-muted">
+			{ i18n.M(v.Locale, "datesSection") }
+		</div>
+		<div class="flex flex-col gap-2.5">
+			for _, opt := range v.Options {
+				@optionRow(v, opt)
+			}
+		</div>
+		if !v.Closed {
+			<form
+				method="POST"
+				action="?/addOption"
+				hx-post="?/addOption"
+				hx-target="body"
+				hx-swap="outerHTML"
+				class="mt-2.5"
+			>
+				<div class="rounded-xl border border-dashed border-border bg-card p-3">
+					<div class="flex items-center gap-2.5">
+						// value="" so the native picker starts empty each render.
+						<label class="flex min-w-0 flex-1 flex-col gap-2">
+							<input
+								type="date"
+								name="value"
+								value=""
+								class="w-full rounded-[10px] border border-border bg-card px-3.5 h-[46px] text-[15px] text-ink outline-none focus:border-primary"
+							/>
+						</label>
+						@ghostSubmit("") {
+							@iconPlus(14)
+							{ i18n.M(v.Locale, "addDate") }
+						}
+					</div>
+					<div class="mt-2.5 flex items-center gap-3.5">
+						<div class="flex flex-1 items-center gap-2">
+							<span class="shrink-0 text-xs font-semibold text-ink-muted">{ i18n.M(v.Locale, "from") }</span>
+							<label class="flex min-w-0 flex-1 flex-col gap-2">
+								<input type="time" name="startTime" value="" class="w-full rounded-[10px] border border-border bg-card px-3.5 h-10 text-[15px] text-ink outline-none focus:border-primary"/>
+							</label>
+						</div>
+						<div class="flex flex-1 items-center gap-2">
+							<span class="shrink-0 text-xs font-semibold text-ink-muted">{ i18n.M(v.Locale, "to") }</span>
+							<label class="flex min-w-0 flex-1 flex-col gap-2">
+								<input type="time" name="endTime" value="" class="w-full rounded-[10px] border border-border bg-card px-3.5 h-10 text-[15px] text-ink outline-none focus:border-primary"/>
+							</label>
+						</div>
+					</div>
+				</div>
+			</form>
+		}
+	</section>
+}
+
+templ optionRow(v DashboardView, opt OptionView) {
+	<div class="rounded-xl border border-border bg-card p-3" x-data="{ editing: false }">
+		// Read view
+		<div class="flex items-center justify-between gap-2.5" x-show="!editing">
+			<div class="min-w-0">
+				<div class="text-[15px] font-semibold text-ink">
+					{ opt.Weekday + " " + opt.DateLabel }
+				</div>
+				if opt.TimeRange != "" {
+					<div class="text-[13px] text-ink-muted">{ opt.TimeRange }</div>
+				}
+			</div>
+			if !v.Closed {
+				<div class="flex shrink-0 items-center gap-2">
+					@ghostButton(i18n.M(v.Locale, "edit"), "editing = true") {
+						@iconPencil(16)
+					}
+					<form
+						method="POST"
+						action="?/removeOption"
+						hx-post="?/removeOption"
+						hx-target="body"
+						hx-swap="outerHTML"
+						if opt.HasResponses {
+							data-confirm={ i18n.M(v.Locale, "confirmDeleteOption") }
+						}
+					>
+						<input type="hidden" name="optionId" value={ opt.ID }/>
+						@iconSubmit(i18n.M(v.Locale, "remove")) {
+							@iconX(16)
+						}
+					</form>
+				</div>
+			}
+		</div>
+		// Edit view
+		<form
+			x-show="editing"
+			x-cloak
+			method="POST"
+			action="?/editOption"
+			hx-post="?/editOption"
+			hx-target="body"
+			hx-swap="outerHTML"
+			class="flex flex-col gap-2.5"
+		>
+			<input type="hidden" name="optionId" value={ opt.ID }/>
+			<div class="flex items-center gap-2.5">
+				<label class="flex min-w-0 flex-1 flex-col gap-2">
+					<input type="date" name="value" value={ opt.Value } class="w-full rounded-[10px] border border-border bg-card px-3.5 h-[46px] text-[15px] text-ink outline-none focus:border-primary"/>
+				</label>
+				@ghostSubmit(i18n.M(v.Locale, "save")) {
+					@iconCheck(16)
+				}
+				@iconButton(i18n.M(v.Locale, "remove"), "editing = false") {
+					@iconX(16)
+				}
+			</div>
+			<div class="flex items-center gap-3.5">
+				<div class="flex flex-1 items-center gap-2">
+					<span class="shrink-0 text-xs font-semibold text-ink-muted">{ i18n.M(v.Locale, "from") }</span>
+					<label class="flex min-w-0 flex-1 flex-col gap-2">
+						<input type="time" name="startTime" value={ opt.StartTime } class="w-full rounded-[10px] border border-border bg-card px-3.5 h-10 text-[15px] text-ink outline-none focus:border-primary"/>
+					</label>
+				</div>
+				<div class="flex flex-1 items-center gap-2">
+					<span class="shrink-0 text-xs font-semibold text-ink-muted">{ i18n.M(v.Locale, "to") }</span>
+					<label class="flex min-w-0 flex-1 flex-col gap-2">
+						<input type="time" name="endTime" value={ opt.EndTime } class="w-full rounded-[10px] border border-border bg-card px-3.5 h-10 text-[15px] text-ink outline-none focus:border-primary"/>
+					</label>
+				</div>
+			</div>
+		</form>
+	</div>
+}
+
+templ inviteesSection(v DashboardView) {
+	<section>
+		<div class="mb-3.5 text-[13px] font-bold uppercase tracking-[0.06em] text-ink-muted">
+			{ i18n.M(v.Locale, "participantsSection") }
+		</div>
+		if v.PollMode == "open" {
+			// Open mode: the shared link lives at the top; here we list respondents
+			// read-only (names come from submissions), with no per-person link.
+			if len(v.Invitees) > 0 {
+				<div class="flex flex-col gap-2.5">
+					for _, inv := range v.Invitees {
+						<div class="rounded-xl border border-border bg-card p-3" x-data="{ noteOpen: false }">
+							<div class="flex items-center gap-2.5">
+								<div class="flex-1 text-[15px] font-semibold text-ink">{ inv.Label }</div>
+								if inv.Note != "" {
+									@noteToggle(v.Locale)
+								}
+							</div>
+							if inv.Note != "" {
+								@noteBody(inv.Note)
+							}
+						</div>
+					}
+				</div>
+			} else {
+				<p class="text-[13px] leading-relaxed text-ink-muted">{ i18n.M(v.Locale, "shareLinkHint") }</p>
+			}
+		} else {
+			<div class="flex flex-col gap-2.5">
+				for _, inv := range v.Invitees {
+					@inviteeRow(v, inv)
+				}
+			</div>
+			if !v.Closed {
+				<form
+					method="POST"
+					action="?/addInvitee"
+					hx-post="?/addInvitee"
+					hx-target="body"
+					hx-swap="outerHTML"
+					class="mt-2.5"
+				>
+					<div class="rounded-xl border border-dashed border-border bg-card p-3">
+						<div class="flex items-center gap-2.5">
+							<label class="flex min-w-0 flex-1 flex-col gap-2">
+								<input
+									type="text"
+									name="label"
+									value=""
+									placeholder={ i18n.M(v.Locale, "name") }
+									class="w-full rounded-[10px] border border-border bg-card px-3.5 h-[46px] text-[15px] text-ink outline-none placeholder:text-ink-muted/70 focus:border-primary"
+								/>
+							</label>
+							@ghostSubmit("") {
+								@iconPlus(14)
+								{ i18n.M(v.Locale, "addParticipant") }
+							}
+						</div>
+					</div>
+				</form>
+			}
+		}
+	</section>
+}
+
+templ inviteeRow(v DashboardView, inv InviteeView) {
+	<div class="rounded-xl border border-border bg-card p-3" x-data="{ noteOpen: false }">
+		<div class="flex items-center gap-2.5">
+			if v.Closed {
+				<div class="flex-1 text-[15px] font-semibold text-ink">{ inv.Label }</div>
+			} else {
+				<form
+					method="POST"
+					action="?/renameInvitee"
+					hx-post="?/renameInvitee"
+					hx-target="body"
+					hx-swap="outerHTML"
+					class="flex flex-1 items-center gap-2.5"
+				>
+					<input type="hidden" name="inviteeId" value={ inv.ID }/>
+					<label class="flex min-w-0 flex-1 flex-col gap-2">
+						<input
+							type="text"
+							name="label"
+							value={ inv.Label }
+							class="w-full rounded-[10px] border border-border bg-card px-3.5 h-[46px] text-[15px] text-ink outline-none focus:border-primary"
+						/>
+					</label>
+					@ghostSubmit(i18n.M(v.Locale, "save")) {
+						@iconCheck(16)
+					}
+				</form>
+			}
+			<span
+				class={ "whitespace-nowrap rounded-full px-2.5 py-1 text-[11px] font-bold " +
+					ternary(inv.Answered, "bg-good-tint text-good", "bg-amber-tint text-amber") }
+			>
+				if inv.Answered {
+					{ i18n.M(v.Locale, "answered") }
+				} else {
+					{ i18n.M(v.Locale, "pending") }
+				}
+			</span>
+			if inv.Note != "" {
+				@noteToggle(v.Locale)
+			}
+			if !v.Closed {
+				<form
+					method="POST"
+					action="?/removeInvitee"
+					hx-post="?/removeInvitee"
+					hx-target="body"
+					hx-swap="outerHTML"
+					data-confirm={ i18n.M(v.Locale, "confirmDeleteInvitee") }
+				>
+					<input type="hidden" name="inviteeId" value={ inv.ID }/>
+					@iconSubmit(i18n.M(v.Locale, "remove")) {
+						@iconX(16)
+					}
+				</form>
+			}
+		</div>
+		if inv.Note != "" {
+			@noteBody(inv.Note)
+		}
+		<div class="mt-2.5 flex flex-wrap items-center gap-2.5">
+			@LinkChip(stripScheme(inv.URL))
+			@CopyButton(v.Locale, inv.URL)
+		</div>
+	</div>
+}
+
+// x-if, not x-show: the original rendered the note only once expanded, so it
+// must be absent from the DOM until the toggle - not just visually hidden.
+templ noteBody(note string) {
+	<template x-if="noteOpen">
+		<div class="mt-2.5 rounded-lg bg-card-alt px-3 py-2 text-[13px] leading-relaxed text-ink-muted">
+			{ note }
+		</div>
+	</template>
+}
+
+templ noteToggle(l i18n.Locale) {
+	<button
+		type="button"
+		@click="noteOpen = !noteOpen"
+		:aria-label={ "noteOpen ? '" + jsEscape(i18n.M(l, "hideNote")) + "' : '" + jsEscape(i18n.M(l, "showNote")) + "'" }
+		:title={ "noteOpen ? '" + jsEscape(i18n.M(l, "hideNote")) + "' : '" + jsEscape(i18n.M(l, "showNote")) + "'" }
+		aria-label={ i18n.M(l, "showNote") }
+		class="inline-flex h-9 w-9 shrink-0 cursor-pointer items-center justify-center rounded-[9px] border border-border bg-card text-ink-muted transition-colors duration-150 hover:bg-card-alt"
+	>
+		@iconMessageSquare(16)
+	</button>
+}
+
+// --- shared button shapes (mirror atoms/Button.svelte + IconButton.svelte) ---
+
+// A ghost button whose accessible name comes from aria-label when given one,
+// otherwise from its own text - exactly how Button.svelte behaved.
+templ ghostButton(label string, click string) {
+	<button
+		type="button"
+		if label != "" {
+			aria-label={ label }
+			title={ label }
+		}
+		@click={ click }
+		class="inline-flex cursor-pointer items-center justify-center gap-1.5 whitespace-nowrap transition-colors duration-150 h-9 rounded-[9px] border border-border bg-card text-primary text-[13px] font-semibold hover:bg-primary-tint px-3.5"
+	>
+		{ children... }
+	</button>
+}
+
+templ ghostSubmit(label string) {
+	<button
+		type="submit"
+		if label != "" {
+			aria-label={ label }
+			title={ label }
+		}
+		class="inline-flex cursor-pointer items-center justify-center gap-1.5 whitespace-nowrap transition-colors duration-150 h-9 rounded-[9px] border border-border bg-card text-primary text-[13px] font-semibold hover:bg-primary-tint px-3.5"
+	>
+		{ children... }
+	</button>
+}
+
+templ iconButton(label string, click string) {
+	<button
+		type="button"
+		aria-label={ label }
+		title={ label }
+		@click={ click }
+		class="inline-flex h-9 w-9 shrink-0 cursor-pointer items-center justify-center rounded-[9px] border border-border bg-card text-ink-muted transition-colors duration-150 hover:bg-card-alt"
+	>
+		{ children... }
+	</button>
+}
+
+templ iconSubmit(label string) {
+	<button
+		type="submit"
+		aria-label={ label }
+		title={ label }
+		class="inline-flex h-9 w-9 shrink-0 cursor-pointer items-center justify-center rounded-[9px] border border-border bg-card text-ink-muted transition-colors duration-150 hover:bg-card-alt"
+	>
+		{ children... }
+	</button>
+}

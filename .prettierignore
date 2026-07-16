@@ -1,6 +1,12 @@
-.svelte-kit
-.wrangler
-build
 node_modules
+
+# Generated / vendored - committed, but never hand-formatted.
+src/lib/paraglide
+src/lib/types.ts
+static/app.css
+static/htmx.min.js
+static/alpine.min.js
 bun.lock
-migrations
+
+test-results
+playwright-report

@@ -1,4 +1,4 @@
-# family-date-poll
+# poll
 
 [![CI](https://github.com/malpou/family-date-poll/actions/workflows/ci.yml/badge.svg)](https://github.com/malpou/family-date-poll/actions/workflows/ci.yml)
 
@@ -35,56 +35,71 @@ shows it prominently at the top.
 
 ## Stack
 
-- **SvelteKit 2** + **Svelte 5** (runes) + **Tailwind 4**
-- **Cloudflare Workers/Pages** hosting, **D1** (SQLite) for storage
-- **Paraglide** (inlang) for DA/EN/FR messages, compiled from `messages/{da,en,fr}.json`
-- **bun** for install, scripts, and lockfile
-- **Playwright** for end-to-end smoke tests
+- **Go** + **[templ](https://templ.guide)** for server-rendered HTML
+- **[HTMX](https://htmx.org)** for server round-trips (form actions, mutations)
+  and **[Alpine.js](https://alpinejs.dev)** for in-page state (the preference
+  selector, the submit gate, inline edit toggles)
+- **[sqlc](https://sqlc.dev)** over **Postgres** (pgx/v5) - queries are written
+  as SQL and compiled to typed Go
+- **Tailwind 4** for styling, compiled to a static `static/app.css`
+- **Paraglide** (inlang) for DA/EN/FR messages, compiled from
+  `messages/{da,en,fr}.json`
+- **Playwright** for end-to-end tests
 
-UI is organized by **atomic design** under `src/lib/components/`
-(`atoms/` → `molecules/` → `organisms/`). Data goes through a
-single `DataProvider` interface (`src/lib/data/provider.ts`) with a mock
-implementation for local dev and tests and a D1 implementation in production -
-swapping is one line.
+Layout:
+
+```
+cmd/server/         main - wiring, config, graceful DB wait
+internal/handlers/  HTTP: routes, form actions, validation
+internal/views/     templ templates (the only place HTML lives)
+internal/domain/    dates, results ranking, tokens - pure logic, unit-tested
+internal/db/        store.go + queries.sql -> sqlc-generated code
+messages/           da/en/fr JSON: one source of truth for copy
+```
+
+`messages/{da,en,fr}.json` is read by **both** the Go server (rendering) and the
+Playwright specs (asserting), so copy can never drift between app and tests.
+All app SQL lives in `internal/db/queries.sql`; the e2e specs seed through
+`e2e/db.ts`. Neither writes SQL anywhere else.
 
 ## Develop
 
+Requires Go 1.25+, [templ](https://templ.guide/quick-start/installation),
+[sqlc](https://docs.sqlc.dev/en/latest/overview/install.html), bun, and Docker
+(for the local Postgres).
+
 ```sh
 bun install
-bun run dev        # http://localhost:5173, uses the mock data provider
+make run        # brings up Postgres, builds, serves on http://localhost:8787
 ```
 
-Useful scripts:
+Useful targets:
 
 ```sh
-bun run check      # svelte-check (types)
-bun run build      # production build
-bun run preview    # preview the production build
+make build      # templ generate + tailwind + vendor JS + go build
+make test       # Go unit tests
+make db         # just bring up/migrate the local Postgres
+sqlc generate   # regenerate DB code after editing internal/db/queries.sql
 ```
 
 ## Testing
 
 ```sh
-bun run test       # unit tests (vitest)
-bun run test:e2e   # Playwright smoke tests: full journey against a local D1
+make test          # Go unit tests (dates, results ranking)
+bun run test:e2e   # Playwright: full journey against the real server + Postgres
 ```
 
-`test:e2e` builds the app, boots `wrangler dev` on a freshly-migrated **local
-D1**, and drives the real create → dashboard → respond → results journey. Specs
-seed and read the database through one shared helper (`e2e/db.ts`) - no raw SQL
-in the tests themselves; all query-building lives in that module, mirroring how
-`src/lib/data/d1.ts` is the single home for app SQL.
+`test:e2e` boots the Go server against a throwaway Postgres container
+(`scripts/pg.sh`), applies the schema, and drives the real create → dashboard →
+respond → results journey. Specs seed and read the database through one shared
+helper (`e2e/db.ts`) - no raw SQL in the tests themselves.
 
 **CI** ([`.github/workflows/ci.yml`](.github/workflows/ci.yml)) runs the full
-gate - `check` → unit tests → e2e - on every push and pull request, and uploads
-the Playwright HTML report as an artifact when a run fails.
+gate - vet → unit tests → e2e - on every push and pull request, and uploads the
+Playwright HTML report as an artifact when a run fails.
 
-## Deploy (Cloudflare)
+## Deploy
 
-```sh
-bun run d1:migrate # apply migrations to D1
-bun run deploy     # publish to Cloudflare
-```
-
-Requires a Cloudflare account with a D1 database bound as `DB` and the
-`poll.malpou.io` route configured. See `wrangler.toml`.
+The server is a single Go binary plus the `static/` directory. It needs
+`DATABASE_URL` (Postgres) and optionally `PORT` (default 8787). Apply
+`internal/db/migrations/0001_init.sql` to a fresh database before first boot.
