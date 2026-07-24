@@ -43,7 +43,7 @@ while leaving the async product untouched.
 - **Modified Fibonacci deck** (`0 1 2 3 5 8 13 20 40 100`) plus three special cards: **?**
   (need more info), **∞** (too big to estimate, split it), and **☕**
   (I need a break). Votes stay hidden during `voting` — participants only
-  see *who* has voted, never *what* — and flip simultaneously on reveal.
+  see _who_ has voted, never _what_ — and flip simultaneously on reveal.
 - **Agreement signal on reveal.** The room computes whether the numeric
   votes **agree** (all the same card), are **close** (within one adjacent
   deck step), or are a **spread** (more than one step apart, any ∞, or no

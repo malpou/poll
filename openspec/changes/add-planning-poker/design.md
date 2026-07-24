@@ -45,12 +45,12 @@ described the async write volume; this workload is why the exception exists.
   `poll_type` variant would inherit a data model it cannot use. New tables in
   migration `0011_planning_poker.sql`:
   - `poker_rooms(id, title, deck, controller_token, join_token, status,
-    created_at)` — `deck` is `'fibonacci'` for now (column reserved for
+created_at)` — `deck` is `'fibonacci'` for now (column reserved for
     future decks); `status` ∈ {open, closed}; two unguessable base62 tokens
     (≥128 bits) generated the existing way, mirroring
     organizer_token/share_token.
   - `poker_rounds(id, room_id, title, sort_order, final_estimate,
-    decided_at)` — one row per estimation item. `title` is the story/ticket
+decided_at)` — one row per estimation item. `title` is the story/ticket
     label or id the controller typed. `final_estimate` (text, the recorded
     deck value or a free split/skip marker) and `decided_at` are NULL until
     the controller records the estimate. The **live phase and votes are not
@@ -75,24 +75,24 @@ described the async write volume; this workload is why the exception exists.
   - `waiting` — no active item, or the next item queued. Participants see
     "waiting for the next item."
   - `voting` — the controller opened the current item. Participants pick or
-    change a card; the DO broadcasts only *who* has voted (a face-down card /
+    change a card; the DO broadcasts only _who_ has voted (a face-down card /
     check), never the value. Late joiners can vote until reveal.
   - `revealed` — the controller revealed; every vote flips face-up at once.
     The DO computes and broadcasts the distribution + agreement signal.
     Discussion happens in this phase; the controller then either re-opens
     voting (a re-vote clears votes back to `voting`) or records the final
     estimate (→ item decided, room returns to `waiting` for the next item).
-  Only the controller connection may drive `open` / `reveal` / `revote` /
-  `finalize` / `next`; a participant attempting a control action is ignored.
-  The controller **facilitates by default but may opt in as an estimator** —
-  when they do their vote is hidden, revealed, and counted like any other
-  seat; facilitation powers are independent of whether they vote.
+    Only the controller connection may drive `open` / `reveal` / `revote` /
+    `finalize` / `next`; a participant attempting a control action is ignored.
+    The controller **facilitates by default but may opt in as an estimator** —
+    when they do their vote is hidden, revealed, and counted like any other
+    seat; facilitation powers are independent of whether they vote.
 - **Vote privacy is enforced server-side.** During `voting` the DO sends
   each non-controller only the boolean "voted" per seat; card values are
   withheld from the broadcast until the phase is `revealed`. A crafted client
   cannot read hidden votes because the DO never sends them. A vote message
   arriving when the phase is not `voting` is rejected.
-- **Agreement signal (advisory, computed on reveal).** Over the *numeric*
+- **Agreement signal (advisory, computed on reveal).** Over the _numeric_
   votes only, by deck index (`0 1 2 3 5 8 13 20 40 100` → indices 0..9):
   - **agree** — at least one numeric vote, all numeric votes equal, and no ∞.
     The equal value pre-fills the suggested estimate.
@@ -101,10 +101,10 @@ described the async write volume; this workload is why the exception exists.
   - **spread** — numeric index span ≥ 2 ("more than one step of difference"),
     OR any ∞ present, OR no numeric votes at all. Flags "discuss / re-vote /
     split." ∞ always forces spread (someone thinks it is too big to size).
-  `?` and `☕` never count toward the numeric span. `☕` additionally raises a
-  separate, advisory "someone needs a break" hint. **The controller always
-  records the final estimate** — any deck value, or a split/skip — the signal
-  only advises and pre-fills; it never auto-decides.
+    `?` and `☕` never count toward the numeric span. `☕` additionally raises a
+    separate, advisory "someone needs a break" hint. **The controller always
+    records the final estimate** — any deck value, or a split/skip — the signal
+    only advises and pre-fills; it never auto-decides.
 - **Reconnect & identity.** Participants name themselves on the join page;
   a cookie (same pattern as the `/s` → `/r` cookie) carries a stable
   per-browser participant id so a refresh or dropped socket rejoins the same
@@ -114,7 +114,7 @@ described the async write volume; this workload is why the exception exists.
   socket drops that seat from the live roster after a short grace; it does
   not affect the durable record.
 - **Deck values are canonical, labels are localized.** The deck is fixed
-  numeric values plus ?/∞/☕; only the *labels/aria* around them are Paraglide
+  numeric values plus ?/∞/☕; only the _labels/aria_ around them are Paraglide
   strings. `∞`, `☕`, `?` render with Lucide-consistent iconography (per
   DESIGN.md additions), the numerals in the typewriter face.
 - **Results log.** The controller console and a room results view render the
@@ -163,7 +163,7 @@ described the async write volume; this workload is why the exception exists.
   participant) against the real socket, so the live path is exercised end to
   end, not mocked.
 - **[Controller disconnects mid-session]** → control is tied to the
-  controller *token*, not a live socket; reopening the controller link
+  controller _token_, not a live socket; reopening the controller link
   reconnects and resumes control. The room never becomes unfacilitatable.
 - **[Someone games the reveal]** → hidden votes are never sent before
   `revealed`, so there is nothing on the client to peek at; privacy is a

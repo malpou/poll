@@ -209,6 +209,34 @@ export interface InviteeView {
 	note: string | null;
 }
 
+// --- Planning poker (openspec/specs/planning-poker). Durable row shapes only;
+// the live phase and in-flight votes are ephemeral coordination state held by
+// the real-time layer, never persisted here. ---
+
+// open = estimating; closed = the controller ended the session (final log only).
+export type RoomStatus = 'open' | 'closed';
+
+export interface PokerRoomRow {
+	id: string;
+	title: string;
+	deck: string; // 'fibonacci' today; column reserved for future decks
+	controllerToken: string; // private, facilitates the room
+	joinToken: string; // shared, participants enter through it
+	status: RoomStatus;
+	createdAt: string;
+}
+
+// One estimation item. final_estimate/decided_at are null until the controller
+// records the estimate (the single durable artifact of a decided item).
+export interface PokerRoundRow {
+	id: string;
+	roomId: string;
+	title: string;
+	sortOrder: number;
+	finalEstimate: string | null;
+	decidedAt: string | null;
+}
+
 // Per-date aggregate for the results view. notAnswered = invitees − answered,
 // so a missing responses row reads as "no answer", never "unavailable".
 export interface DateOptionResult {

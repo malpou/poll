@@ -2,10 +2,10 @@
 
 ## 1. Data layer
 
-- [ ] 1.1 Migration `0011_planning_poker.sql`: `poker_rooms(id, title, deck, controller_token, join_token, status, created_at)` (deck default `'fibonacci'`, status default `'open'`) and `poker_rounds(id, room_id, title, sort_order, final_estimate, decided_at)` (`final_estimate`/`decided_at` nullable). Additive only — no existing table touched
-- [ ] 1.2 Room/round types + data-provider reads (create room, list rooms by token, list rounds/results, insert round, finalize round → set `final_estimate`/`decided_at`, close room)
+- [x] 1.1 Migration `0011_planning_poker.sql`: `poker_rooms(id, title, deck, controller_token, join_token, status, created_at)` (deck default `'fibonacci'`, status default `'open'`) and `poker_rounds(id, room_id, title, sort_order, final_estimate, decided_at)` (`final_estimate`/`decided_at` nullable). Additive only — no existing table touched
+- [ ] 1.2 Room/round types + data-provider reads (create room, list rooms by token, list rounds/results, insert round, finalize round → set `final_estimate`/`decided_at`, close room) — row types added to `src/lib/types.ts`; provider methods pending transport decision
 - [ ] 1.3 Token generation reuses the existing base62 ≥128-bit helper for both `controller_token` and `join_token`
-- [ ] 1.4 Add rooms + rounds to the e2e seed helper (`openspec/specs/support/db.ts`), seedable open/closed with decided items, `e2e-poker-*` token/id family (delete-then-insert, idempotent)
+- [x] 1.4 Add rooms + rounds to the e2e seed helper (`openspec/specs/support/db.ts`), seedable open/closed with decided items, `e2e-poker-*` token/id family (delete-then-insert, idempotent)
 
 ## 2. Real-time layer (Durable Object)
 
@@ -18,8 +18,8 @@
 
 ## 3. Agreement signal + deck
 
-- [ ] 3.1 Canonical deck: numeric `0 1 2 3 5 8 13 20 40 100` (modified Fibonacci, deck-indexed) plus specials `?`, `∞`, `☕`
-- [ ] 3.2 Signal computation over numeric votes by deck index: `agree` (≥1 numeric, all equal, no ∞ → pre-fill the value), `close` (span == 1, no ∞), `spread` (span ≥ 2, any ∞, or zero numeric votes). `?`/`☕` excluded from the span; `∞` forces spread; `☕` raises the advisory break hint. Unit-tested in `src/**/*.test.ts`
+- [x] 3.1 Canonical deck: numeric `0 1 2 3 5 8 13 20 40 100` (modified Fibonacci, deck-indexed) plus specials `?`, `∞`, `☕`
+- [x] 3.2 Signal computation over numeric votes by deck index: `agree` (≥1 numeric, all equal, no ∞ → pre-fill the value), `close` (span == 1, no ∞), `spread` (span ≥ 2, any ∞, or zero numeric votes). `?`/`☕` excluded from the span; `∞` forces spread; `☕` raises the advisory break hint. Unit-tested in `src/**/*.test.ts`
 
 ## 4. Routes
 
