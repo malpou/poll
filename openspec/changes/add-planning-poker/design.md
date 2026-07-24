@@ -84,13 +84,16 @@ described the async write volume; this workload is why the exception exists.
     estimate (→ item decided, room returns to `waiting` for the next item).
   Only the controller connection may drive `open` / `reveal` / `revote` /
   `finalize` / `next`; a participant attempting a control action is ignored.
+  The controller **facilitates by default but may opt in as an estimator** —
+  when they do their vote is hidden, revealed, and counted like any other
+  seat; facilitation powers are independent of whether they vote.
 - **Vote privacy is enforced server-side.** During `voting` the DO sends
   each non-controller only the boolean "voted" per seat; card values are
   withheld from the broadcast until the phase is `revealed`. A crafted client
   cannot read hidden votes because the DO never sends them. A vote message
   arriving when the phase is not `voting` is rejected.
 - **Agreement signal (advisory, computed on reveal).** Over the *numeric*
-  votes only, by deck index (`0 1 2 3 5 8 13 21` → indices 0..7):
+  votes only, by deck index (`0 1 2 3 5 8 13 20 40 100` → indices 0..9):
   - **agree** — at least one numeric vote, all numeric votes equal, and no ∞.
     The equal value pre-fills the suggested estimate.
   - **close** — numeric index span == 1 (votes on two adjacent deck cards),

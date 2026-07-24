@@ -18,7 +18,7 @@
 
 ## 3. Agreement signal + deck
 
-- [ ] 3.1 Canonical deck: numeric `0 1 2 3 5 8 13 21` (deck-indexed) plus specials `?`, `∞`, `☕`
+- [ ] 3.1 Canonical deck: numeric `0 1 2 3 5 8 13 20 40 100` (modified Fibonacci, deck-indexed) plus specials `?`, `∞`, `☕`
 - [ ] 3.2 Signal computation over numeric votes by deck index: `agree` (≥1 numeric, all equal, no ∞ → pre-fill the value), `close` (span == 1, no ∞), `spread` (span ≥ 2, any ∞, or zero numeric votes). `?`/`☕` excluded from the span; `∞` forces spread; `☕` raises the advisory break hint. Unit-tested in `src/**/*.test.ts`
 
 ## 4. Routes
