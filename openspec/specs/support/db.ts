@@ -276,12 +276,17 @@ export function seedRound(r: RoundSeed) {
 	);
 }
 
-// Delete a room and its rounds (children first). Accepts one id or several.
-// Idempotent - safe to call before every seed.
+// Delete a room and all its children in FK order (votes, participants, rounds,
+// room). Accepts one id or several. Idempotent - safe to call before every seed.
 export function wipeRoom(roomId: string | string[]) {
 	const ids = (Array.isArray(roomId) ? roomId : [roomId]).map(lit).join(', ');
 	d1(
-		`DELETE FROM poker_rounds WHERE room_id IN (${ids});
+		// Break the rooms<->rounds cycle first (active_round_id references a round),
+		// then delete children in FK order.
+		`UPDATE poker_rooms SET active_round_id = NULL WHERE id IN (${ids});
+		 DELETE FROM poker_votes WHERE round_id IN (SELECT id FROM poker_rounds WHERE room_id IN (${ids}));
+		 DELETE FROM poker_participants WHERE room_id IN (${ids});
+		 DELETE FROM poker_rounds WHERE room_id IN (${ids});
 		 DELETE FROM poker_rooms WHERE id IN (${ids});`
 	);
 }

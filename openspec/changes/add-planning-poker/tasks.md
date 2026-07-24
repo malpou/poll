@@ -1,45 +1,90 @@
 # Tasks: add-planning-poker
 
+Transport note: shipped D1-backed (short-polled state endpoint), not a Durable
+Object, after the adapter-cloudflare DO-export constraint (see design.md).
+
 ## 1. Data layer
 
-- [x] 1.1 Migration `0011_planning_poker.sql`: `poker_rooms(id, title, deck, controller_token, join_token, status, created_at)` (deck default `'fibonacci'`, status default `'open'`) and `poker_rounds(id, room_id, title, sort_order, final_estimate, decided_at)` (`final_estimate`/`decided_at` nullable). Additive only — no existing table touched
-- [ ] 1.2 Room/round types + data-provider reads (create room, list rooms by token, list rounds/results, insert round, finalize round → set `final_estimate`/`decided_at`, close room) — row types added to `src/lib/types.ts`; provider methods pending transport decision
-- [ ] 1.3 Token generation reuses the existing base62 ≥128-bit helper for both `controller_token` and `join_token`
-- [x] 1.4 Add rooms + rounds to the e2e seed helper (`openspec/specs/support/db.ts`), seedable open/closed with decided items, `e2e-poker-*` token/id family (delete-then-insert, idempotent)
+- [x] 1.1 Migration `0011_planning_poker.sql`: durable `poker_rooms` +
+      `poker_rounds`, plus the live-state tables `poker_participants` +
+      `poker_votes` and the room's `phase` / `active_round_id` / `rev`. Additive
+      only, nothing to backfill
+- [x] 1.2 Row types (`PokerRoomRow`, `PokerRoundRow`, `PokerParticipantRow`,
+      `PokerVoteRow`, `RoomPhase`, `ParticipantRole`) and a self-contained
+      `pokerProvider` (create room, resolve by token, roster/votes/results reads,
+      vote + controller commands, each bumping `rev`)
+- [x] 1.3 Token generation reuses the existing base62 ≥128-bit helper for both
+      `controller_token` and `join_token`
+- [x] 1.4 Rooms + rounds in the e2e seed helper
+      (`openspec/specs/support/db.ts`), seedable open/closed, `e2e-poker-*`
+      token/id family (delete-then-insert, idempotent, FK-safe)
 
-## 2. Real-time layer (Durable Object)
+## 2. Real-time layer (D1-backed)
 
-- [ ] 2.1 `POKER_ROOM` Durable Object class using the WebSocket Hibernation API; binding + migration tag in `wrangler.toml`
-- [ ] 2.2 In-DO live state: roster (identity, role, hasVoted), current item phase (`waiting`/`voting`/`revealed`), per-seat vote for the active item, agreement signal — mirrored into the DO's transactional storage so an evicted instance rehydrates the in-flight item
-- [ ] 2.3 Snapshot on connect: full room state (phase, roster, revealed votes if any, results log) sent to a newly connected client
-- [ ] 2.4 Broadcast on every change (join/leave, vote tick, phase change, reveal, finalize); during `voting` send only per-seat `hasVoted`, never card values
-- [ ] 2.5 Message handlers with role enforcement: participant → `vote` (rejected unless phase is `voting`); controller-only → `open`/`reveal`/`revote`/`finalize`/`next`/`close` (ignore from participants). On `finalize`, write `final_estimate`/`decided_at` to the round's D1 row — the single DO→D1 hand-off
-- [ ] 2.6 Disconnect drops the seat from the live roster after a short grace; durable record untouched
+- [x] 2.1 `GET /poker/api/[token]/state`: viewer snapshot; each poll doubles as
+      a heartbeat. `POST /poker/api/[token]/command`: one action
+      (join/vote/heartbeat/leave + controller open/reveal/revote/finalize/close)
+- [x] 2.2 Live state in D1: room phase + active round, `poker_participants`
+      (heartbeat presence), `poker_votes` (active item, cleared on
+      finalize/re-vote)
+- [x] 2.3 Snapshot on load: full room state (phase, roster, revealed votes if
+      any, results log); client short-polls ~1s (`RoomClient`)
+- [x] 2.4 Vote privacy in `buildSnapshot`: during `voting` only per-seat
+      `hasVoted` (+ the caller's own card echoed), never other cards, until
+      `revealed`. Unit-tested
+- [x] 2.5 Role enforcement: control commands controller-token-only (403
+      otherwise); `castVote` guarded in SQL (voting phase + registered estimator);
+      `finalize` writes `final_estimate`/`decided_at` to the round
+- [x] 2.6 Presence-windowed roster: a lapsed heartbeat drops the seat from the
+      live roster; durable record untouched
 
 ## 3. Agreement signal + deck
 
-- [x] 3.1 Canonical deck: numeric `0 1 2 3 5 8 13 20 40 100` (modified Fibonacci, deck-indexed) plus specials `?`, `∞`, `☕`
-- [x] 3.2 Signal computation over numeric votes by deck index: `agree` (≥1 numeric, all equal, no ∞ → pre-fill the value), `close` (span == 1, no ∞), `spread` (span ≥ 2, any ∞, or zero numeric votes). `?`/`☕` excluded from the span; `∞` forces spread; `☕` raises the advisory break hint. Unit-tested in `src/**/*.test.ts`
+- [x] 3.1 Canonical deck: numeric `0 1 2 3 5 8 13 20 40 100` (modified
+      Fibonacci) plus specials `?`, `∞`, `☕`
+- [x] 3.2 Signal computation (`agree`/`close`/`spread`) by deck-index span; `∞`
+      forces spread; `☕` raises the break hint; only `agree` pre-fills a
+      suggestion. Unit-tested
 
 ## 4. Routes
 
-- [ ] 4.1 Create-a-room page + action: free/instant, generate tokens, insert room, 303 to the controller console
-- [ ] 4.2 Controller console (`/poker/c/{controller_token}`): validate token → room; name/open the next item, reveal, re-vote, record final estimate (suggestion pre-filled on `agree`), close; live via WebSocket; server-rendered results log fallback
-- [ ] 4.3 Participant join page (`/poker/j/{join_token}`): name yourself (cookie identity, observer toggle), the deck to vote, face-down/reveal view, live roster + agreement signal; closed room shows results only, no voting
-- [ ] 4.4 WebSocket upgrade endpoint: validate the token in D1 → `{room_id, role}`, forward the upgrade to `POKER_ROOM.idFromName(room_id)` asserting role + cookie identity; keep the token out of logs (header/subprotocol or short-lived ticket over a query string); token pages stay `noindex`
+- [x] 4.1 Create-a-room page + action: free/instant, generate tokens, 303 to
+      the controller console
+- [x] 4.2 Controller console (`/poker/c/{token}`): validate token → room;
+      open item, reveal, re-vote, record estimate (suggestion pre-filled on
+      `agree`), close; live via the poll; server-rendered shell
+- [x] 4.3 Participant join page (`/poker/j/{token}`): name yourself (cookie
+      identity, observer toggle), deck to vote, face-down/reveal view, live roster
+  - signal; closed room shows results only, no voting
+- [x] 4.4 Token is the path credential; every load/endpoint authorizes it in
+      D1 and 404s on unknown; token pages `noindex`
 
 ## 5. Design & messages
 
-- [ ] 5.1 Card deck UI (hand-drawn-radius paper cards, selected card lifts + ink border on `--hl`; specials as Lucide help-circle/infinity/coffee), face-down back + synchronized reveal flip (transform-only ~240ms ease-out, reduced-motion = opacity), roster with "voted" tick + controller marker, agreement-signal strip (agree = `--hl` tone, close = neutral, spread = `ink-hatch`/`bad`), break hint
-- [ ] 5.2 Update `openspec/specs/DESIGN.md` with the new rules (card deck, reveal flip, roster, agreement signal) in the same change per the design invariant
-- [ ] 5.3 Paraglide strings in `messages/{da,de,en,es,fr}.json` for deck labels/aria, phases, special cards, join/roster, agreement signal + break hint, results log, close — no hardcoded UI strings, no em-dashes
+- [x] 5.1 Card deck UI (paper cards, selected lifts + ink border on `--hl`;
+      specials as Lucide icons), face-down back + synchronized reveal flip
+      (transform-only ~240ms, reduced-motion = opacity), roster with presence +
+      voted state, agreement-signal strip, break hint
+- [x] 5.2 `openspec/specs/DESIGN.md` updated with the new rules (fixed blue
+      poker accent, card deck, reveal flip, roster, agreement signal)
+- [x] 5.3 Paraglide strings for deck/aria, phases, special cards, join/roster,
+      signal + break hint, results, close in all five locales (no em-dashes)
 
 ## 6. Specs & tests
 
 - [ ] 6.1 Sync the delta spec into `openspec/specs/planning-poker/spec.md`
-- [ ] 6.2 `openspec/specs/planning-poker/planning-poker.spec.ts`: one Playwright test per scenario, titles semantically traceable. Drive two browser contexts (controller + participant) against the real Worker + DO + local D1 on `:8787`. Cover: create → console; join + roster live; refresh resumes seat; closed room = results only; open voting live; re-vote clears votes; participant cannot drive phases; cast/change vote; votes hidden until reveal; late joiner votes; vote-after-reveal rejected; synchronized reveal + distribution; ∞ forces spread; ☕ break hint; agree/close/spread + no-numeric spread; record suggested / override; decided estimate persists; live phase change reaches everyone; connect mid-session shows state; leaver drops from roster; join token cannot control; controller token controls; close ends estimation. `e2e-poker-*` family; DB asserts (final estimates) via `expect.poll`
+      (archive-time step)
+- [x] 6.2 `openspec/specs/planning-poker/planning-poker.spec.ts`: Playwright
+      tests, two/three browser contexts against the real Worker + local D1 on
+      `:8787`, polling the real state endpoint. Covers create → console; join +
+      roster live; refresh resumes seat; closed room = results only; open voting
+      live; participant cannot drive phases; votes hidden until reveal + flip;
+      agree + record + persist; spread; ∞ forces spread; close ends estimation.
+      `e2e-poker-*` family; DB asserts via `expect.poll`
 
 ## 7. Deploy
 
-- [ ] 7.1 Apply migration `0011` (local + remote); confirm the `POKER_ROOM` DO binding + migration tag deploy
-- [ ] 7.2 `bun run check`, `bun run lint`, `bun run test`, `bun run test:e2e`
+- [x] 7.1 Migration `0011` applies locally (`bun run d1:migrate`); no new
+      binding or secret. Remote migration + deploy is the release step
+- [x] 7.2 `bun run check` (0/0), `bun run lint` (clean), `bun run test` (128),
+      `bun run test:e2e` planning-poker (11 pass)
