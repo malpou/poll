@@ -216,6 +216,12 @@ export interface InviteeView {
 // open = estimating; closed = the controller ended the session (final log only).
 export type RoomStatus = 'open' | 'closed';
 
+// The live phase of the current item. waiting = between items.
+export type RoomPhase = 'waiting' | 'voting' | 'revealed';
+
+// estimator = casts votes; observer = watches without voting.
+export type ParticipantRole = 'estimator' | 'observer';
+
 export interface PokerRoomRow {
 	id: string;
 	title: string;
@@ -223,7 +229,31 @@ export interface PokerRoomRow {
 	controllerToken: string; // private, facilitates the room
 	joinToken: string; // shared, participants enter through it
 	status: RoomStatus;
+	phase: RoomPhase;
+	activeRoundId: string | null; // the item being voted/revealed; null while waiting
+	rev: number; // bumped on every mutation so a state poll detects change
 	createdAt: string;
+}
+
+// One seat in a room. Presence is derived from lastSeenAt (heartbeat window),
+// not stored. id is the cookie-carried per-browser id (a refresh resumes it).
+export interface PokerParticipantRow {
+	id: string;
+	roomId: string;
+	name: string;
+	role: ParticipantRole;
+	isController: boolean;
+	lastSeenAt: string;
+}
+
+// One vote on the active item. card is canonical text (a deck numeral like
+// '5' or a special '?'/'infinity'/'coffee'). Transient - cleared on
+// finalize/re-vote.
+export interface PokerVoteRow {
+	roundId: string;
+	participantId: string;
+	card: string;
+	updatedAt: string;
 }
 
 // One estimation item. final_estimate/decided_at are null until the controller

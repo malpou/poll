@@ -247,9 +247,9 @@ item. A decided item's estimate SHALL survive after the live session ends.
 ### Requirement: Live propagation
 
 Every phase change, join, leave, vote-cast tick, reveal, and recorded
-estimate SHALL propagate to all connected participants in real time without a
-manual refresh. A newly connected client SHALL immediately receive the
-current room state (phase, roster, revealed votes if any, and results log).
+estimate SHALL propagate to all present participants live, without a manual
+refresh. A newly loaded client SHALL promptly receive the current room state
+(phase, roster, revealed votes if any, and results log).
 
 #### Scenario: A phase change reaches everyone live
 
