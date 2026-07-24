@@ -53,6 +53,10 @@ export interface RoomSnapshot {
 	// Decided items, in order - the durable results log.
 	results: { title: string; estimate: string }[];
 	viewerIsController: boolean;
+	// Whether this viewer already holds a seat (so a refresh skips the join
+	// form), and that seat's role. Null role when they have no seat yet.
+	viewerSeated: boolean;
+	viewerRole: ParticipantRole | null;
 }
 
 export interface SnapshotInput {
@@ -100,6 +104,10 @@ export function buildSnapshot(input: SnapshotInput): RoomSnapshot {
 		: undefined;
 	const myVote = own ? cardFromText(own.card) : null;
 
+	const mySeat = viewerParticipantId
+		? participants.find((p) => p.id === viewerParticipantId)
+		: undefined;
+
 	// Privacy gate: other seats' card values only exist in the payload once the
 	// controller has revealed. Before that, the roster's hasVoted is all anyone
 	// (including a crafted client) can read.
@@ -135,6 +143,8 @@ export function buildSnapshot(input: SnapshotInput): RoomSnapshot {
 		signal,
 		distribution,
 		results,
-		viewerIsController
+		viewerIsController,
+		viewerSeated: !!mySeat,
+		viewerRole: mySeat?.role ?? null
 	};
 }
