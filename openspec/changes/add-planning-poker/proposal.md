@@ -17,12 +17,14 @@ when it needs to talk. It keeps the product's core promise (no logins, the
 link is the credential, free and instant) and extends the "poll" brand from
 "collect answers over time" to "estimate together, now."
 
-It is a deliberate architectural departure. PROJECT.md notes Durable Objects
-are overkill for the date-poll write volume — true for that async workload.
-Live estimation is the opposite workload: rapid state transitions fanned out
-to every connected participant. That is exactly what a Durable Object per
-room is for, so this capability introduces the tool's first real-time layer
-while leaving the async product untouched.
+It stays inside the product's existing stack. A Durable Object with WebSocket
+push was considered and rejected on a concrete constraint (the SvelteKit
+Cloudflare adapter exports only its own worker and overwrites `main`, so
+shipping a DO fights the build and the single-worker e2e harness). Instead the
+live session state lives in D1 — the room's phase, a heartbeat-presence
+roster, and per-participant votes — and clients stay current by short-polling
+a JSON state endpoint (~1s). PROJECT.md's "DOs are overkill" note holds: this
+remains a D1 app, and ~1s updates read as live for a room's pace.
 
 ## What Changes
 
@@ -52,13 +54,13 @@ while leaving the async product untouched.
   signal advises, the controller records the final number (or splits/skips).
   ☕ surfaces as a "someone needs a break" hint, advisory only.
 - **Live for everyone.** Every phase change, join/leave, vote-cast tick, and
-  reveal propagates to all connected participants over a WebSocket to the
-  room's Durable Object, using the hibernation API so idle rooms cost
-  nothing.
+  reveal shows up for all present participants within about a second, via a
+  JSON state endpoint each client short-polls — no manual refresh.
 - **Durable record in D1.** The room, its ordered items, and each item's
   final estimate persist so the controller keeps a running results log and
-  can revisit a closed room. Live phase and in-flight votes live only in the
-  Durable Object — they are ephemeral once an item is decided.
+  can revisit a closed room. The live phase, roster, and in-flight votes also
+  live in D1 (their own tables) but are transient — votes clear once an item
+  is decided; only the final estimate is a durable artifact.
 - **Easy, clear UX.** One deck, one big reveal, one clear "does the room
   agree?" answer. No timers, reactions, or backlog import in this change.
 
@@ -71,8 +73,8 @@ while leaving the async product untouched.
   (controller + join links, cookie identity), a per-item waiting → voting →
   revealed state machine with hidden votes and a synchronized reveal, an
   agree/close/spread agreement signal, controller-recorded final estimates
-  persisted as a room results log, and live propagation to all connected
-  participants via a Durable Object per room.
+  persisted as a room results log, and live (~1s) propagation to all present
+  participants via D1-backed state that clients short-poll.
 
 ### Modified Capabilities
 
@@ -80,31 +82,33 @@ while leaving the async product untouched.
 
 ## Impact
 
-- **First real-time layer.** New Durable Object class (one instance per
-  room) using the WebSocket Hibernation API; new `wrangler.toml` DO binding
-  and migration tag. This is the intentional break from PROJECT.md's
-  "DOs are overkill" note, which described the async write volume only.
+- **First live layer, still on D1.** No Durable Object, no WebSocket, no new
+  binding or secret. Live coordination is D1-backed and clients short-poll a
+  state endpoint; ~1s update latency is the deliberate trade for staying in
+  the single-worker stack.
 - **D1 migration** `0011_planning_poker.sql`: additive new tables
-  `poker_rooms` and `poker_rounds` (durable skeleton + final estimates).
-  No change to existing tables; nothing to backfill.
+  `poker_rooms` and `poker_rounds` (durable skeleton + final estimates) plus
+  the live-state tables `poker_participants` and `poker_votes`, and a phase /
+  active-round / rev counter on the room. No change to existing tables;
+  nothing to backfill.
 - **New routes:** create-a-room, controller console, participant join page,
-  and a WebSocket upgrade endpoint that authorizes the token in D1 and
-  forwards the connection to the room's Durable Object by room id.
+  and per-role `state` (GET snapshot) + `command` (POST action) endpoints
+  under the token path.
 - **New security surface:** control actions (open/reveal/finalize/next)
-  require the controller token; voting requires only join + a named
-  identity. The Worker authorizes every upgrade against D1 before the
-  Durable Object trusts a connection's role. Tokens stay out of logs,
-  referrers, and the WebSocket URL where feasible (same discipline as the
-  existing token pages, which stay `noindex`).
+  require the controller token; voting requires only the join token + a named
+  identity. Every load and endpoint authorizes the token against D1 and
+  reveals nothing on an unknown token; the state endpoint omits hidden vote
+  values before reveal. Token pages stay `noindex`, same discipline as the
+  existing `/e`, `/r`, `/s` pages.
 - **New Paraglide strings** for the deck, phases, agreement signal, special
   cards, join/roster, and results log, in all five locales.
 - **New DESIGN.md rules** for the card deck, the face-down/face-up reveal
   flip, the roster, and the agreement signal — landed in this change per the
   design invariant.
 - **E2E:** Playwright drives two browser contexts (controller + participant)
-  against the real Worker + Durable Object + local D1 on `:8787`; rooms are
-  seedable directly via `openspec/specs/support/db.ts` with an
-  `e2e-poker-*` token family.
+  against the real Worker + local D1 on `:8787` (unchanged harness), polling
+  the real state endpoint; rooms are seedable directly via
+  `openspec/specs/support/db.ts` with an `e2e-poker-*` token family.
 - **Non-goals (deferred):** per-vote timers, emoji reactions, multiple/
   custom decks, backlog/ticket import, persistent named teams, and any
   account or login. "Free without limits" positioning is unchanged.

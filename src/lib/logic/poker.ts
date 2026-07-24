@@ -27,6 +27,24 @@ export function isCard(card: unknown): card is Card {
 	return isSpecialCard(card) || (typeof card === 'number' && NUMERIC_DECK.includes(card as never));
 }
 
+/**
+ * Canonical text form of a card, as stored in D1 and sent over the wire:
+ * a numeric card is its decimal string ('5'), a special is its name ('coffee').
+ */
+export function cardToText(card: Card): string {
+	return String(card);
+}
+
+/** Parses stored/wire card text back to a Card, or null if it is not a legal card. */
+export function cardFromText(text: string): Card | null {
+	if (isSpecialCard(text)) return text;
+	if (/^\d+$/.test(text)) {
+		const n = Number(text);
+		if (NUMERIC_DECK.includes(n as never)) return n;
+	}
+	return null;
+}
+
 // agree  - at least one numeric vote, all numeric votes equal, no infinity.
 // close  - the numeric votes span exactly one adjacent deck step, no infinity.
 // spread - span of more than one step, any infinity, or no numeric votes.
