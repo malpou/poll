@@ -192,6 +192,29 @@ theme token instead.
   `×strokes`, with the words in `sr-only` text.
 - Prominent date displays capitalize the weekday via CSS (`capitalize`);
   running text keeps the poll language's own casing (Danish lowercase).
+- **Planning poker** (the real-time estimation rooms) is the one capability
+  with a fixed accent rather than an organizer-picked one: its pages carry
+  `data-accent="blue"` so `--hl` resolves for the card tint, giving the tool
+  its own calm identity. Its surfaces:
+  - **Cards** are paper cards on the control-radius family (`h-19 w-14`, or
+    `h-12 w-9` in the roster), the numeral centered in the mono face; a
+    selected/picked card takes an ink border on the `--hl` tint and lifts
+    (reusing the selector's active-face convention). The three special cards
+    render as Lucide icons in place of a numeral: `CircleQuestionMark`
+    (need info), `Infinity` (too big), `Coffee` (a break); each carries an
+    accessible label since the glyph is the value.
+  - **Face-down back:** a cast-but-hidden vote shows as a blank card back (a
+    faint centered dot, value withheld) with an `sr-only` "voted" label,
+    never the number, until the reveal.
+  - **Roster** is a column of bordered `card-alt` seat rows: a presence dot
+    (`good` present, `ink-faint` away), the name, then pill badges (solid-ink
+    for the controller, bordered for an observer) and the seat's voting
+    status. Reuses the pill/badge conventions, no new token.
+  - **Agreement signal** is a `NoticeBanner`-style strip in three tones,
+    reusing documented colors: highlighter tint + `--hl` dot for **agree**
+    (with the suggested value pushed right), neutral `card-alt` + ink dot for
+    **close**, and `bad-tint` + `bad` dot for **spread** (borrowing the "no"
+    semantics). A coffee break-hint sits below as quiet caption text.
 
 ## Motion
 
@@ -212,6 +235,12 @@ decorative. Animate transform and opacity only — the result bar grows with a
   is the positive answer and takes the `--hl` face instead of the wash.
 - **List entrance → staggered**, ~35ms between cards on first load.
   Orchestrate, don't dump.
+- **Planning-poker reveal** is the capability's signature interaction: on
+  reveal every seat's card flips face-up together with a short transform-only
+  scale-in (~240ms, from 0.8), the analogue of the three-state selector's
+  glide. Reduced motion drops the transform (duration 0). The live view
+  otherwise updates in place from the ~1s poll without animating (a value
+  seen constantly), per the "don't animate what's seen dozens of times" rule.
 - **Accent switch is live and animated:** picking a highlighter updates the
   page immediately (create previews on the form; the dashboard previews like
   the language picker, rolled back on cancel), and `--hl` is a registered

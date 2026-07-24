@@ -16,7 +16,6 @@ export class RoomClient {
 	#token: string;
 	#timer: ReturnType<typeof setInterval> | null = null;
 	#inFlight = false;
-	#onUnload = () => this.leave();
 
 	constructor(token: string) {
 		this.#token = token;
@@ -29,14 +28,11 @@ export class RoomClient {
 	start() {
 		void this.refresh();
 		this.#timer = setInterval(() => void this.refresh(), POLL_MS);
-		// Best-effort graceful leave so the roster updates promptly on tab close.
-		window.addEventListener('pagehide', this.#onUnload);
 	}
 
 	stop() {
 		if (this.#timer) clearInterval(this.#timer);
 		this.#timer = null;
-		window.removeEventListener('pagehide', this.#onUnload);
 	}
 
 	async refresh() {
@@ -73,20 +69,6 @@ export class RoomClient {
 		} catch {
 			this.offline = true;
 			return false;
-		}
-	}
-
-	leave() {
-		// keepalive lets the request outlive the unloading page.
-		try {
-			void fetch(`${this.#base}/command`, {
-				method: 'POST',
-				headers: { 'content-type': 'application/json' },
-				body: JSON.stringify({ action: 'leave' }),
-				keepalive: true
-			});
-		} catch {
-			// nothing to do while unloading
 		}
 	}
 }

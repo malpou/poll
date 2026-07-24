@@ -18,6 +18,9 @@
 	} = $props();
 
 	const cardByPid = $derived(new Map((revealed ?? []).map((v) => [v.participantId, v.card])));
+	// Only present seats are shown: a seat whose heartbeat has lapsed drops off
+	// the roster (the "removed on leave" behavior, presence-windowed).
+	const seats = $derived(roster.filter((s) => s.present));
 	// Reveal flips all cards face-up together; reduced motion drops the transform.
 	const flip = () => (prefersReducedMotion() ? { duration: 0 } : { start: 0.8, duration: 240 });
 </script>
@@ -25,15 +28,11 @@
 <section class="flex flex-col gap-3">
 	<SectionHeading text={m.pokerRosterHeading()} />
 	<ul class="flex flex-col gap-2">
-		{#each roster as seat (seat.id)}
+		{#each seats as seat (seat.id)}
 			<li
 				class="flex items-center gap-2.5 rounded-control border-2 border-border bg-card-alt px-3 py-2"
-				class:opacity-50={!seat.present}
 			>
-				<span
-					class="h-2 w-2 shrink-0 rounded-full {seat.present ? 'bg-good' : 'bg-ink-faint'}"
-					aria-hidden="true"
-				></span>
+				<span class="h-2 w-2 shrink-0 rounded-full bg-good" aria-hidden="true"></span>
 				<span class="min-w-0 flex-1 truncate text-body text-ink">{seat.name}</span>
 
 				{#if seat.isController}
