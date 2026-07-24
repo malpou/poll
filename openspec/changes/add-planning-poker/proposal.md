@@ -40,7 +40,7 @@ while leaving the async product untouched.
   `revealed` (all cards flip up at once, discussion happens here). At most
   one item is active at a time; the controller opens voting, reveals,
   re-votes, or records the final estimate and moves on.
-- **Fibonacci deck** (`0 1 2 3 5 8 13 21`) plus three special cards: **?**
+- **Modified Fibonacci deck** (`0 1 2 3 5 8 13 20 40 100`) plus three special cards: **?**
   (need more info), **∞** (too big to estimate, split it), and **☕**
   (I need a break). Votes stay hidden during `voting` — participants only
   see *who* has voted, never *what* — and flip simultaneously on reveal.

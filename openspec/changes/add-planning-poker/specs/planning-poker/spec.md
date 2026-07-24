@@ -100,8 +100,10 @@ attempted by a non-controller participant SHALL be ignored.
 ### Requirement: Cast a hidden vote
 
 While the phase is voting, an estimator SHALL cast a vote by picking one card
-from the Fibonacci deck (`0 1 2 3 5 8 13 21`) or a special card, and SHALL be
-able to change it until the reveal. Until the reveal the system SHALL show
+from the modified Fibonacci deck (`0 1 2 3 5 8 13 20 40 100`) or a special
+card, and SHALL be able to change it until the reveal. The controller MAY
+also take part as an estimator; when they do, their vote counts and is
+hidden and revealed like any other. Until the reveal the system SHALL show
 only **which** seats have voted, never **what** any seat voted. A vote
 message that arrives when the phase is not voting SHALL be rejected.
 
@@ -124,6 +126,13 @@ message that arrives when the phase is not voting SHALL be rejected.
 - GIVEN a room already in the voting phase
 - WHEN a new participant joins and picks a card before the reveal
 - THEN their vote is recorded and their seat shows as "voted"
+
+#### Scenario: Controller votes as an estimator
+
+- GIVEN a controller who has chosen to take part as an estimator
+- WHEN they pick a card in the voting phase
+- THEN their vote is hidden until reveal like any other seat
+- AND it is included in the distribution and agreement signal on reveal
 
 #### Scenario: Vote after reveal is rejected
 
