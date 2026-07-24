@@ -72,8 +72,8 @@ Object, after the adapter-cloudflare DO-export constraint (see design.md).
 
 ## 6. Specs & tests
 
-- [ ] 6.1 Sync the delta spec into `openspec/specs/planning-poker/spec.md`
-      (archive-time step)
+- [x] 6.1 Sync the delta spec into `openspec/specs/planning-poker/spec.md`
+      (new capability; main spec + colocated Playwright test)
 - [x] 6.2 `openspec/specs/planning-poker/planning-poker.spec.ts`: Playwright
       tests, two/three browser contexts against the real Worker + local D1 on
       `:8787`, polling the real state endpoint. Covers create → console; join +
