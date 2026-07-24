@@ -86,6 +86,8 @@ export interface PokerProvider {
 	): Promise<void>;
 	/** Refresh presence only. */
 	heartbeat(participantId: string): Promise<void>;
+	/** Explicit leave: drop the seat now (graceful close), rather than waiting out presence. */
+	removeParticipant(roomId: string, participantId: string): Promise<void>;
 	/** Cast/replace the active-round vote. No-op unless the room is in `voting`. */
 	castVote(roomId: string, participantId: string, card: string): Promise<void>;
 
@@ -188,18 +190,29 @@ export function pokerProvider(db: D1Database): PokerProvider {
 				.run();
 		},
 
+		async removeParticipant(roomId, participantId) {
+			await db.batch([
+				db.prepare(`DELETE FROM poker_participants WHERE id = ?`).bind(participantId),
+				bumpRev(roomId)
+			]);
+		},
+
 		async castVote(roomId, participantId, card) {
-			// Guard the phase in SQL: the vote only lands while the room is voting and
-			// there is an active round. Refresh presence at the same time.
+			// Guard entirely in SQL: the vote lands only while the room is voting with
+			// an active round AND the caster is a registered estimator seat in this
+			// room (so observers and non-joined callers cannot vote). Refresh presence
+			// at the same time.
 			await db.batch([
 				db
 					.prepare(
 						`INSERT INTO poker_votes (round_id, participant_id, card, updated_at)
-						 SELECT active_round_id, ?, ?, datetime('now') FROM poker_rooms
-						 WHERE id = ? AND phase = 'voting' AND active_round_id IS NOT NULL
+						 SELECT r.active_round_id, ?, ?, datetime('now') FROM poker_rooms r
+						 WHERE r.id = ? AND r.phase = 'voting' AND r.active_round_id IS NOT NULL
+						   AND EXISTS (SELECT 1 FROM poker_participants p
+						               WHERE p.id = ? AND p.room_id = r.id AND p.role = 'estimator')
 						 ON CONFLICT(round_id, participant_id) DO UPDATE SET card = excluded.card, updated_at = excluded.updated_at`
 					)
-					.bind(participantId, card, roomId),
+					.bind(participantId, card, roomId, participantId),
 				db
 					.prepare(`UPDATE poker_participants SET last_seen_at = datetime('now') WHERE id = ?`)
 					.bind(participantId),
