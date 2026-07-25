@@ -1,5 +1,11 @@
 import { describe, it, expect } from 'vitest';
-import { buildSnapshot, type SnapshotInput } from './poker-snapshot';
+import {
+	buildSnapshot,
+	canReveal,
+	pendingVoters,
+	type RosterSeat,
+	type SnapshotInput
+} from './poker-snapshot';
 import type { PokerParticipantRow, PokerRoomRow, PokerVoteRow, RoomPhase } from '$lib/types';
 
 // The snapshot builder is the single enforcement point for vote privacy
@@ -12,6 +18,9 @@ const room = (phase: RoomPhase): PokerRoomRow => ({
 	deck: 'fibonacci',
 	controllerToken: 'ctrl',
 	joinToken: 'join',
+	email: null,
+	locale: 'en',
+	accent: 'blue',
 	status: 'open',
 	phase,
 	activeRoundId: phase === 'waiting' ? null : 'round-1',
@@ -88,5 +97,44 @@ describe('buildSnapshot privacy', () => {
 		const snap = buildSnapshot(input);
 		expect(snap.roster.find((s) => s.id === 'alice')?.present).toBe(true);
 		expect(snap.roster.find((s) => s.id === 'bob')?.present).toBe(false);
+	});
+});
+
+describe('canReveal', () => {
+	const s = (over: Partial<RosterSeat>): RosterSeat => ({
+		id: 'x',
+		name: 'x',
+		role: 'estimator',
+		isController: false,
+		present: true,
+		hasVoted: false,
+		...over
+	});
+
+	it('locks the reveal while a present estimator has not voted', () => {
+		const roster = [s({ id: 'a', hasVoted: true }), s({ id: 'b', hasVoted: false })];
+		expect(canReveal(roster)).toBe(false);
+		expect(pendingVoters(roster).map((p) => p.id)).toEqual(['b']);
+	});
+
+	it('unlocks once every present estimator has voted', () => {
+		const roster = [s({ id: 'a', hasVoted: true }), s({ id: 'b', hasVoted: true })];
+		expect(canReveal(roster)).toBe(true);
+		expect(pendingVoters(roster)).toEqual([]);
+	});
+
+	it('never waits on observers or absent seats', () => {
+		const roster = [
+			s({ id: 'a', hasVoted: true }),
+			s({ id: 'obs', role: 'observer', hasVoted: false }),
+			s({ id: 'gone', present: false, hasVoted: false })
+		];
+		expect(canReveal(roster)).toBe(true);
+		expect(pendingVoters(roster)).toEqual([]);
+	});
+
+	it('stays locked when nobody can vote', () => {
+		expect(canReveal([])).toBe(false);
+		expect(canReveal([s({ role: 'observer' })])).toBe(false);
 	});
 });

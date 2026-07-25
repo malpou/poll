@@ -25,6 +25,13 @@ export type PollMode = 'assigned' | 'open';
 // one fixed date, yes/no answers; rank = order text options; highlight =
 // spend marker strokes on text options. Chosen at creation, immutable after;
 // validated at the form boundary (no SQL CHECK).
+// What the create page is making. Planning-poker rooms share the create page
+// and its chrome but nothing else: no options, no invitees, no timezone, no
+// mode, no highlighter - so this branches above the poll form rather than
+// joining POLL_TYPES.
+export const CREATE_KINDS = ['poll', 'poker'] as const;
+export type CreateKind = (typeof CREATE_KINDS)[number];
+
 export const POLL_TYPES = ['dates', 'question', 'rsvp', 'rank', 'highlight'] as const;
 export type PollType = (typeof POLL_TYPES)[number];
 
@@ -232,6 +239,14 @@ export interface PokerRoomRow {
 	phase: RoomPhase;
 	activeRoundId: string | null; // the item being voted/revealed; null while waiting
 	rev: number; // bumped on every mutation so a state poll detects change
+	// Optional controller address. Stored (unlike the poll organizer's, which is
+	// used once and discarded) because the results summary is sent at close.
+	email: string | null;
+	// The language the whole room renders in, fixed at creation - the analogue of
+	// an event's `locale`. Not a URL segment: one join link serves everyone.
+	locale: Locale;
+	// The room's highlighter, picked at creation like a poll's.
+	accent: Accent;
 	createdAt: string;
 }
 

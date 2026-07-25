@@ -1,12 +1,21 @@
 import { test, expect, type Browser, type Page } from '@playwright/test';
 import { m } from '../../../src/lib/paraglide/messages';
-import { roomResults, roomStatus, seedRoom, wipeRoom } from '../support/db';
+import {
+	roomEmail,
+	roomIdByControllerToken,
+	roomJoinToken,
+	roomResults,
+	roomStatus,
+	seedRoom,
+	wipeRoom
+} from '../support/db';
 
 // Planning poker: a real-time, controller-run estimation room
 // (openspec/specs/planning-poker). Real-time is D1-backed and clients short-
 // poll, so assertions wait for the ~1s loop via Playwright's auto-retrying
 // expect. Two browser contexts stand in for the controller and a participant.
-// English browser so bare m.*() matches the page (poker renders baseLocale).
+// English browser so bare m.*() matches the page (rooms seeded without a
+// language read as the base locale).
 test.use({ locale: 'en-US', timezoneId: 'Europe/Copenhagen' });
 
 // One seeded room per test, reset in beforeEach. Own e2e-poker-* family.
@@ -53,7 +62,7 @@ async function openController(
 // --- Requirement: Create a planning-poker room ---
 
 test('creating a room lands on the controller console with a join link', async ({ page }) => {
-	await page.goto('/poker/new');
+	await page.goto('/create?make=poker');
 	await page.getByLabel(m.pokerRoomNameLabel()).fill('Backlog grooming');
 	await page.getByRole('button', { name: m.pokerCreateButton() }).click();
 
@@ -253,4 +262,230 @@ test('closing the room ends estimation for participants', async ({ browser }) =>
 
 	await p.close();
 	await c.close();
+});
+
+// --- Requirement: Create a planning-poker room (on the shared create page) ---
+
+test('choosing a room asks only for a room name', async ({ page }) => {
+	await page.goto('/create?make=poker');
+	await expect(page.getByLabel(m.pokerRoomNameLabel())).toBeVisible();
+
+	// None of the poll form's own fields are mounted, so none of them post.
+	await expect(page.getByText(m.fieldPollType())).toHaveCount(0);
+	await expect(page.getByText(m.datesSection())).toHaveCount(0);
+	await expect(page.getByText(m.optionsSection())).toHaveCount(0);
+	await expect(page.getByText(m.fieldMode())).toHaveCount(0);
+	// Parity with polls: the same highlighter choice is offered.
+	await expect(page.getByRole('radio', { name: m.accentPink() })).toBeVisible();
+});
+
+test('choosing a poll leaves poll creation unchanged', async ({ page }) => {
+	await page.goto('/create?make=poker');
+	await expect(page.getByLabel(m.pokerRoomNameLabel())).toBeVisible();
+
+	// Switch back: the full poll form returns.
+	await page.getByRole('radio', { name: m.createKindPoll() }).check();
+	await expect(page.getByText(m.fieldPollType())).toBeVisible();
+	await expect(page.getByText(m.fieldMode())).toBeVisible();
+	await expect(page.getByRole('radio', { name: m.accentPink() })).toBeVisible();
+	await expect(page.getByLabel(m.pokerRoomNameLabel())).toHaveCount(0);
+});
+
+test('a room wears the highlighter it was created with', async ({ page }) => {
+	await page.goto('/create?make=poker&accent=pink');
+	await page.getByLabel(m.pokerRoomNameLabel()).fill('Pink room (e2e)');
+	await page.getByRole('button', { name: m.pokerCreateButton() }).click();
+
+	await expect(page).toHaveURL(/\/poker\/c\//);
+	await expect(page.getByTestId('poker-console')).toHaveAttribute('data-accent', 'pink');
+
+	// And every participant sees the same, not their own preference.
+	const roomId = roomIdByControllerToken(page.url().split('/').pop() as string);
+	await page.goto(`/poker/j/${roomJoinToken(roomId)}`);
+	await expect(page.getByTestId('poker-room')).toHaveAttribute('data-accent', 'pink');
+});
+
+test('a room without a name is rejected', async ({ page }) => {
+	await page.goto('/create?make=poker');
+	// The submit stays disabled until the room is named, so no room can be made.
+	await expect(page.getByRole('button', { name: m.pokerCreateButton() })).toBeDisabled();
+	await expect(page).toHaveURL(/\/create/);
+});
+
+// --- Requirement: Room language ---
+
+test('a room renders in the language it was created in', async ({ page }) => {
+	await page.goto('/da/create?make=poker');
+	await page.getByLabel(m.pokerRoomNameLabel({}, { locale: 'da' })).fill('Sprint 13 (e2e)');
+	await page.getByRole('button', { name: m.pokerCreateButton({}, { locale: 'da' }) }).click();
+
+	await expect(page).toHaveURL(/\/poker\/c\//);
+	// The console is Danish even though the browser asks for English.
+	await expect(page.getByText(m.pokerRosterHeading({}, { locale: 'da' }))).toBeVisible();
+	await expect(page.locator('html')).toHaveAttribute('lang', 'da');
+});
+
+test('participants see the creator language, not their own', async ({ page, browser }) => {
+	await page.goto('/da/create?make=poker');
+	await page.getByLabel(m.pokerRoomNameLabel({}, { locale: 'da' })).fill('Sprint 14 (e2e)');
+	await page.getByRole('button', { name: m.pokerCreateButton({}, { locale: 'da' }) }).click();
+	await expect(page).toHaveURL(/\/poker\/c\//);
+
+	const roomId = roomIdByControllerToken(page.url().split('/').pop() as string);
+	const ctx = await browser.newContext({ locale: 'fr-FR' });
+	const p = await ctx.newPage();
+	await p.goto(`/poker/j/${roomJoinToken(roomId)}`);
+
+	// A French browser still gets the room's Danish.
+	await expect(p.getByLabel(m.pokerNameLabel({}, { locale: 'da' }))).toBeVisible();
+	await ctx.close();
+});
+
+// --- Requirement: Reveal waits for everyone present ---
+
+test('the reveal is held while someone has not voted, and frees up on the last vote', async ({
+	browser
+}) => {
+	const c = await openController(browser);
+	const a = await joinParticipant(browser, 'Alice');
+	const b = await joinParticipant(browser, 'Bob');
+	await c.page.getByLabel(m.pokerNextItemLabel()).fill('PROJ-100');
+	await c.page.getByRole('button', { name: m.pokerOpenVoting() }).click();
+
+	await a.page.getByTestId('poker-active-item').waitFor();
+	await a.page.getByRole('button', { name: '5', exact: true }).click();
+
+	// Bob has not voted: reveal is unavailable and the room names who it waits on.
+	await expect(c.page.getByRole('button', { name: m.pokerReveal() })).toBeDisabled();
+	await expect(c.page.getByTestId('poker-reveal-blocked')).toContainText('Bob');
+
+	await b.page.getByTestId('poker-active-item').waitFor();
+	await b.page.getByRole('button', { name: '5', exact: true }).click();
+
+	await expect(c.page.getByRole('button', { name: m.pokerReveal() })).toBeEnabled();
+
+	await a.close();
+	await b.close();
+	await c.close();
+});
+
+test('observers never hold up a reveal', async ({ browser }) => {
+	const c = await openController(browser);
+	const a = await joinParticipant(browser, 'Alice');
+	const o = await joinParticipant(browser, 'Olive', { observer: true });
+	await c.page.getByLabel(m.pokerNextItemLabel()).fill('PROJ-101');
+	await c.page.getByRole('button', { name: m.pokerOpenVoting() }).click();
+
+	await a.page.getByTestId('poker-active-item').waitFor();
+	await a.page.getByRole('button', { name: '5', exact: true }).click();
+
+	// Every estimator has voted; the watching observer does not block it.
+	await expect(c.page.getByRole('button', { name: m.pokerReveal() })).toBeEnabled();
+
+	await a.close();
+	await o.close();
+	await c.close();
+});
+
+// --- Requirement: Recorded estimate stays within what was voted ---
+
+test('offered estimates span only the votes cast', async ({ browser }) => {
+	const c = await openController(browser);
+	const a = await joinParticipant(browser, 'Alice');
+	const b = await joinParticipant(browser, 'Bob');
+	await c.page.getByLabel(m.pokerNextItemLabel()).fill('PROJ-102');
+	await c.page.getByRole('button', { name: m.pokerOpenVoting() }).click();
+
+	await a.page.getByTestId('poker-active-item').waitFor();
+	await a.page.getByRole('button', { name: '3', exact: true }).click();
+	await b.page.getByTestId('poker-active-item').waitFor();
+	await b.page.getByRole('button', { name: '8', exact: true }).click();
+
+	await c.page.getByRole('button', { name: m.pokerReveal() }).click();
+
+	// 3 through 8 inclusive, and nothing outside that span.
+	const finalize = c.page.getByTestId('poker-finalize');
+	for (const n of ['3', '5', '8'])
+		await expect(finalize.getByRole('button', { name: n, exact: true })).toBeVisible();
+	for (const n of ['0', '1', '2', '13', '20', '40', '100'])
+		await expect(finalize.getByRole('button', { name: n, exact: true })).toHaveCount(0);
+
+	await a.close();
+	await b.close();
+	await c.close();
+});
+
+// --- Requirement: Keyboard submits the room's text entries ---
+
+test('enter joins the room and opens voting on the next item', async ({ browser }) => {
+	const ctx = await browser.newContext({ locale: 'en-US', timezoneId: 'Europe/Copenhagen' });
+	const p = await ctx.newPage();
+	await p.goto(`/poker/j/${JTOK}`);
+
+	// Empty field: Enter does nothing, the join form stays.
+	await p.getByLabel(m.pokerNameLabel()).press('Enter');
+	await expect(p.getByRole('button', { name: m.pokerJoinButton() })).toBeVisible();
+
+	await p.getByLabel(m.pokerNameLabel()).fill('Alice');
+	await p.getByLabel(m.pokerNameLabel()).press('Enter');
+	await expect(p.getByRole('button', { name: m.pokerJoinButton() })).toBeHidden();
+	await expect(p.getByText('Alice')).toBeVisible();
+
+	// Same on the console's item field.
+	const c = await openController(browser);
+	await c.page.getByLabel(m.pokerNextItemLabel()).fill('PROJ-103');
+	await c.page.getByLabel(m.pokerNextItemLabel()).press('Enter');
+	await expect(c.page.getByTestId('poker-active-item')).toHaveText('PROJ-103');
+
+	await c.close();
+	await ctx.close();
+});
+
+// --- Requirement: A closed room stops offering its join link ---
+
+test('the join link disappears when the room closes', async ({ browser }) => {
+	const c = await openController(browser);
+	await expect(c.page.getByText(m.pokerJoinLinkLabel())).toBeVisible();
+
+	await c.page.getByRole('button', { name: m.pokerCloseRoom() }).click();
+
+	await expect(c.page.getByText(m.pokerJoinLinkLabel())).toHaveCount(0);
+	await c.close();
+});
+
+// --- Requirement: Room email ---
+
+test('creating a room with an address stores it for the closing summary', async ({ page }) => {
+	await page.goto('/create?make=poker');
+	await page.getByLabel(m.pokerRoomNameLabel()).fill('Emailed room (e2e)');
+	await page.getByLabel(m.fieldOrganizerEmail()).fill('controller@example.com');
+	await page.getByRole('button', { name: m.pokerCreateButton() }).click();
+	await expect(page).toHaveURL(/\/poker\/c\//);
+
+	const roomId = roomIdByControllerToken(page.url().split('/').pop() as string);
+	expect(roomEmail(roomId)).toBe('controller@example.com');
+
+	// Stored, but never sent back to any client.
+	const state = await page.request.get(`/poker/api/${page.url().split('/').pop()}/state`);
+	expect(await state.text()).not.toContain('controller@example.com');
+});
+
+test('creating a room without an address stores none', async ({ page }) => {
+	await page.goto('/create?make=poker');
+	await page.getByLabel(m.pokerRoomNameLabel()).fill('No-email room (e2e)');
+	await page.getByRole('button', { name: m.pokerCreateButton() }).click();
+	await expect(page).toHaveURL(/\/poker\/c\//);
+
+	const roomId = roomIdByControllerToken(page.url().split('/').pop() as string);
+	expect(roomEmail(roomId)).toBe(null);
+});
+
+test('an invalid address is rejected and creates no room', async ({ page }) => {
+	await page.goto('/create?make=poker');
+	await page.getByLabel(m.pokerRoomNameLabel()).fill('Bad-email room (e2e)');
+	await page.getByLabel(m.fieldOrganizerEmail()).fill('not-an-email');
+	await page.getByRole('button', { name: m.pokerCreateButton() }).click();
+
+	await expect(page.getByText(m.errorInvalidEmail())).toBeVisible();
+	await expect(page).toHaveURL(/\/create/);
 });

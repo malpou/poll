@@ -31,6 +31,25 @@ export interface RosterSeat {
 	hasVoted: boolean;
 }
 
+/**
+ * Whether the controller may reveal yet: every estimator who is actually here
+ * has cast a card, and there is at least one of them. Observers never vote, so
+ * they never hold the room up; away seats (someone who closed the tab or
+ * dropped) are skipped too, so one absentee can't deadlock the round.
+ *
+ * ponytail: advisory - enforced on the controller's own UI only. The reveal
+ * command still accepts, because the controller already holds full control of
+ * the room; there is no adversary to guard against, only a mis-click.
+ */
+export function pendingVoters(roster: RosterSeat[]): RosterSeat[] {
+	return roster.filter((s) => s.role === 'estimator' && s.present && !s.hasVoted);
+}
+
+export function canReveal(roster: RosterSeat[]): boolean {
+	const estimators = roster.filter((s) => s.role === 'estimator' && s.present);
+	return estimators.length > 0 && estimators.every((s) => s.hasVoted);
+}
+
 export interface RevealedVote {
 	participantId: string;
 	name: string;

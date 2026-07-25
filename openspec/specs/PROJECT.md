@@ -2,10 +2,20 @@
 
 ## Purpose
 
-Let one organizer collect preferred dates from participants. The organizer
+Two tools sharing one site, one design language, and one create page.
+
+**Polls** (the original): let one organizer collect preferred dates from participants. The organizer
 supplies the candidate dates; recipients only choose among them. Distribution is
 by the organizer copying each recipient's link and sending it themselves (email,
 text, etc.). No participant accounts.
+
+**Planning poker**: a real-time, controller-run estimation room. A team sizes
+items on a Fibonacci deck one at a time - everyone casts a hidden vote, the
+controller reveals them together, the room sees whether it agrees. One person
+controls the room over a private link; everyone else joins through a shared
+link and names themselves. Asynchronous where polls are, live where polls are
+not - but the same capability-URL model, the same paper look, the same five
+languages, the same organizer-picked highlighter.
 
 ## Stack
 
@@ -25,6 +35,8 @@ for this write volume.
   - `organizer_token` - full management of one event (private, never shared)
   - `invitee_token` - respond as one invitee on one event (`/r/…`)
   - `share_token` - open-mode shared link anyone can respond through (`/s/…`)
+  - `controller_token` - full control of one planning-poker room (private)
+  - `join_token` - the room's shared link; join + vote only, never control
 - Tokens are unguessable and never listed publicly. Treat the organizer link as
   a secret. Decision: capability URL only for v1 - no passphrase. Mitigate leak
   risk by keeping tokens out of logs, referrers, and analytics.
@@ -84,6 +96,36 @@ for this write volume.
     the system appended when the organizer added an option (the
     needs-confirmation marker the response page flags until resubmit)
 
+### Planning poker (D1)
+
+- `poker_rooms(id, title, deck, controller_token, join_token, status, phase,
+active_round_id, rev, locale, accent, email, created_at)`
+  - self-contained: shares no table with the events model, so it has its own
+    provider rather than extending the poll one
+  - status ∈ {open, closed}; phase ∈ {waiting, voting, revealed} - the live
+    phase of the current item, `waiting` between items
+  - `rev` bumps on every mutation so a state poll cheaply detects change
+  - locale / accent - the language and highlighter picked at creation, worn by
+    every one of the room's pages for everyone. Not URL segments: one join link
+    serves the whole team, so both travel with the room
+  - email - the controller's optional address. Stored, unlike the poll
+    organizer's, because the results summary is sent when the room closes
+- `poker_rounds(id, room_id, title, sort_order, final_estimate, decided_at)` -
+  the items and each one's recorded estimate; the only durable artifact of a
+  decided item
+- `poker_participants(id, room_id, name, role, is_controller, last_seen_at)` -
+  the roster. Presence is derived from `last_seen_at` against a 15s window, not
+  stored; the client's ~1s state poll doubles as the heartbeat (the write is
+  throttled to once per 5s per seat)
+- `poker_votes(round_id, participant_id, card, updated_at)` - the active item's
+  votes, cleared on finalize and re-vote. Never leaves the server before the
+  reveal
+
+Real-time is D1-backed rather than a Durable Object: clients short-poll a state
+endpoint. At this volume the polling fits inside the Workers plan's included
+requests and D1 writes, so the reason to move to a DO would be write throughput
+and push latency, not cost.
+
 ## Routes
 
 - `/` landing page: explains the product, interactive per-poll-type examples
@@ -92,22 +134,31 @@ for this write volume.
   `/create`); language switcher + hreflang alternates; no browser-language
   redirect, only a dismissible hint. Marketing pages are indexable; token
   pages (`/e`, `/r`, `/s`) declare noindex
-- `/create` create a new event (title, description, language, poll type, mode;
-  dates and timezone or 2+ text options per type; participants in assigned
-  mode)
+- `/create` create a new event or a planning-poker room. Opens by asking which:
+  a poll (title, description, language, highlighter, poll type, mode; dates and
+  timezone or 2+ text options per type; participants in assigned mode) or a
+  room (name, language, highlighter, optional email - nothing else). Same
+  per-language URLs as the landing page; `?make=poker` opens on the room branch
 - `/e/{organizer_token}` organizer dashboard: options, people/results, mode +
   language, shared link (open mode)
 - `/r/{invitee_token}` recipient response page (assigned invitee, or an open
   submitter's personal edit link)
 - `/s/{share_token}` open-mode shared page: name yourself, answer, submit. A
   cookie remembers the browser so a revisit edits its own answer via `/r`
+- `/poker/c/{controller_token}` controller console: drive the phases, record
+  estimates, hand out the join link, close the room
+- `/poker/j/{join_token}` participant page: name yourself, vote, watch the
+  reveal
+- `/poker/api/{token}/state` and `/poker/api/{token}/command` - the live loop's
+  read and write endpoints; the token in the path is the only credential
 
 ## Conventions
 
 - Mutations use SvelteKit form actions; token is validated in every load/action.
 - Language: polls render in Danish, German, English, Spanish, or French,
   chosen per poll (the `locale` column) at creation and changeable on the
-  dashboard. Base locale is English. User-facing strings live in
+  dashboard. A planning-poker room's language works the same way but is fixed
+  at creation - one join link serves everyone, so it cannot follow a URL. Base locale is English. User-facing strings live in
   `messages/{da,de,en,es,fr}.json`, compiled to typed `m.*()` via
   Paraglide. Weekdays/months render in the poll's language with that
   language's conventional casing (Danish lowercase; others keep Intl's

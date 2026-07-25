@@ -4,7 +4,7 @@
 import { resolve } from '$app/paths';
 import type { ResolvedPathname } from '$app/types';
 import { baseLocale } from '$lib/paraglide/runtime';
-import type { Accent, Locale } from '$lib/types';
+import type { Accent, CreateKind, Locale } from '$lib/types';
 
 const params = (l: Locale) => (l === baseLocale ? {} : { lang: l });
 
@@ -15,6 +15,17 @@ export function landingUrl(locale: Locale, accent: Accent = 'yellow'): ResolvedP
 	return withAccent(resolve('/[[lang=locale]]', params(locale)), accent);
 }
 
-export function createUrl(locale: Locale, accent: Accent = 'yellow'): ResolvedPathname {
-	return withAccent(resolve('/[[lang=locale]]/create', params(locale)), accent);
+/**
+ * The create page. `kind` picks which of the two things it opens on: a poll
+ * (the default) or a planning-poker room. Both take a highlighter, so both
+ * carry the picked one over.
+ */
+export function createUrl(
+	locale: Locale,
+	accent: Accent = 'yellow',
+	kind: CreateKind = 'poll'
+): ResolvedPathname {
+	const path = withAccent(resolve('/[[lang=locale]]/create', params(locale)), accent);
+	if (kind !== 'poker') return path;
+	return path.includes('?') ? `${path}&make=poker` : `${path}?make=poker`;
 }

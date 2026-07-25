@@ -1,5 +1,12 @@
 import { describe, it, expect } from 'vitest';
-import { agreementSignal, voteDistribution, isCard, isSpecialCard, NUMERIC_DECK } from './poker';
+import {
+	agreementSignal,
+	voteDistribution,
+	estimateChoices,
+	isCard,
+	isSpecialCard,
+	NUMERIC_DECK
+} from './poker';
 
 // The reveal-time agreement signal (openspec/specs/planning-poker "Agreement
 // signal" + "Special cards"): agree / close / spread by deck-index span, with
@@ -78,5 +85,24 @@ describe('card guards', () => {
 		expect(isCard('banana')).toBe(false);
 		expect(isSpecialCard('coffee')).toBe(true);
 		expect(isSpecialCard(5)).toBe(false);
+	});
+});
+
+describe('estimateChoices', () => {
+	it('brackets the cast numerals, lowest through highest', () => {
+		expect(estimateChoices([3, 8])).toEqual([3, 5, 8]);
+	});
+
+	it('collapses to the single card when the room agreed', () => {
+		expect(estimateChoices([5, 5, 5])).toEqual([5]);
+	});
+
+	it('ignores special cards when bracketing', () => {
+		expect(estimateChoices([2, 'infinity', 'coffee', 3])).toEqual([2, 3]);
+	});
+
+	it('offers the whole deck when nobody played a numeral', () => {
+		expect(estimateChoices(['?', 'coffee'])).toEqual([...NUMERIC_DECK]);
+		expect(estimateChoices([])).toEqual([...NUMERIC_DECK]);
 	});
 });

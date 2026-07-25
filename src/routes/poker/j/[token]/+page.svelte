@@ -32,7 +32,7 @@
 <svelte:head><title>{data.roomTitle}</title><meta name="robots" content="noindex" /></svelte:head>
 
 <div
-	data-accent="blue"
+	data-accent={data.accent}
 	data-testid="poker-room"
 	class="mx-auto flex max-w-120 flex-col gap-6 px-4 pb-18 pt-7"
 >
@@ -47,8 +47,15 @@
 		{#if snap.status === 'closed'}
 			<NoticeBanner tone="ink" text={m.pokerClosedNotice()} />
 		{:else if !snap.viewerSeated}
-			<!-- Name yourself to take a seat. -->
-			<section class="flex flex-col gap-3 rounded-card border-2 border-border bg-card p-4">
+			<!-- Name yourself to take a seat. A real <form> so Enter in the name
+			     field joins, without a keydown handler; nothing is posted. -->
+			<form
+				onsubmit={(e) => {
+					e.preventDefault();
+					join();
+				}}
+				class="flex flex-col gap-3 rounded-card border-2 border-border bg-card p-4"
+			>
 				<TextField
 					label={m.pokerNameLabel()}
 					name="name"
@@ -59,8 +66,8 @@
 					<input type="checkbox" bind:checked={asObserver} class="h-4 w-4 accent-ink" />
 					{m.pokerJoinAsObserver()}
 				</label>
-				<Button type="button" onclick={join}>{m.pokerJoinButton()}</Button>
-			</section>
+				<Button type="submit">{m.pokerJoinButton()}</Button>
+			</form>
 		{:else}
 			<!-- Seated: the live view. -->
 			<section

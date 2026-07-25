@@ -7,6 +7,7 @@
 	import LocaleSwap from '$lib/components/atoms/LocaleSwap.svelte';
 	import SectionHeading from '$lib/components/atoms/SectionHeading.svelte';
 	import LandingExamples from '$lib/components/organisms/LandingExamples.svelte';
+	import LandingPoker from '$lib/components/organisms/LandingPoker.svelte';
 	import { m } from '$lib/paraglide/messages';
 	import { langLabel } from '$lib/logic/locales';
 	import { createUrl, landingUrl } from '$lib/logic/site-urls';
@@ -116,6 +117,15 @@
 				{m.createTitle()}
 				<ArrowRight size={17} aria-hidden="true" />
 			</a>
+
+			<!-- Planning poker leads the body: it is the newest capability and the
+			     one nobody is looking for yet, so it sits above the examples rather
+			     than after them. Solid rules on both sides - a harder break than the
+			     dashed one between poll sections, because this is a different tool,
+			     not another poll type. -->
+			<hr class="my-9 border-t-2 border-ink-faint" />
+
+			<LandingPoker {locale} {accent} />
 
 			<hr class="my-9 border-t-2 border-dashed border-border" />
 

@@ -251,6 +251,8 @@ export interface RoomSeed {
 	joinToken: string;
 	status?: 'open' | 'closed'; // omit → column default 'open'
 	deck?: string; // omit → column default 'fibonacci'
+	locale?: string; // omit → 'en', the base locale
+	accent?: string; // omit → 'blue', what rooms were hardcoded to
 	createdAt?: string;
 }
 export interface RoundSeed {
@@ -264,8 +266,8 @@ export interface RoundSeed {
 
 export function seedRoom(r: RoomSeed) {
 	d1(
-		`INSERT INTO poker_rooms (id, title, deck, controller_token, join_token, status, created_at) VALUES
-		   (${lit(r.id)}, ${lit(r.title)}, ${lit(r.deck ?? 'fibonacci')}, ${lit(r.controllerToken)}, ${lit(r.joinToken)}, ${lit(r.status ?? 'open')}, ${lit(r.createdAt ?? NOW)});`
+		`INSERT INTO poker_rooms (id, title, deck, controller_token, join_token, status, locale, accent, created_at) VALUES
+		   (${lit(r.id)}, ${lit(r.title)}, ${lit(r.deck ?? 'fibonacci')}, ${lit(r.controllerToken)}, ${lit(r.joinToken)}, ${lit(r.status ?? 'open')}, ${lit(r.locale ?? 'en')}, ${lit(r.accent ?? 'blue')}, ${lit(r.createdAt ?? NOW)});`
 	);
 }
 
@@ -295,6 +297,28 @@ export function wipeRoom(roomId: string | string[]) {
 
 export function roomStatus(roomId: string): string {
 	return d1(`SELECT status FROM poker_rooms WHERE id = ${lit(roomId)}`).results[0].status as string;
+}
+
+// Resolve a room id from its controller token - creation flows only know the
+// token they landed on.
+export function roomIdByControllerToken(token: string): string {
+	return d1(`SELECT id FROM poker_rooms WHERE controller_token = ${lit(token)}`).results[0]
+		.id as string;
+}
+
+// A room's shared join token - creation flows only know the controller token
+// they landed on, and the console's copy row is not a reliable place to read it.
+export function roomJoinToken(roomId: string): string {
+	return d1(`SELECT join_token FROM poker_rooms WHERE id = ${lit(roomId)}`).results[0]
+		.join_token as string;
+}
+
+// The controller address attached to a room, or null when none is. The address
+// is stored (the closing summary is sent later) but never leaves the server, so
+// tests read it here rather than from any client payload.
+export function roomEmail(roomId: string): string | null {
+	return (d1(`SELECT email FROM poker_rooms WHERE id = ${lit(roomId)}`).results[0].email ??
+		null) as string | null;
 }
 
 // Decided items with their recorded estimate, in display order. Undecided

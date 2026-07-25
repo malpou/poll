@@ -100,6 +100,23 @@ export function agreementSignal(votes: readonly Card[]): AgreementSignal {
 }
 
 /**
+ * The numerals the controller may record as the final estimate: the deck slice
+ * the room actually voted, lowest cast card through highest, inclusive. A room
+ * that split 3/8 can land on 3, 5, or 8 - never on 40, which nobody argued for.
+ * Unanimous rounds collapse to the single card. With no numeric votes at all
+ * (every seat played a special) there is nothing to bracket, so the whole deck
+ * is offered rather than nothing.
+ */
+export function estimateChoices(votes: readonly Card[]): readonly number[] {
+	const indices = votes
+		.filter((v): v is number => typeof v === 'number')
+		.map((n) => NUMERIC_DECK.indexOf(n as never))
+		.filter((i) => i >= 0);
+	if (indices.length === 0) return NUMERIC_DECK;
+	return NUMERIC_DECK.slice(Math.min(...indices), Math.max(...indices) + 1);
+}
+
+/**
  * Counts votes per card in deck order, for the reveal's distribution display.
  * Cards with no votes are still present (count 0), so the distribution renders
  * against the full deck.
