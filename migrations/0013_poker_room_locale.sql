@@ -1,0 +1,15 @@
+-- A planning-poker room's language (openspec/specs/planning-poker "Room
+-- language").
+--
+-- Rooms previously had no language at all: every /poker page fell back to the
+-- base locale because the routes carry no language segment, even though all
+-- poker strings are translated. Now that a room is created from the localized
+-- create page, it records the language chosen there and renders in it for
+-- everyone who joins - exactly how a poll's `locale` column already works.
+--
+-- Not a URL segment: the controller hands one join link to the whole team, so
+-- the language must travel with the room, not with whoever copied the link.
+--
+-- Additive, defaulted: existing rooms read as the base locale, nothing to
+-- backfill. No CHECK - validated at the form boundary like the poll's locale.
+ALTER TABLE poker_rooms ADD COLUMN locale TEXT NOT NULL DEFAULT 'en';

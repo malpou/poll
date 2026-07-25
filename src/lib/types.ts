@@ -25,6 +25,13 @@ export type PollMode = 'assigned' | 'open';
 // one fixed date, yes/no answers; rank = order text options; highlight =
 // spend marker strokes on text options. Chosen at creation, immutable after;
 // validated at the form boundary (no SQL CHECK).
+// What the create page is making. Planning-poker rooms share the create page
+// and its chrome but nothing else: no options, no invitees, no timezone, no
+// mode, no highlighter - so this branches above the poll form rather than
+// joining POLL_TYPES.
+export const CREATE_KINDS = ['poll', 'poker'] as const;
+export type CreateKind = (typeof CREATE_KINDS)[number];
+
 export const POLL_TYPES = ['dates', 'question', 'rsvp', 'rank', 'highlight'] as const;
 export type PollType = (typeof POLL_TYPES)[number];
 
@@ -207,6 +214,72 @@ export interface InviteeView {
 	url: string;
 	status: 'complete' | 'partial' | 'none';
 	note: string | null;
+}
+
+// --- Planning poker (openspec/specs/planning-poker). Durable row shapes only;
+// the live phase and in-flight votes are ephemeral coordination state held by
+// the real-time layer, never persisted here. ---
+
+// open = estimating; closed = the controller ended the session (final log only).
+export type RoomStatus = 'open' | 'closed';
+
+// The live phase of the current item. waiting = between items.
+export type RoomPhase = 'waiting' | 'voting' | 'revealed';
+
+// estimator = casts votes; observer = watches without voting.
+export type ParticipantRole = 'estimator' | 'observer';
+
+export interface PokerRoomRow {
+	id: string;
+	title: string;
+	deck: string; // 'fibonacci' today; column reserved for future decks
+	controllerToken: string; // private, facilitates the room
+	joinToken: string; // shared, participants enter through it
+	status: RoomStatus;
+	phase: RoomPhase;
+	activeRoundId: string | null; // the item being voted/revealed; null while waiting
+	rev: number; // bumped on every mutation so a state poll detects change
+	// Optional controller address. Stored (unlike the poll organizer's, which is
+	// used once and discarded) because the results summary is sent at close.
+	email: string | null;
+	// The language the whole room renders in, fixed at creation - the analogue of
+	// an event's `locale`. Not a URL segment: one join link serves everyone.
+	locale: Locale;
+	// The room's highlighter, picked at creation like a poll's.
+	accent: Accent;
+	createdAt: string;
+}
+
+// One seat in a room. Presence is derived from lastSeenAt (heartbeat window),
+// not stored. id is the cookie-carried per-browser id (a refresh resumes it).
+export interface PokerParticipantRow {
+	id: string;
+	roomId: string;
+	name: string;
+	role: ParticipantRole;
+	isController: boolean;
+	lastSeenAt: string;
+}
+
+// One vote on the active item. card is canonical text (a deck numeral like
+// '5' or a special '?'/'infinity'/'coffee'). Transient - cleared on
+// finalize/re-vote.
+export interface PokerVoteRow {
+	roundId: string;
+	participantId: string;
+	card: string;
+	updatedAt: string;
+}
+
+// One estimation item. final_estimate/decided_at are null until the controller
+// records the estimate (the single durable artifact of a decided item).
+export interface PokerRoundRow {
+	id: string;
+	roomId: string;
+	title: string;
+	sortOrder: number;
+	finalEstimate: string | null;
+	decidedAt: string | null;
 }
 
 // Per-date aggregate for the results view. notAnswered = invitees − answered,

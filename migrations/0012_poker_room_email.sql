@@ -1,0 +1,11 @@
+-- Optional controller email on a planning-poker room
+-- (openspec/specs/planning-poker "Room email").
+--
+-- Unlike the async poll's organizer email - which is used once at creation and
+-- never stored - a room's address must persist: the second email (the results
+-- summary) is sent when the room closes, arbitrarily later. It lives only as
+-- long as the room row does.
+--
+-- Additive, nullable, no backfill: existing rooms simply have no email and
+-- send nothing.
+ALTER TABLE poker_rooms ADD COLUMN email TEXT;

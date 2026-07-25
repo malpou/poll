@@ -23,7 +23,15 @@
 	import { fly, slide } from 'svelte/transition';
 	import AccentPicker from '$lib/components/atoms/AccentPicker.svelte';
 	import LanguagePicker from '$lib/components/atoms/LanguagePicker.svelte';
-	import type { Accent, DateOption, Locale, Participant, PollMode, PollType } from '$lib/types';
+	import type {
+		Accent,
+		CreateKind,
+		DateOption,
+		Locale,
+		Participant,
+		PollMode,
+		PollType
+	} from '$lib/types';
 	import { HIGHLIGHT_BUDGET_DEFAULT, isTextPollType } from '$lib/types';
 
 	// The create action's fail() payload; null on first render / success.
@@ -33,15 +41,26 @@
 		form,
 		suggestedLocale,
 		suggestedAccent = 'yellow',
+		suggestedKind = 'poll',
 		hintLocale = null
 	}: {
 		form: { error?: string } | null;
 		suggestedLocale: Locale;
 		suggestedAccent?: Accent;
+		// Which of the two things the page opens on, from the ?make= query.
+		suggestedKind?: CreateKind;
 		// Browser-preferred language when it differs from the form's: offered as
 		// a dismissible hint, never a redirect.
 		hintLocale?: Locale | null;
 	} = $props();
+
+	// The first decision: a poll or a planning-poker room. A room shares this
+	// page's chrome and language but none of the poll's fields, so it branches
+	// here rather than being a sixth poll type.
+	// svelte-ignore state_referenced_locally
+	let kind = $state<CreateKind>(suggestedKind);
+	const poker = $derived(kind === 'poker');
+	let roomName = $state('');
 
 	// Start empty; dates and participants are added via the same fill-then-add
 	// cards the dashboard uses.
@@ -127,7 +146,7 @@
 			document.documentElement.lang = next;
 			// Keep the URL on the picked language's create route (shallow - no
 			// reload, the {#key locale} re-render does the work).
-			replaceState(createUrl(next, accent), {});
+			replaceState(createUrl(next, accent, kind), {});
 		}
 		locale = next;
 	}
@@ -135,7 +154,14 @@
 	// The highlighter pick syncs the ?accent= query the same way, so the
 	// landing-page choice and a reload both keep it.
 	function pickAccent(next: Accent) {
-		if (browser) replaceState(createUrl(locale, next), {});
+		if (browser) replaceState(createUrl(locale, next, kind), {});
+	}
+
+	// Switching branch is reflected in the URL the same way, so a reload — or the
+	// landing page's "start a room" link — lands on the same branch.
+	function pickKind(next: CreateKind) {
+		kind = next;
+		if (browser) replaceState(createUrl(locale, accent, next), {});
 	}
 
 	// The hint is dismissible for the session (same key as the landing page's
@@ -186,7 +212,7 @@
      before our localized error can render. -->
 <form
 	method="POST"
-	action="?/create"
+	action={poker ? '?/createRoom' : '?/create'}
 	use:enhance
 	novalidate
 	data-accent={accent}
@@ -235,20 +261,18 @@
 	     dates, participants) lives in $state above the block, so it survives. -->
 		<LocaleSwap {locale}>
 			<h1 class="mb-8 text-title font-bold text-ink">
-				<span class="hl-swipe">{m.createTitle()}</span>
+				<span class="hl-swipe">{poker ? m.pokerCreateTitle() : m.createTitle()}</span>
 			</h1>
 
-			<!-- The type decides what the rest of the form asks for, so it leads;
-			     its hint is the single explainer for the picked type. -->
+			<!-- What are you making? The two tools share this page and its chrome
+			     but nothing else, so this decision comes before every field. Same
+			     radio-card shape as the poll type picker below. -->
 			<fieldset class="mb-9 flex flex-col gap-2.5">
 				<legend class="mb-3 text-2xs font-bold uppercase tracking-widest text-ink-muted">
-					{m.fieldPollType()}
+					{m.fieldCreateKind()}
 				</legend>
-				<!-- Dates (the default) leads; the three text-option types cluster in
-				     the middle around question; RSVP, the single-date odd one out,
-				     closes the list. -->
-				{#each [{ value: 'dates', label: m.pollTypeDates() }, { value: 'rank', label: m.pollTypeRank() }, { value: 'question', label: m.pollTypeQuestion() }, { value: 'highlight', label: m.pollTypeHighlight() }, { value: 'rsvp', label: m.pollTypeRsvp() }] as opt (opt.value)}
-					{@const active = pollType === opt.value}
+				{#each [{ value: 'poll', label: m.createKindPoll() }, { value: 'poker', label: m.createKindPoker() }] as opt (opt.value)}
+					{@const active = kind === opt.value}
 					<label
 						class="relative flex cursor-pointer items-center gap-3 rounded-control border-2 p-3.5 text-body text-ink transition hover:border-ink {active
 							? 'border-ink bg-hl-tint'
@@ -256,9 +280,10 @@
 					>
 						<input
 							type="radio"
-							name="pollType"
+							name="createKind"
 							value={opt.value}
-							bind:group={pollType}
+							checked={active}
+							onchange={() => pickKind(opt.value as CreateKind)}
 							class="peer absolute inset-0 h-full w-full cursor-pointer opacity-0"
 						/>
 						<span class="grid h-4 w-4 shrink-0 place-items-center rounded-full border-2 border-ink">
@@ -267,169 +292,242 @@
 						{opt.label}
 					</label>
 				{/each}
-				{#key pollType}
+				{#key kind}
 					<p in:fly={swapIn()} class="text-caption leading-relaxed text-ink-muted">
-						{pollType === 'question'
-							? m.pollTypeQuestionHint()
-							: pollType === 'rsvp'
-								? m.pollTypeRsvpHint()
-								: pollType === 'rank'
-									? m.pollTypeRankHint()
-									: pollType === 'highlight'
-										? m.pollTypeHighlightHint()
-										: m.pollTypeDatesHint()}
+						{poker ? m.createKindPokerHint() : m.createKindPollHint()}
 					</p>
 				{/key}
 			</fieldset>
 
-			<div class="mb-6">
-				<TextField
-					label={m.fieldTitle()}
-					name="title"
-					bind:value={title}
-					placeholder={m.titlePlaceholder()}
-				/>
-			</div>
-
-			<div class="mb-10">
-				<RichTextEditor label={m.fieldDescription()} name="description" bind:value={description} />
-			</div>
-
-			{#if textType}
-				<div class="mb-10">
-					<SectionHeading text={m.optionsSection()} class="mb-1" />
-					<p class="mb-3.5 text-caption text-ink-muted">{m.optionsHint()}</p>
-					<TextOptionList bind:options={textOptions} />
-					{#if pollType === 'highlight'}
-						<div transition:slide={slideParams()} class="mt-6 max-w-40">
-							<TextField
-								label={m.fieldBudget()}
-								name="highlightBudget"
-								type="number"
-								min={1}
-								max={10}
-								bind:value={highlightBudget}
-							/>
-							<p class="mt-2 text-caption leading-relaxed text-ink-muted">{m.budgetHint()}</p>
-						</div>
-					{/if}
-				</div>
-			{:else if pollType === 'rsvp'}
-				<div class="mb-10">
-					<SectionHeading text={m.dateSectionRsvp()} class="mb-1" />
-					<p class="mb-3.5 text-caption text-ink-muted">{m.dateHintRsvp()}</p>
-					{@render timezoneField()}
-					<CalendarDatePicker bind:dates={rsvpDates} {locale} single />
-				</div>
-			{:else}
-				<div class="mb-10">
-					<SectionHeading text={m.datesSection()} class="mb-1" />
-					<p class="mb-3.5 text-caption text-ink-muted">{m.datesHint()}</p>
-					{@render timezoneField()}
-					<CalendarDatePicker bind:dates {locale} />
-				</div>
-			{/if}
-
-			<!-- Hidden inputs carry explicit values so the server never has to guess
-			     an unchecked box's meaning. RSVP is strictly yes/no and rank/highlight
-			     answer by value: no toggles offered, both posted off. -->
-			{#if noToggles}
-				<input type="hidden" name="allowPreferred" value="0" />
-				<input type="hidden" name="allowUnsure" value="0" />
-			{:else}
-				<div class="mb-9 flex flex-col gap-2">
-					<span class="text-2xs font-bold uppercase tracking-widest text-ink-muted"
-						>{m.fieldChoices()}</span
-					>
-					<p class="text-caption leading-relaxed text-ink-muted">{m.choicesHint()}</p>
-					<label class="flex items-center gap-2 text-body text-ink">
-						<input
-							type="checkbox"
-							bind:checked={allowPreferred}
-							class="h-5 w-5 cursor-pointer accent-ink"
-						/>
-						{m.prefPreferred()}
-					</label>
-					<label class="flex items-center gap-2 text-body text-ink">
-						<input
-							type="checkbox"
-							bind:checked={allowUnsure}
-							class="h-5 w-5 cursor-pointer accent-ink"
-						/>
-						{m.prefUnsure()}
-					</label>
-					<input type="hidden" name="allowPreferred" value={allowPreferred ? '1' : '0'} />
-					<input type="hidden" name="allowUnsure" value={allowUnsure ? '1' : '0'} />
-				</div>
-			{/if}
-
-			<fieldset class="mb-9 flex flex-col gap-2.5">
-				<legend class="mb-3 text-2xs font-bold uppercase tracking-widest text-ink-muted">
-					{m.fieldMode()}
-				</legend>
-				{#each [{ value: 'open', label: m.modeOpen() }, { value: 'assigned', label: m.modeAssigned() }] as opt (opt.value)}
-					{@const active = pollMode === opt.value}
-					<label
-						class="relative flex cursor-pointer items-center gap-3 rounded-control border-2 p-3.5 text-body text-ink transition hover:border-ink {active
-							? 'border-ink bg-hl-tint'
-							: 'border-border-strong bg-card-alt'}"
-					>
-						<input
-							type="radio"
-							name="pollMode"
-							value={opt.value}
-							bind:group={pollMode}
-							class="peer absolute inset-0 h-full w-full cursor-pointer opacity-0"
-						/>
-						<span class="grid h-4 w-4 shrink-0 place-items-center rounded-full border-2 border-ink">
-							<span class="h-2 w-2 rounded-full {active ? 'bg-ink' : ''}"></span>
-						</span>
-						{opt.label}
-					</label>
-				{/each}
-				{#key pollMode}
-					<p in:fly={swapIn()} class="text-caption leading-relaxed text-ink-muted">
-						{pollMode === 'open' ? m.modeOpenHint() : m.modeAssignedHint()}
-					</p>
-				{/key}
-			</fieldset>
-
-			{#if pollMode === 'assigned'}
-				<div class="mb-9">
-					<ParticipantList
-						bind:participants
-						onadd={addParticipant}
-						onremove={removeParticipant}
-						oncopied={() => toast.show(m.linkCopied())}
+			{#if poker}
+				<!-- A room asks for a name and nothing else; everything below is the
+				     poll form and stays unmounted, so none of it posts. -->
+				<div class="mb-6">
+					<TextField
+						label={m.pokerRoomNameLabel()}
+						name="title"
+						bind:value={roomName}
+						placeholder={m.pokerRoomNamePlaceholder()}
 					/>
 				</div>
-			{/if}
 
-			<div class="mb-9">
-				<TextField label={m.fieldOrganizerEmail()} name="email" type="email" bind:value={email} />
-				<p class="mt-1.5 text-caption text-ink-muted">{m.organizerEmailHint()}</p>
-			</div>
+				<!-- Same optional address the poll form offers. A room's is stored,
+				     because the results summary is sent when the room closes. -->
+				<div class="mb-9">
+					<TextField label={m.fieldOrganizerEmail()} name="email" type="email" bind:value={email} />
+					<p class="mt-1.5 text-caption text-ink-muted">{m.pokerEmailHint()}</p>
+				</div>
 
-			<div class="mt-2 flex flex-col gap-3.5">
-				{#if form?.error}
-					<div class="text-sm font-semibold text-bad">{form.error}</div>
-				{/if}
-				{#if !valid}
-					<!-- Name the first missing thing so the disabled button explains itself. -->
-					<div class="text-center text-caption text-ink-muted">
-						{!title.trim()
-							? m.errorNoTitle()
-							: textType
-								? m.errorTooFewOptions()
+				<div class="mt-2 flex flex-col gap-3.5">
+					{#if form?.error}
+						<div class="text-sm font-semibold text-bad">{form.error}</div>
+					{/if}
+					<Button variant="primary" type="submit" disabled={!roomName.trim()}
+						>{m.pokerCreateButton()}<ArrowRight size={17} /></Button
+					>
+				</div>
+			{:else}
+				<!-- The type decides what the rest of the form asks for, so it leads;
+			     its hint is the single explainer for the picked type. -->
+				<fieldset class="mb-9 flex flex-col gap-2.5">
+					<legend class="mb-3 text-2xs font-bold uppercase tracking-widest text-ink-muted">
+						{m.fieldPollType()}
+					</legend>
+					<!-- Dates (the default) leads; the three text-option types cluster in
+				     the middle around question; RSVP, the single-date odd one out,
+				     closes the list. -->
+					{#each [{ value: 'dates', label: m.pollTypeDates() }, { value: 'rank', label: m.pollTypeRank() }, { value: 'question', label: m.pollTypeQuestion() }, { value: 'highlight', label: m.pollTypeHighlight() }, { value: 'rsvp', label: m.pollTypeRsvp() }] as opt (opt.value)}
+						{@const active = pollType === opt.value}
+						<label
+							class="relative flex cursor-pointer items-center gap-3 rounded-control border-2 p-3.5 text-body text-ink transition hover:border-ink {active
+								? 'border-ink bg-hl-tint'
+								: 'border-border-strong bg-card-alt'}"
+						>
+							<input
+								type="radio"
+								name="pollType"
+								value={opt.value}
+								bind:group={pollType}
+								class="peer absolute inset-0 h-full w-full cursor-pointer opacity-0"
+							/>
+							<span
+								class="grid h-4 w-4 shrink-0 place-items-center rounded-full border-2 border-ink"
+							>
+								<span class="h-2 w-2 rounded-full {active ? 'bg-ink' : ''}"></span>
+							</span>
+							{opt.label}
+						</label>
+					{/each}
+					{#key pollType}
+						<p in:fly={swapIn()} class="text-caption leading-relaxed text-ink-muted">
+							{pollType === 'question'
+								? m.pollTypeQuestionHint()
 								: pollType === 'rsvp'
-									? m.errorRsvpOneDate()
-									: m.errorNoDates()}
+									? m.pollTypeRsvpHint()
+									: pollType === 'rank'
+										? m.pollTypeRankHint()
+										: pollType === 'highlight'
+											? m.pollTypeHighlightHint()
+											: m.pollTypeDatesHint()}
+						</p>
+					{/key}
+				</fieldset>
+
+				<div class="mb-6">
+					<TextField
+						label={m.fieldTitle()}
+						name="title"
+						bind:value={title}
+						placeholder={m.titlePlaceholder()}
+					/>
+				</div>
+
+				<div class="mb-10">
+					<RichTextEditor
+						label={m.fieldDescription()}
+						name="description"
+						bind:value={description}
+					/>
+				</div>
+
+				{#if textType}
+					<div class="mb-10">
+						<SectionHeading text={m.optionsSection()} class="mb-1" />
+						<p class="mb-3.5 text-caption text-ink-muted">{m.optionsHint()}</p>
+						<TextOptionList bind:options={textOptions} />
+						{#if pollType === 'highlight'}
+							<div transition:slide={slideParams()} class="mt-6 max-w-40">
+								<TextField
+									label={m.fieldBudget()}
+									name="highlightBudget"
+									type="number"
+									min={1}
+									max={10}
+									bind:value={highlightBudget}
+								/>
+								<p class="mt-2 text-caption leading-relaxed text-ink-muted">{m.budgetHint()}</p>
+							</div>
+						{/if}
+					</div>
+				{:else if pollType === 'rsvp'}
+					<div class="mb-10">
+						<SectionHeading text={m.dateSectionRsvp()} class="mb-1" />
+						<p class="mb-3.5 text-caption text-ink-muted">{m.dateHintRsvp()}</p>
+						{@render timezoneField()}
+						<CalendarDatePicker bind:dates={rsvpDates} {locale} single />
+					</div>
+				{:else}
+					<div class="mb-10">
+						<SectionHeading text={m.datesSection()} class="mb-1" />
+						<p class="mb-3.5 text-caption text-ink-muted">{m.datesHint()}</p>
+						{@render timezoneField()}
+						<CalendarDatePicker bind:dates {locale} />
 					</div>
 				{/if}
-				<Button variant="primary" type="submit" disabled={!valid}
-					>{m.create()}<ArrowRight size={17} /></Button
-				>
-			</div>
+
+				<!-- Hidden inputs carry explicit values so the server never has to guess
+			     an unchecked box's meaning. RSVP is strictly yes/no and rank/highlight
+			     answer by value: no toggles offered, both posted off. -->
+				{#if noToggles}
+					<input type="hidden" name="allowPreferred" value="0" />
+					<input type="hidden" name="allowUnsure" value="0" />
+				{:else}
+					<div class="mb-9 flex flex-col gap-2">
+						<span class="text-2xs font-bold uppercase tracking-widest text-ink-muted"
+							>{m.fieldChoices()}</span
+						>
+						<p class="text-caption leading-relaxed text-ink-muted">{m.choicesHint()}</p>
+						<label class="flex items-center gap-2 text-body text-ink">
+							<input
+								type="checkbox"
+								bind:checked={allowPreferred}
+								class="h-5 w-5 cursor-pointer accent-ink"
+							/>
+							{m.prefPreferred()}
+						</label>
+						<label class="flex items-center gap-2 text-body text-ink">
+							<input
+								type="checkbox"
+								bind:checked={allowUnsure}
+								class="h-5 w-5 cursor-pointer accent-ink"
+							/>
+							{m.prefUnsure()}
+						</label>
+						<input type="hidden" name="allowPreferred" value={allowPreferred ? '1' : '0'} />
+						<input type="hidden" name="allowUnsure" value={allowUnsure ? '1' : '0'} />
+					</div>
+				{/if}
+
+				<fieldset class="mb-9 flex flex-col gap-2.5">
+					<legend class="mb-3 text-2xs font-bold uppercase tracking-widest text-ink-muted">
+						{m.fieldMode()}
+					</legend>
+					{#each [{ value: 'open', label: m.modeOpen() }, { value: 'assigned', label: m.modeAssigned() }] as opt (opt.value)}
+						{@const active = pollMode === opt.value}
+						<label
+							class="relative flex cursor-pointer items-center gap-3 rounded-control border-2 p-3.5 text-body text-ink transition hover:border-ink {active
+								? 'border-ink bg-hl-tint'
+								: 'border-border-strong bg-card-alt'}"
+						>
+							<input
+								type="radio"
+								name="pollMode"
+								value={opt.value}
+								bind:group={pollMode}
+								class="peer absolute inset-0 h-full w-full cursor-pointer opacity-0"
+							/>
+							<span
+								class="grid h-4 w-4 shrink-0 place-items-center rounded-full border-2 border-ink"
+							>
+								<span class="h-2 w-2 rounded-full {active ? 'bg-ink' : ''}"></span>
+							</span>
+							{opt.label}
+						</label>
+					{/each}
+					{#key pollMode}
+						<p in:fly={swapIn()} class="text-caption leading-relaxed text-ink-muted">
+							{pollMode === 'open' ? m.modeOpenHint() : m.modeAssignedHint()}
+						</p>
+					{/key}
+				</fieldset>
+
+				{#if pollMode === 'assigned'}
+					<div class="mb-9">
+						<ParticipantList
+							bind:participants
+							onadd={addParticipant}
+							onremove={removeParticipant}
+							oncopied={() => toast.show(m.linkCopied())}
+						/>
+					</div>
+				{/if}
+
+				<div class="mb-9">
+					<TextField label={m.fieldOrganizerEmail()} name="email" type="email" bind:value={email} />
+					<p class="mt-1.5 text-caption text-ink-muted">{m.organizerEmailHint()}</p>
+				</div>
+
+				<div class="mt-2 flex flex-col gap-3.5">
+					{#if form?.error}
+						<div class="text-sm font-semibold text-bad">{form.error}</div>
+					{/if}
+					{#if !valid}
+						<!-- Name the first missing thing so the disabled button explains itself. -->
+						<div class="text-center text-caption text-ink-muted">
+							{!title.trim()
+								? m.errorNoTitle()
+								: textType
+									? m.errorTooFewOptions()
+									: pollType === 'rsvp'
+										? m.errorRsvpOneDate()
+										: m.errorNoDates()}
+						</div>
+					{/if}
+					<Button variant="primary" type="submit" disabled={!valid}
+						>{m.create()}<ArrowRight size={17} /></Button
+					>
+				</div>
+			{/if}
 		</LocaleSwap>
 	</div>
 </form>

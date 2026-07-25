@@ -1,0 +1,13 @@
+-- A planning-poker room's highlighter (openspec/specs/planning-poker "Room
+-- highlighter").
+--
+-- Rooms used to be the one capability with a hardcoded accent - every room was
+-- blue. That was a leftover from poker living on its own page: now that rooms
+-- are created from the same page as polls, they take the same organizer-picked
+-- highlighter, so the two tools reach feature parity and the create form has
+-- one fewer special case.
+--
+-- Additive, defaulted to the old hardcoded value so rooms that predate the
+-- column render exactly as they did. Validated at the form boundary like the
+-- events table's `accent` - no CHECK.
+ALTER TABLE poker_rooms ADD COLUMN accent TEXT NOT NULL DEFAULT 'blue';

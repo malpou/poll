@@ -12,5 +12,6 @@
 	{form}
 	suggestedLocale={data.suggestedLocale}
 	suggestedAccent={data.suggestedAccent}
+	suggestedKind={data.suggestedKind}
 	hintLocale={data.hintLocale}
 />

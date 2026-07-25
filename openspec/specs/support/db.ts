@@ -238,3 +238,100 @@ export function selectedOptionIds(eventId: string): string[] {
 		`SELECT id FROM date_options WHERE event_id = ${lit(eventId)} AND selected = 1 ORDER BY sort_order`
 	).results.map((r) => r.id as string);
 }
+
+// --- Planning poker (openspec/specs/planning-poker). Durable skeleton only:
+// rooms + rounds + final estimates. Live phase/votes are held by the real-time
+// layer, not D1, so there is nothing to seed for them. Own e2e-poker-* id/token
+// family. ---
+
+export interface RoomSeed {
+	id: string;
+	title: string;
+	controllerToken: string;
+	joinToken: string;
+	status?: 'open' | 'closed'; // omit → column default 'open'
+	deck?: string; // omit → column default 'fibonacci'
+	locale?: string; // omit → 'en', the base locale
+	accent?: string; // omit → 'blue', what rooms were hardcoded to
+	createdAt?: string;
+}
+export interface RoundSeed {
+	id: string;
+	roomId: string;
+	title: string;
+	sortOrder: number;
+	finalEstimate?: string | null; // omit → NULL (not yet decided)
+	decidedAt?: string | null;
+}
+
+export function seedRoom(r: RoomSeed) {
+	d1(
+		`INSERT INTO poker_rooms (id, title, deck, controller_token, join_token, status, locale, accent, created_at) VALUES
+		   (${lit(r.id)}, ${lit(r.title)}, ${lit(r.deck ?? 'fibonacci')}, ${lit(r.controllerToken)}, ${lit(r.joinToken)}, ${lit(r.status ?? 'open')}, ${lit(r.locale ?? 'en')}, ${lit(r.accent ?? 'blue')}, ${lit(r.createdAt ?? NOW)});`
+	);
+}
+
+export function seedRound(r: RoundSeed) {
+	d1(
+		`INSERT INTO poker_rounds (id, room_id, title, sort_order, final_estimate, decided_at) VALUES
+		   (${lit(r.id)}, ${lit(r.roomId)}, ${lit(r.title)}, ${r.sortOrder}, ${lit(r.finalEstimate ?? null)}, ${lit(r.decidedAt ?? null)});`
+	);
+}
+
+// Delete a room and all its children in FK order (votes, participants, rounds,
+// room). Accepts one id or several. Idempotent - safe to call before every seed.
+export function wipeRoom(roomId: string | string[]) {
+	const ids = (Array.isArray(roomId) ? roomId : [roomId]).map(lit).join(', ');
+	d1(
+		// Break the rooms<->rounds cycle first (active_round_id references a round),
+		// then delete children in FK order.
+		`UPDATE poker_rooms SET active_round_id = NULL WHERE id IN (${ids});
+		 DELETE FROM poker_votes WHERE round_id IN (SELECT id FROM poker_rounds WHERE room_id IN (${ids}));
+		 DELETE FROM poker_participants WHERE room_id IN (${ids});
+		 DELETE FROM poker_rounds WHERE room_id IN (${ids});
+		 DELETE FROM poker_rooms WHERE id IN (${ids});`
+	);
+}
+
+// --- Read helpers (assertions) ---
+
+export function roomStatus(roomId: string): string {
+	return d1(`SELECT status FROM poker_rooms WHERE id = ${lit(roomId)}`).results[0].status as string;
+}
+
+// Resolve a room id from its controller token - creation flows only know the
+// token they landed on.
+export function roomIdByControllerToken(token: string): string {
+	return d1(`SELECT id FROM poker_rooms WHERE controller_token = ${lit(token)}`).results[0]
+		.id as string;
+}
+
+// A room's shared join token - creation flows only know the controller token
+// they landed on, and the console's copy row is not a reliable place to read it.
+export function roomJoinToken(roomId: string): string {
+	return d1(`SELECT join_token FROM poker_rooms WHERE id = ${lit(roomId)}`).results[0]
+		.join_token as string;
+}
+
+// The controller address attached to a room, or null when none is. The address
+// is stored (the closing summary is sent later) but never leaves the server, so
+// tests read it here rather than from any client payload.
+export function roomEmail(roomId: string): string | null {
+	return (d1(`SELECT email FROM poker_rooms WHERE id = ${lit(roomId)}`).results[0].email ??
+		null) as string | null;
+}
+
+// Decided items with their recorded estimate, in display order. Undecided
+// rounds are absent (final_estimate IS NULL).
+export function roomResults(roomId: string): { title: string; estimate: string }[] {
+	return d1(
+		`SELECT title, final_estimate FROM poker_rounds WHERE room_id = ${lit(roomId)} AND final_estimate IS NOT NULL ORDER BY sort_order`
+	).results.map((r) => ({ title: r.title as string, estimate: r.final_estimate as string }));
+}
+
+// Every round title for a room in order (decided or not) - for roster/queue asserts.
+export function roundTitles(roomId: string): string[] {
+	return d1(
+		`SELECT title FROM poker_rounds WHERE room_id = ${lit(roomId)} ORDER BY sort_order`
+	).results.map((r) => r.title as string);
+}
