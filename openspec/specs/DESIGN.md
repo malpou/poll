@@ -192,10 +192,11 @@ theme token instead.
   `×strokes`, with the words in `sr-only` text.
 - Prominent date displays capitalize the weekday via CSS (`capitalize`);
   running text keeps the poll language's own casing (Danish lowercase).
-- **Planning poker** (the real-time estimation rooms) is the one capability
-  with a fixed accent rather than an organizer-picked one: its pages carry
-  `data-accent="blue"` so `--hl` resolves for the card tint, giving the tool
-  its own calm identity. Its surfaces:
+- **Planning poker** (the real-time estimation rooms) takes an organizer-picked
+  highlighter exactly as a poll does — picked on the create page, stored on the
+  room, worn by every one of its pages, so `--hl` resolves for the card tint.
+  Rooms created before rooms carried a highlighter stay blue, the value the
+  capability was hardcoded to. Its surfaces:
   - **Cards** are paper cards on the control-radius family (`h-19 w-14`, or
     `h-12 w-9` in the roster), the numeral centered in the mono face; a
     selected/picked card takes an ink border on the `--hl` tint and lifts
@@ -210,6 +211,14 @@ theme token instead.
     (`good` present, `ink-faint` away), the name, then pill badges (solid-ink
     for the controller, bordered for an observer) and the seat's voting
     status. Reuses the pill/badge conventions, no new token.
+  - **Landing section.** Planning poker leads the landing page's body, between
+    solid `ink-faint` rules - a harder break than the dashed rule separating
+    poll sections, because what follows is a different tool. It opens with the
+    solid-ink pill (the roster's controller-badge shape) reading "new", since
+    nobody arrives looking for the capability. Its example is a single
+    reveal: four face-down cards that turn face-up together on one tap, with
+    the agreement strip below. No new tokens - it reuses the room's own card
+    and signal surfaces, so it cannot drift from the real thing.
   - **Agreement signal** is a `NoticeBanner`-style strip in three tones,
     reusing documented colors: highlighter tint + `--hl` dot for **agree**
     (with the suggested value pushed right), neutral `card-alt` + ink dot for

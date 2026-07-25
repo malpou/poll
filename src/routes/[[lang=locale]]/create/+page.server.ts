@@ -1,13 +1,22 @@
-import { fail, redirect } from '@sveltejs/kit';
+import { error, fail, redirect } from '@sveltejs/kit';
 import { getProvider } from '$lib/data/provider';
+import { getPokerProvider } from '$lib/data/poker';
 import { newToken, newAdminCode } from '$lib/data/shared';
 import { adminCookie, ADMIN_COOKIE_OPTS } from '$lib/server/admin-gate';
-import { sendAdminEmail } from '$lib/server/email';
+import { sendAdminEmail, sendPokerLinkEmail } from '$lib/server/email';
 import { m } from '$lib/paraglide/messages';
 import { baseLocale, extractLocaleFromHeader, isLocale } from '$lib/paraglide/runtime';
 import { field, parseIndexed, validateTimes } from '$lib/forms/forms';
 import { richTextIsEmpty, sanitizeRichText } from '$lib/forms/richtext';
-import type { Accent, DateOption, Locale, Participant, PollMode, PollType } from '$lib/types';
+import type {
+	Accent,
+	CreateKind,
+	DateOption,
+	Locale,
+	Participant,
+	PollMode,
+	PollType
+} from '$lib/types';
 import {
 	ACCENTS,
 	HIGHLIGHT_BUDGET_DEFAULT,
@@ -17,6 +26,9 @@ import {
 	POLL_TYPES
 } from '$lib/types';
 import type { Actions, PageServerLoad } from './$types';
+
+// ponytail: pragmatic shape check, not RFC 5322; every send is best-effort.
+const EMAIL_RE = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
 
 /**
  * Loads the create page. The page chrome renders in the URL's language segment
@@ -33,9 +45,13 @@ export const load: PageServerLoad = ({ params, request, url }) => {
 	// The browser-language hint, same offer as the landing page: never a
 	// redirect, only set when the preference differs from the form's language.
 	const browserLocale = extractLocaleFromHeader(request);
+	// Which of the two things to open on. Anything but the room marker is a poll,
+	// so the retired /poker/new redirect is the only thing that needs to know.
+	const suggestedKind: CreateKind = url.searchParams.get('make') === 'poker' ? 'poker' : 'poll';
 	return {
 		suggestedLocale,
 		suggestedAccent,
+		suggestedKind,
 		hintLocale: browserLocale && browserLocale !== suggestedLocale ? browserLocale : null
 	};
 };
@@ -133,8 +149,7 @@ export const actions = {
 
 		let error: string | null = null;
 		if (!title) error = m.errorNoTitle();
-		// ponytail: pragmatic shape check, not RFC 5322; the send is best-effort anyway.
-		else if (email && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) error = m.errorInvalidEmail();
+		else if (email && !EMAIL_RE.test(email)) error = m.errorInvalidEmail();
 		else if (
 			pollType === 'highlight' &&
 			(!Number.isInteger(highlightBudget) ||
@@ -168,5 +183,50 @@ export const actions = {
 		}
 
 		redirect(303, `/e/${organizerToken}`);
+	},
+
+	/**
+	 * The other thing this page makes: a planning-poker room. Shares the page,
+	 * its language, and its highlighter - a room has no options, invitees,
+	 * timezone, or
+	 * so this action validates a name and nothing else. The room records the
+	 * language and highlighter picked here and wears both for everyone who joins.
+	 */
+	createRoom: async ({ request, platform, url }) => {
+		const provider = getPokerProvider(platform);
+		if (!provider) error(503, 'planning poker requires a database');
+
+		const form = await request.formData();
+		const title = field(form, 'title');
+		if (!title) return fail(400, { error: m.pokerErrorNoRoomName(), title });
+
+		// Same fields the poll action reads - the pickers post both. Unknown values
+		// fall back to the defaults, same discipline as everywhere else.
+		const localeField = field(form, 'locale');
+		const locale: Locale = isLocale(localeField) ? localeField : baseLocale;
+		const accentField = field(form, 'accent');
+		const accent: Accent = (ACCENTS as readonly string[]).includes(accentField)
+			? (accentField as Accent)
+			: 'yellow';
+
+		// Optional, exactly like the poll's organizer email - but a room's address
+		// is stored, because the results summary is sent when the room closes.
+		const email = field(form, 'email');
+		if (email && !EMAIL_RE.test(email)) return fail(400, { error: m.errorInvalidEmail(), title });
+
+		const { controllerToken } = await provider.createRoom(title, locale, accent, email || null);
+
+		// Best-effort, never blocking the redirect - same discipline as the poll's.
+		if (email)
+			platform?.ctx.waitUntil(
+				sendPokerLinkEmail(platform, {
+					to: email,
+					roomTitle: title,
+					controllerUrl: `${url.origin}/poker/c/${controllerToken}`,
+					locale
+				})
+			);
+
+		redirect(303, `/poker/c/${controllerToken}`);
 	}
 } satisfies Actions;

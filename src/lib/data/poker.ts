@@ -9,7 +9,9 @@ import type {
 	PokerRoomRow,
 	PokerRoundRow,
 	PokerVoteRow,
-	ParticipantRole
+	ParticipantRole,
+	Accent,
+	Locale
 } from '$lib/types';
 import { id, newToken } from './shared';
 
@@ -24,6 +26,9 @@ function mapRoom(r: Record<string, unknown>): PokerRoomRow {
 		phase: r.phase as PokerRoomRow['phase'],
 		activeRoundId: (r.active_round_id as string | null) ?? null,
 		rev: r.rev as number,
+		email: (r.email as string | null) ?? null,
+		locale: r.locale as PokerRoomRow['locale'],
+		accent: r.accent as PokerRoomRow['accent'],
 		createdAt: r.created_at as string
 	};
 }
@@ -66,7 +71,12 @@ export interface CreateRoomResult {
 }
 
 export interface PokerProvider {
-	createRoom(title: string): Promise<CreateRoomResult>;
+	createRoom(
+		title: string,
+		locale: Locale,
+		accent: Accent,
+		email: string | null
+	): Promise<CreateRoomResult>;
 	getRoomByControllerToken(token: string): Promise<PokerRoomRow | null>;
 	getRoomByJoinToken(token: string): Promise<PokerRoomRow | null>;
 	getRoundById(roundId: string): Promise<PokerRoundRow | null>;
@@ -115,16 +125,16 @@ export function pokerProvider(db: D1Database): PokerProvider {
 		db.prepare(`UPDATE poker_rooms SET rev = rev + 1 WHERE id = ?`).bind(roomId);
 
 	return {
-		async createRoom(title: string) {
+		async createRoom(title: string, locale: Locale, accent: Accent, email: string | null) {
 			const roomId = id('room');
 			const controllerToken = newToken();
 			const joinToken = newToken();
 			await db
 				.prepare(
-					`INSERT INTO poker_rooms (id, title, deck, controller_token, join_token, status, phase, active_round_id, rev, created_at)
-					 VALUES (?, ?, 'fibonacci', ?, ?, 'open', 'waiting', NULL, 0, datetime('now'))`
+					`INSERT INTO poker_rooms (id, title, deck, controller_token, join_token, status, phase, active_round_id, rev, locale, accent, email, created_at)
+					 VALUES (?, ?, 'fibonacci', ?, ?, 'open', 'waiting', NULL, 0, ?, ?, ?, datetime('now'))`
 				)
-				.bind(roomId, title, controllerToken, joinToken)
+				.bind(roomId, title, controllerToken, joinToken, locale, accent, email)
 				.run();
 			return { roomId, controllerToken, joinToken };
 		},
@@ -184,8 +194,18 @@ export function pokerProvider(db: D1Database): PokerProvider {
 		},
 
 		async heartbeat(participantId) {
+			// Every client poll (~1s per seat) lands here, so the write is throttled:
+			// only refresh a stamp already older than a third of the presence window.
+			// Worst case a seat's stamp is 5s stale against a 15s window, so presence
+			// is unaffected - but D1 takes ~5x fewer writes, and D1 is one SQLite
+			// writer shared with the whole poll product.
+			// ponytail: 5s hardcoded against PRESENCE_WINDOW_MS's 15s. If the window
+			// ever moves, derive this from it rather than retuning by hand.
 			await db
-				.prepare(`UPDATE poker_participants SET last_seen_at = datetime('now') WHERE id = ?`)
+				.prepare(
+					`UPDATE poker_participants SET last_seen_at = datetime('now')
+					 WHERE id = ? AND last_seen_at < datetime('now', '-5 seconds')`
+				)
 				.bind(participantId)
 				.run();
 		},

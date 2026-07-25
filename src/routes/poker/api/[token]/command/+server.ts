@@ -3,6 +3,7 @@ import { getPokerProvider } from '$lib/data/poker';
 import { id } from '$lib/data/shared';
 import { cardFromText } from '$lib/logic/poker';
 import { assembleSnapshot, readPid, resolveRoom, writePid } from '$lib/server/poker';
+import { sendPokerSummaryEmail } from '$lib/server/email';
 import type { ParticipantRole } from '$lib/types';
 import type { RequestHandler } from './$types';
 
@@ -83,9 +84,19 @@ export const POST: RequestHandler = async ({ params, platform, cookies, request 
 			await provider.finalize(room.id, body.estimate);
 			break;
 		}
-		case 'close':
+		case 'close': {
+			// Read the log before closing - closing clears live state, not results,
+			// but reading first keeps the summary independent of that ordering.
+			const results = room.email ? await provider.listResults(room.id) : [];
 			await provider.closeRoom(room.id);
+			if (room.email)
+				await sendPokerSummaryEmail(platform, {
+					to: room.email,
+					roomTitle: room.title,
+					results
+				});
 			break;
+		}
 		default:
 			error(400, 'unknown action');
 	}

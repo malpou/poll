@@ -8,7 +8,8 @@
 	import SectionHeading from '$lib/components/atoms/SectionHeading.svelte';
 	import NoticeBanner from '$lib/components/atoms/NoticeBanner.svelte';
 	import CopyLinkRow from '$lib/components/molecules/CopyLinkRow.svelte';
-	import { NUMERIC_DECK, cardToText } from '$lib/logic/poker';
+	import { cardToText, estimateChoices } from '$lib/logic/poker';
+	import { canReveal, pendingVoters } from '$lib/logic/poker-snapshot';
 	import { m } from '$lib/paraglide/messages';
 	import type { PageData } from './$types';
 
@@ -42,7 +43,7 @@
 <svelte:head><title>{data.roomTitle}</title><meta name="robots" content="noindex" /></svelte:head>
 
 <div
-	data-accent="blue"
+	data-accent={data.accent}
 	data-testid="poker-console"
 	class="mx-auto flex max-w-160 flex-col gap-6 px-4 pb-18 pt-7"
 >
@@ -53,10 +54,14 @@
 		<h1 class="text-title font-bold text-ink"><span class="hl-swipe">{data.roomTitle}</span></h1>
 	</header>
 
-	<section class="flex flex-col gap-2">
-		<SectionHeading text={m.pokerJoinLinkLabel()} />
-		<CopyLinkRow url={data.joinUrl} />
-	</section>
+	<!-- Hidden once the room is closed: the link no longer lets anyone in, so
+	     offering it to copy would only invite a dead hand-out. -->
+	{#if snap?.status !== 'closed'}
+		<section class="flex flex-col gap-2">
+			<SectionHeading text={m.pokerJoinLinkLabel()} />
+			<CopyLinkRow url={data.joinUrl} />
+		</section>
+	{/if}
 
 	{#if snap}
 		{#if snap.status === 'closed'}
@@ -79,7 +84,15 @@
 				</div>
 
 				{#if snap.phase === 'waiting'}
-					<div class="flex flex-wrap items-end gap-2">
+					<!-- A real <form> so Enter in the item field opens voting; item after
+					     item is typed here all session, so the keyboard path matters. -->
+					<form
+						onsubmit={(e) => {
+							e.preventDefault();
+							open();
+						}}
+						class="flex flex-wrap items-end gap-2"
+					>
 						<TextField
 							label={m.pokerNextItemLabel()}
 							name="nextItem"
@@ -87,21 +100,39 @@
 							placeholder={m.pokerNextItemPlaceholder()}
 						/>
 						<div class="w-40 shrink-0">
-							<Button type="button" onclick={open}>{m.pokerOpenVoting()}</Button>
+							<Button type="submit">{m.pokerOpenVoting()}</Button>
 						</div>
-					</div>
+					</form>
 				{:else if snap.activeRound}
 					<div class="text-lead font-bold text-ink" data-testid="poker-active-item">
 						{snap.activeRound.title}
 					</div>
 
 					{#if snap.phase === 'voting'}
-						<Button type="button" onclick={() => room?.command('reveal')}>{m.pokerReveal()}</Button>
+						<!-- Locked until everyone present has voted, so a reveal can't cut
+						     the round short; the caption names who is still out. -->
+						{@const waiting = pendingVoters(snap.roster)}
+						<Button
+							type="button"
+							disabled={!canReveal(snap.roster)}
+							onclick={() => room?.command('reveal')}>{m.pokerReveal()}</Button
+						>
+						{#if waiting.length > 0}
+							<p data-testid="poker-reveal-blocked" class="text-caption text-ink-muted">
+								{m.pokerWaitingOn({ names: waiting.map((s) => s.name).join(', ') })}
+							</p>
+						{/if}
 						<!-- Controller can estimate too. -->
 						{#if snap.viewerSeated && snap.viewerRole === 'estimator'}
 							<Deck selected={snap.myVote} onpick={(c) => room?.command('vote', { card: c })} />
 						{:else}
-							<div class="flex flex-wrap items-end gap-2">
+							<form
+								onsubmit={(e) => {
+									e.preventDefault();
+									joinAsEstimator();
+								}}
+								class="flex flex-wrap items-end gap-2"
+							>
 								<TextField
 									label={m.pokerNameLabel()}
 									name="ctrlName"
@@ -109,20 +140,20 @@
 									placeholder={m.pokerNamePlaceholder()}
 								/>
 								<div class="w-44 shrink-0">
-									<Button variant="ghost" type="button" onclick={joinAsEstimator}
-										>{m.pokerControllerEstimates()}</Button
-									>
+									<Button variant="ghost" type="submit">{m.pokerControllerEstimates()}</Button>
 								</div>
-							</div>
+							</form>
 						{/if}
 					{:else if snap.phase === 'revealed'}
 						{#if snap.signal && snap.distribution}
 							<Signal signal={snap.signal} distribution={snap.distribution} />
 						{/if}
 						<SectionHeading text={m.pokerRecordEstimate()} />
-						<!-- Pick any deck numeral, or split/skip. Suggestion pre-highlighted. -->
+						<!-- Only the numerals the room actually bracketed (lowest cast card
+						     through highest), or split/skip. Suggestion pre-highlighted. -->
+						{@const choices = estimateChoices((snap.revealed ?? []).map((v) => v.card))}
 						<div class="flex flex-wrap gap-2" data-testid="poker-finalize">
-							{#each NUMERIC_DECK as n (n)}
+							{#each choices as n (n)}
 								<button
 									type="button"
 									onclick={() => room?.command('finalize', { estimate: cardToText(n) })}
