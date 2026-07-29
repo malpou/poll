@@ -3,6 +3,7 @@
 	import Deck from '$lib/components/poker/Deck.svelte';
 	import Roster from '$lib/components/poker/Roster.svelte';
 	import Signal from '$lib/components/poker/Signal.svelte';
+	import Break from '$lib/components/poker/Break.svelte';
 	import Button from '$lib/components/atoms/Button.svelte';
 	import TextField from '$lib/components/atoms/TextField.svelte';
 	import SectionHeading from '$lib/components/atoms/SectionHeading.svelte';
@@ -67,6 +68,11 @@
 		{#if snap.status === 'closed'}
 			<NoticeBanner tone="ink" text={m.pokerClosedNotice()} />
 		{:else}
+			<Break
+				calledBy={snap.breakCalledBy}
+				oncall={() => room?.command('break', { on: true })}
+				onend={() => room?.command('break', { on: false })}
+			/>
 			<!-- Phase-driven controls -->
 			<section
 				data-testid="poker-controls"
@@ -146,7 +152,11 @@
 						{/if}
 					{:else if snap.phase === 'revealed'}
 						{#if snap.signal && snap.distribution}
-							<Signal signal={snap.signal} distribution={snap.distribution} />
+							<Signal
+								signal={snap.signal}
+								distribution={snap.distribution}
+								voters={snap.revealed ?? []}
+							/>
 						{/if}
 						<SectionHeading text={m.pokerRecordEstimate()} />
 						<!-- Only the numerals the room actually bracketed (lowest cast card

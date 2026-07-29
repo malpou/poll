@@ -247,6 +247,9 @@ export interface PokerRoomRow {
 	locale: Locale;
 	// The room's highlighter, picked at creation like a poll's.
 	accent: Accent;
+	// Who called the current coffee break, or null when nobody has. Empty string
+	// when the caller holds no seat (a controller who is not estimating).
+	breakCalledBy: string | null;
 	createdAt: string;
 }
 

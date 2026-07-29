@@ -63,7 +63,7 @@
 		</div>
 
 		{#if signal && distribution}
-			<Signal {signal} {distribution} />
+			<Signal {signal} {distribution} voters={SEATS} />
 		{:else}
 			<button
 				type="button"
