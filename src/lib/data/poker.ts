@@ -29,6 +29,7 @@ function mapRoom(r: Record<string, unknown>): PokerRoomRow {
 		email: (r.email as string | null) ?? null,
 		locale: r.locale as PokerRoomRow['locale'],
 		accent: r.accent as PokerRoomRow['accent'],
+		breakCalledBy: (r.break_called_by as string | null) ?? null,
 		createdAt: r.created_at as string
 	};
 }
@@ -100,6 +101,8 @@ export interface PokerProvider {
 	removeParticipant(roomId: string, participantId: string): Promise<void>;
 	/** Cast/replace the active-round vote. No-op unless the room is in `voting`. */
 	castVote(roomId: string, participantId: string, card: string): Promise<void>;
+	/** Raise (name, possibly empty) or clear (null) the room's coffee break. */
+	setBreak(roomId: string, calledBy: string | null): Promise<void>;
 
 	// --- Controller actions (each bumps rev) ---
 	/** Create the next item and open voting on it. */
@@ -240,6 +243,13 @@ export function pokerProvider(db: D1Database): PokerProvider {
 			]);
 		},
 
+		async setBreak(roomId, calledBy) {
+			await db
+				.prepare(`UPDATE poker_rooms SET break_called_by = ?, rev = rev + 1 WHERE id = ?`)
+				.bind(calledBy, roomId)
+				.run();
+		},
+
 		async openRound(roomId, title) {
 			const roundId = id('round');
 			await db.batch([
@@ -251,7 +261,7 @@ export function pokerProvider(db: D1Database): PokerProvider {
 					.bind(roundId, roomId, title, roomId),
 				db
 					.prepare(
-						`UPDATE poker_rooms SET phase = 'voting', active_round_id = ?, rev = rev + 1
+						`UPDATE poker_rooms SET phase = 'voting', active_round_id = ?, break_called_by = NULL, rev = rev + 1
 						 WHERE id = ? AND status = 'open'`
 					)
 					.bind(roundId, roomId)
@@ -315,7 +325,7 @@ export function pokerProvider(db: D1Database): PokerProvider {
 					.bind(roomId),
 				db
 					.prepare(
-						`UPDATE poker_rooms SET status = 'closed', phase = 'waiting', active_round_id = NULL, rev = rev + 1
+						`UPDATE poker_rooms SET status = 'closed', phase = 'waiting', active_round_id = NULL, break_called_by = NULL, rev = rev + 1
 						 WHERE id = ?`
 					)
 					.bind(roomId)

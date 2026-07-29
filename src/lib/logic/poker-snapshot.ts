@@ -15,6 +15,7 @@ import type {
 import {
 	type AgreementSignal,
 	type Card,
+	DECK,
 	agreementSignal,
 	cardFromText,
 	voteDistribution
@@ -71,6 +72,9 @@ export interface RoomSnapshot {
 	distribution: { card: Card; count: number }[] | null;
 	// Decided items, in order - the durable results log.
 	results: { title: string; estimate: string }[];
+	// Who called the standing coffee break ('' = a caller without a seat), or
+	// null when the room is not on a break.
+	breakCalledBy: string | null;
 	viewerIsController: boolean;
 	// Whether this viewer already holds a seat (so a refresh skips the join
 	// form), and that seat's role. Null role when they have no seat yet.
@@ -108,14 +112,29 @@ export function buildSnapshot(input: SnapshotInput): RoomSnapshot {
 	const votedIds = new Set(votes.map((v) => v.participantId));
 	const nameById = new Map(participants.map((p) => [p.id, p.name]));
 
-	const roster: RosterSeat[] = participants.map((p) => ({
-		id: p.id,
-		name: p.name,
-		role: p.role,
-		isController: p.isController,
-		present: nowMs - Date.parse(p.lastSeenAt) <= presenceWindowMs,
-		hasVoted: votedIds.has(p.id)
-	}));
+	// Alphabetical by name so the roster does not reshuffle between polls
+	// (join order and row order are both unstable); id breaks name ties. Once
+	// revealed the same list re-sorts by card, low to high, so the spread reads
+	// off the roster directly - deck order puts the specials after the numerals
+	// and seats without a card last.
+	const cardByPid = new Map(votes.map((v) => [v.participantId, cardFromText(v.card)]));
+	const rank = (pid: string) => {
+		const i = DECK.indexOf(cardByPid.get(pid) ?? (null as never));
+		return i < 0 ? DECK.length : i;
+	};
+	const byName = (a: RosterSeat, b: RosterSeat) =>
+		a.name.localeCompare(b.name) || a.id.localeCompare(b.id);
+
+	const roster: RosterSeat[] = participants
+		.map((p) => ({
+			id: p.id,
+			name: p.name,
+			role: p.role,
+			isController: p.isController,
+			present: nowMs - Date.parse(p.lastSeenAt) <= presenceWindowMs,
+			hasVoted: votedIds.has(p.id)
+		}))
+		.sort(room.phase === 'revealed' ? (a, b) => rank(a.id) - rank(b.id) || byName(a, b) : byName);
 
 	// The caller's own vote is always theirs to see (voting or revealed).
 	const own = viewerParticipantId
@@ -162,6 +181,7 @@ export function buildSnapshot(input: SnapshotInput): RoomSnapshot {
 		signal,
 		distribution,
 		results,
+		breakCalledBy: room.breakCalledBy,
 		viewerIsController,
 		viewerSeated: !!mySeat,
 		viewerRole: mySeat?.role ?? null

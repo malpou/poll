@@ -224,6 +224,18 @@ theme token instead.
     (with the suggested value pushed right), neutral `card-alt` + ink dot for
     **close**, and `bad-tint` + `bad` dot for **spread** (borrowing the "no"
     semantics). A coffee break-hint sits below as quiet caption text.
+  - **Coffee break** sits above the phase panel in both room views: a ghost
+    button with the `Coffee` icon while the room is working, replaced by a
+    highlighter-tint callout (the `Coffee` icon in place of the notice dot,
+    the caller's name, a trailing ghost "back to it") while a break stands.
+    Same tokens as the other callouts — the break is loud by position, not by
+    a new colour.
+  - **Distribution stacks** under the signal are native `<details>`: the card
+    plus its `×count` is the summary (marker hidden, a 12px `ChevronDown` that
+    rotates 180° when open is the only affordance), and the voters' names list
+    beneath in `ink-soft` caption text, alphabetical. Disclosure elsewhere
+    follows this shape — no custom accordion, no hover-only reveal, so touch
+    and keyboard get the same thing.
 
 ## Motion
 

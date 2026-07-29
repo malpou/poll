@@ -3,6 +3,7 @@
 	import Deck from '$lib/components/poker/Deck.svelte';
 	import Roster from '$lib/components/poker/Roster.svelte';
 	import Signal from '$lib/components/poker/Signal.svelte';
+	import Break from '$lib/components/poker/Break.svelte';
 	import Button from '$lib/components/atoms/Button.svelte';
 	import TextField from '$lib/components/atoms/TextField.svelte';
 	import NoticeBanner from '$lib/components/atoms/NoticeBanner.svelte';
@@ -69,7 +70,12 @@
 				<Button type="submit">{m.pokerJoinButton()}</Button>
 			</form>
 		{:else}
-			<!-- Seated: the live view. -->
+			<!-- Seated: the live view. Anyone here can stop the room for coffee. -->
+			<Break
+				calledBy={snap.breakCalledBy}
+				oncall={() => room?.command('break', { on: true })}
+				onend={() => room?.command('break', { on: false })}
+			/>
 			<section
 				data-testid="poker-stage"
 				class="flex flex-col gap-3 rounded-card border-2 border-border bg-card p-4"
@@ -95,7 +101,11 @@
 					{#if snap.viewerRole === 'observer'}
 						<NoticeBanner tone="ink" text={m.pokerObservingNotice()} />
 						{#if snap.phase === 'revealed' && snap.signal && snap.distribution}
-							<Signal signal={snap.signal} distribution={snap.distribution} />
+							<Signal
+								signal={snap.signal}
+								distribution={snap.distribution}
+								voters={snap.revealed ?? []}
+							/>
 						{/if}
 					{:else if snap.phase === 'voting'}
 						<div class="text-2xs font-bold uppercase tracking-widest text-ink-muted">
@@ -105,7 +115,11 @@
 						<p class="text-caption text-ink-faint">{m.pokerHiddenNotice()}</p>
 					{:else if snap.phase === 'revealed'}
 						{#if snap.signal && snap.distribution}
-							<Signal signal={snap.signal} distribution={snap.distribution} />
+							<Signal
+								signal={snap.signal}
+								distribution={snap.distribution}
+								voters={snap.revealed ?? []}
+							/>
 						{/if}
 					{/if}
 				{/if}

@@ -21,6 +21,7 @@ const room = (phase: RoomPhase): PokerRoomRow => ({
 	email: null,
 	locale: 'en',
 	accent: 'blue',
+	breakCalledBy: null,
 	status: 'open',
 	phase,
 	activeRoundId: phase === 'waiting' ? null : 'round-1',
@@ -86,6 +87,35 @@ describe('buildSnapshot privacy', () => {
 		expect(snap.signal?.level).toBe('agree');
 		expect(snap.signal?.suggestion).toBe(5);
 		expect(snap.distribution?.find((d) => d.card === 5)?.count).toBe(3);
+	});
+
+	it('orders the roster alphabetically whatever order the rows arrive in', () => {
+		const input = base('voting', [], null);
+		input.participants = [seat('c', { name: 'Charlie' }), seat('a', { name: 'Alice' })];
+		expect(buildSnapshot(input).roster.map((s) => s.name)).toEqual(['Alice', 'Charlie']);
+	});
+
+	it('re-sorts the roster by card, low to high, once revealed', () => {
+		const input = base(
+			'revealed',
+			[vote('c', '13'), vote('a', '3'), vote('b', 'coffee'), vote('d', '5')],
+			null
+		);
+		input.participants = [
+			seat('c', { name: 'Charlie' }),
+			seat('a', { name: 'Alice' }),
+			seat('b', { name: 'Bob' }),
+			seat('d', { name: 'Dave' }),
+			// No card cast: sorts last, after the specials.
+			seat('e', { name: 'Eve' })
+		];
+		expect(buildSnapshot(input).roster.map((s) => s.name)).toEqual([
+			'Alice',
+			'Dave',
+			'Charlie',
+			'Bob',
+			'Eve'
+		]);
 	});
 
 	it('derives presence from the heartbeat window', () => {

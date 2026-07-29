@@ -86,6 +86,31 @@ test('joining by name appears in the roster for everyone live', async ({ browser
 	await c.close();
 });
 
+test('the roster reads alphabetically whoever joined first', async ({ browser }) => {
+	const c = await openController(browser);
+	// Joined out of order on purpose: the roster must not show join order.
+	const charlie = await joinParticipant(browser, 'Charlie');
+	const alice = await joinParticipant(browser, 'Alice');
+	const bob = await joinParticipant(browser, 'Bob');
+
+	const roster = c.page.locator('section', { hasText: m.pokerRosterHeading() });
+	await expect(roster.locator('li')).toHaveText([/Alice/, /Bob/, /Charlie/]);
+
+	// Still alphabetical while the votes land - order is by name until reveal.
+	await c.page.getByLabel(m.pokerNextItemLabel()).fill('PROJ-42');
+	await c.page.getByRole('button', { name: m.pokerOpenVoting() }).click();
+	for (const p of [charlie, alice, bob]) {
+		await p.page.getByTestId('poker-active-item').waitFor();
+		await p.page.getByRole('button', { name: '5', exact: true }).click();
+	}
+	await expect(roster.locator('li')).toHaveText([/Alice/, /Bob/, /Charlie/]);
+
+	await charlie.close();
+	await alice.close();
+	await bob.close();
+	await c.close();
+});
+
 test('a refresh resumes the same seat, no duplicate', async ({ browser }) => {
 	const p = await joinParticipant(browser, 'Alice');
 	// Seated: the join form is gone.
@@ -176,6 +201,65 @@ test('votes stay hidden until the reveal, then flip face-up', async ({ browser }
 	await c.close();
 });
 
+test('the revealed roster reads by card, low to high', async ({ browser }) => {
+	const c = await openController(browser);
+	// Alphabetically Alice, Bob, Charlie - by card the other way round.
+	const a = await joinParticipant(browser, 'Alice');
+	const b = await joinParticipant(browser, 'Bob');
+	const ch = await joinParticipant(browser, 'Charlie');
+	await c.page.getByLabel(m.pokerNextItemLabel()).fill('PROJ-42');
+	await c.page.getByRole('button', { name: m.pokerOpenVoting() }).click();
+
+	for (const [pg, card] of [
+		[a.page, '13'],
+		[b.page, '8'],
+		[ch.page, '3']
+	] as const) {
+		await pg.getByTestId('poker-active-item').waitFor();
+		await pg.getByRole('button', { name: card, exact: true }).click();
+	}
+	await c.page.getByRole('button', { name: m.pokerReveal() }).click();
+
+	const roster = c.page.locator('section', { hasText: m.pokerRosterHeading() });
+	await expect(roster.locator('li')).toHaveText([/Charlie/, /Bob/, /Alice/]);
+
+	await a.close();
+	await b.close();
+	await ch.close();
+	await c.close();
+});
+
+test('a distribution card expands to name who played it', async ({ browser }) => {
+	const c = await openController(browser);
+	const a = await joinParticipant(browser, 'Alice');
+	const b = await joinParticipant(browser, 'Bob');
+	const d = await joinParticipant(browser, 'Dave');
+	await c.page.getByLabel(m.pokerNextItemLabel()).fill('PROJ-42');
+	await c.page.getByRole('button', { name: m.pokerOpenVoting() }).click();
+
+	for (const [pg, card] of [
+		[a.page, '5'],
+		[b.page, '5'],
+		[d.page, '8']
+	] as const) {
+		await pg.getByTestId('poker-active-item').waitFor();
+		await pg.getByRole('button', { name: card, exact: true }).click();
+	}
+	await c.page.getByRole('button', { name: m.pokerReveal() }).click();
+
+	// Stacks sit in deck order, so the first one is the "5".
+	const five = c.page.getByTestId('poker-distribution').locator('details').first();
+	await five.locator('summary').click();
+	await expect(five.getByText('Alice')).toBeVisible();
+	await expect(five.getByText('Bob')).toBeVisible();
+	await expect(five.getByText('Dave')).toHaveCount(0);
+
+	await a.close();
+	await b.close();
+	await d.close();
+	await c.close();
+});
+
 // --- Requirement: Agreement signal + Controller records the final estimate ---
 
 test('the room agrees, the suggestion is offered, and the estimate is recorded', async ({
@@ -246,6 +330,58 @@ test('an infinity vote forces a spread even when the numbers agree', async ({ br
 
 	await a.close();
 	await b.close();
+	await c.close();
+});
+
+// --- Requirement: Call a coffee break ---
+
+test('a break called between items reaches the whole room, named', async ({ browser }) => {
+	const c = await openController(browser);
+	const p = await joinParticipant(browser, 'Alice');
+
+	// Waiting phase, no item open - the break is still available.
+	await p.page.getByRole('button', { name: m.pokerCallBreak() }).click();
+	await expect(c.page.getByText(m.pokerBreakCalledBy({ name: 'Alice' }))).toBeVisible();
+	await expect(p.page.getByText(m.pokerBreakCalledBy({ name: 'Alice' }))).toBeVisible();
+
+	await p.close();
+	await c.close();
+});
+
+test('a break called mid-round is ended by anyone and holds nothing up', async ({ browser }) => {
+	const c = await openController(browser);
+	const p = await joinParticipant(browser, 'Alice');
+	await c.page.getByLabel(m.pokerNextItemLabel()).fill('PROJ-99');
+	await c.page.getByRole('button', { name: m.pokerOpenVoting() }).click();
+	await p.page.getByTestId('poker-active-item').waitFor();
+
+	await p.page.getByRole('button', { name: m.pokerCallBreak() }).click();
+	await expect(c.page.getByTestId('poker-break')).toBeVisible();
+
+	// The controller (who did not call it) ends it; voting was never blocked.
+	await c.page.getByRole('button', { name: m.pokerEndBreak() }).click();
+	await expect(p.page.getByTestId('poker-break')).toHaveCount(0);
+	await p.page.getByRole('button', { name: '5', exact: true }).click();
+	await c.page.getByRole('button', { name: m.pokerReveal() }).click();
+	await expect(c.page.getByText(m.pokerSignalAgree())).toBeVisible();
+
+	await p.close();
+	await c.close();
+});
+
+test('opening the next item ends a standing break', async ({ browser }) => {
+	const c = await openController(browser);
+	const p = await joinParticipant(browser, 'Alice');
+
+	await p.page.getByRole('button', { name: m.pokerCallBreak() }).click();
+	await expect(c.page.getByTestId('poker-break')).toBeVisible();
+
+	await c.page.getByLabel(m.pokerNextItemLabel()).fill('PROJ-100');
+	await c.page.getByRole('button', { name: m.pokerOpenVoting() }).click();
+	await expect(c.page.getByTestId('poker-break')).toHaveCount(0);
+	await expect(p.page.getByTestId('poker-break')).toHaveCount(0);
+
+	await p.close();
 	await c.close();
 });
 

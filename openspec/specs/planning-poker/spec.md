@@ -73,7 +73,11 @@ SHALL remember the participant's identity in their browser so a refresh or a
 dropped connection resumes the same seat rather than creating a duplicate. A
 participant MAY join as an observer who watches without casting a vote.
 Joining a room whose status is "closed" SHALL NOT allow voting and SHALL show
-the final results log.
+the final results log. The roster SHALL be ordered alphabetically by display
+name, the same order for every viewer, and SHALL NOT reorder as the room
+updates — except in the revealed phase, where it SHALL be ordered by the card
+each seat played, lowest first, with the special cards after the numerals and
+seats that played nothing last.
 
 #### Scenario: Join by naming yourself
 
@@ -81,6 +85,19 @@ the final results log.
 - WHEN they enter a display name and join
 - THEN they appear in the live roster under that name
 - AND every already-connected participant sees the new seat appear live
+
+#### Scenario: The roster reads alphabetically
+
+- GIVEN a room joined by several participants in a non-alphabetical order
+- WHEN the roster is shown
+- THEN the seats are listed alphabetically by name
+- AND the order stays the same as votes are cast
+
+#### Scenario: The revealed roster reads by card
+
+- GIVEN a revealed room where the seats played different cards
+- WHEN the roster is shown
+- THEN the seats are listed by the card they played, lowest first
 
 #### Scenario: Refresh resumes the same seat
 
@@ -173,7 +190,8 @@ message that arrives when the phase is not voting SHALL be rejected.
 
 When the controller reveals, every cast vote SHALL become visible to all
 connected participants at the same time, and the system SHALL show the
-distribution of votes across the deck.
+distribution of votes across the deck. Each card in the distribution SHALL be
+expandable to name the participants who played it.
 
 #### Scenario: Reveal flips all votes at once
 
@@ -181,6 +199,13 @@ distribution of votes across the deck.
 - WHEN the controller reveals
 - THEN every participant sees all cast cards face-up together
 - AND the distribution of votes across the deck is shown
+
+#### Scenario: A distribution card names who played it
+
+- GIVEN a revealed room where two participants played the same card
+- WHEN a viewer expands that card in the distribution
+- THEN both their names are shown under it
+- AND names of participants who played a different card are not
 
 ### Requirement: Special cards
 
@@ -204,6 +229,34 @@ affecting the numeric agreement.
 - WHEN a participant votes ☕ and the controller reveals
 - THEN a "someone needs a break" hint is shown
 - AND the ☕ vote does not change the numeric agreement signal
+
+### Requirement: Call a coffee break
+
+Anyone in an open room SHALL be able to call a coffee break at any time,
+whatever the phase and without an item being voted on, and everyone in the
+room SHALL see it live, named after whoever called it. Anyone in the room
+SHALL be able to end the break. A break SHALL be advisory: it blocks no
+action, and voting, revealing, and recording an estimate carry on unaffected.
+Opening the next item, or closing the room, SHALL end a standing break.
+
+#### Scenario: A break is called between items
+
+- GIVEN an open room in the waiting phase with no item being voted on
+- WHEN a participant calls a coffee break
+- THEN everyone in the room sees that a break was called, naming them
+
+#### Scenario: A break is called mid-round and ended
+
+- GIVEN a room in the voting phase where a break has been called
+- WHEN someone in the room ends the break
+- THEN the break notice disappears for everyone
+- AND the round is still open for voting exactly as before
+
+#### Scenario: The next item ends the break
+
+- GIVEN a room with a standing coffee break
+- WHEN the controller opens voting on the next item
+- THEN the break is over for everyone
 
 ### Requirement: Agreement signal
 

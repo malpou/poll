@@ -59,6 +59,19 @@ export const POST: RequestHandler = async ({ params, platform, cookies, request 
 			await provider.castVote(room.id, pid, String(card));
 			break;
 		}
+		case 'break': {
+			// Anyone in the room may call a break or end one, in any phase - it is a
+			// human signal, not a control action. The caller's seat name is stored so
+			// the banner can say who asked; a controller without a seat stores ''.
+			// ponytail: no ownership, whoever is back first ends it for everyone.
+			if (body.on === false) {
+				await provider.setBreak(room.id, null);
+				break;
+			}
+			const me = pid ? (await provider.listParticipants(room.id)).find((p) => p.id === pid) : null;
+			await provider.setBreak(room.id, me?.name ?? '');
+			break;
+		}
 		case 'heartbeat': {
 			if (pid) await provider.heartbeat(pid);
 			break;
